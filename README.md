@@ -136,6 +136,14 @@ Palet sengaja **grayscale** — semua warna di luar ramp abu-abu otomatis disnap
 
 Template menyimpan blok ini di antara `/*RB_DESIGN_START*/` dan `/*RB_DESIGN_END*/`. Saat design diubah, RetroBit menulis ulang blok tersebut **dan** menyuntikkan stylesheet langsung ke WebView, jadi preview berubah seketika tanpa reload. Halaman baru cukup memakai `var(--rb-primary)` dan seterusnya agar ikut bertema.
 
+### Ikon
+
+Semua ikon digambar di grid 12×12 lalu ditulis sebagai `ImageVector` 24×24 oleh `tools/pixel_icons.py`. Satu ketebalan garis, tanpa aset pihak ketiga. Lembar kontak di bawah dirender langsung dari generator agar bentuk tiap glyph bisa diperiksa di ukuran 96/48/24/16 px sebelum masuk aplikasi.
+
+![Lembar ikon RetroBit](docs/icons.png)
+
+Regenerasi: `python3 tools/pixel_icons.py render` (lembar kontak) dan `python3 tools/pixel_icons.py kotlin` (menulis ulang `PixelIcons.kt`).
+
 ## System prompt global
 
 `SettingsStore.DEFAULT_SYSTEM_PROMPT` berisi persona default yang dipakai untuk **setiap chat baru**. Saat proyek dibuat, isi prompt disalin ke `Project.systemPrompt`; mengubah pengaturan global tidak menimpa percakapan yang sudah berjalan. Prompt per chat bisa diubah dari menu workspace (**System prompt obrolan**) atau dikembalikan ke default global dengan **Ikuti global**. Teks persona dikirim sebagai bagian pertama system prompt agen, diikuti aturan produk dan protokol kerja.
