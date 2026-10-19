@@ -138,6 +138,8 @@ Template menyimpan blok ini di antara `/*RB_DESIGN_START*/` dan `/*RB_DESIGN_END
 
 ### Ikon
 
+![Perbandingan ikon sebelum dan sesudah](docs/icons-before-after.png)
+
 Semua ikon digambar di grid 12×12 lalu ditulis sebagai `ImageVector` 24×24 oleh `tools/pixel_icons.py`. Satu ketebalan garis, tanpa aset pihak ketiga. Lembar kontak di bawah dirender langsung dari generator agar bentuk tiap glyph bisa diperiksa di ukuran 96/48/24/16 px sebelum masuk aplikasi.
 
 ![Lembar ikon RetroBit](docs/icons.png)
