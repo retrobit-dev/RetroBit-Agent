@@ -148,7 +148,7 @@ class ProjectFiles(val root: File) {
                 sb.appendLine("--- $rel (binary, ${file.length()} bytes) ---")
                 continue
             }
-            val text = runCatching { file.readText() }.getOrElse { continue }
+            val text = runCatching { file.readText() }.getOrNull() ?: continue
             sb.appendLine("--- $rel ---")
             sb.appendLine(if (text.length > maxCharsPerFile) text.take(maxCharsPerFile) + "\n… (dipotong)" else text)
         }

@@ -104,8 +104,8 @@ class LanPreviewServer(
         while (true) {
             val b = input.read()
             if (b == -1) return if (sb.isEmpty()) null else sb.toString()
-            if (b == '\n') break
-            if (b != '\r') sb.append(b.toChar())
+            if (b == 10) break // '\n'
+            if (b != 13) sb.append(b.toChar()) // skip '\r'
             if (sb.length > 4096) return null
         }
         return sb.toString()

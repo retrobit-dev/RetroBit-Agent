@@ -47,6 +47,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import dev.retrobit.agent.data.DatabaseManager
 import dev.retrobit.agent.data.DesignSystem
@@ -329,7 +330,7 @@ fun PreviewToolbar(
         }
         if (errorCount > 0) {
             Box(Modifier.clip(CircleShape)) {
-                Pill("$errorCount error", color = Palette.Danger, background = Palette.Danger.copy(alpha = 0.14), dot = true)
+                Pill("$errorCount error", color = Palette.Danger, background = Palette.Danger.copy(alpha = 0.14f), dot = true)
             }
         }
         IconButton(onClick = onOpenConsole, modifier = Modifier.size(34.dp)) {
