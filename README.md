@@ -243,6 +243,10 @@ filesDir/
 - Semua tombol di dashboard punya area sentuh **48 dp** walaupun tampilannya lebih kecil; ikon dan labelnya digabung jadi satu node semantik, jadi TalkBack membacanya sebagai "Template", "Demo lokal", atau "Kirim" — bukan tombol tanpa nama.
 - Smoke test mengukur ini di emulator: `scripts/ui-walk.sh` membaca pohon semantik dan mencatat `event=touch-targets ... small=N` untuk setiap node yang clickable namun di bawah 48 dp.
 
+## Bahasa antarmuka
+
+Seluruh teks yang tampil di aplikasi berada di `app/src/main/res/values/strings.xml`: navigasi bawah (Beranda, Template, Cloud), drawer (Cari, Semua proyek, AI Cloud), dashboard (Terbaru, Semua, Disimpan, "Aplikasi yang…"), sampai footer Cloud. Tidak ada lagi label Inggris yang ditulis langsung di kode Compose, jadi menambah bahasa lain cukup dengan membuat `values-xx/strings.xml` baru.
+
 ## Batasan yang diketahui
 
 - Belum ada streaming token: jawaban muncul setelah satu putaran selesai (dengan indikator langkah berjalan).

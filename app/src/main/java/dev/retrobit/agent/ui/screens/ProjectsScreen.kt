@@ -156,7 +156,7 @@ fun ProjectsScreen(
 
         item {
             Text(
-                "What will you build,\nRetro?",
+                stringResource(R.string.dashboard_headline),
                 style = MaterialTheme.typography.displayLarge.copy(
                     brush = Brush.linearGradient(
                         listOf(

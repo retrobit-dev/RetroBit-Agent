@@ -143,7 +143,12 @@ fun CloudScreen(
             ) {
                 Column {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("🧪", fontSize = 18.sp)
+                        Icon(
+                            PixelIcons.Warning,
+                            contentDescription = null,
+                            tint = Palette.Warning,
+                            modifier = Modifier.size(18.dp),
+                        )
                         Spacer(Modifier.width(8.dp))
                         Text("Mode demo", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurface)
                     }

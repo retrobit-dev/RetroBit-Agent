@@ -12,6 +12,7 @@
 
     <!-- Dashboard -->
     <string name="dashboard_subtitle">studio cyberdeck</string>
+    <string name="dashboard_headline">Mau bangun\napa, Retro?</string>
     <string name="dashboard_recents">Terbaru</string>
     <string name="dashboard_filter_all">Semua</string>
     <string name="dashboard_filter_saved">Disimpan</string>
