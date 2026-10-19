@@ -63,6 +63,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import dev.retrobit.agent.ui.components.AuroraBackground
+import dev.retrobit.agent.ui.screens.ChatSpaceScreen
+import dev.retrobit.agent.ui.screens.ChatSpaceViewModel
 import dev.retrobit.agent.ui.screens.CloudScreen
 import dev.retrobit.agent.ui.screens.CloudViewModel
 import dev.retrobit.agent.ui.screens.ProjectsScreen
@@ -79,6 +81,7 @@ private data class BottomDestination(val route: String, val labelRes: Int, val i
 
 private val destinations = listOf(
     BottomDestination("projects", R.string.nav_home, PixelIcons.Home),
+    BottomDestination("chat", R.string.nav_chat, PixelIcons.Comment),
     BottomDestination("templates", R.string.nav_templates, PixelIcons.Layout),
     BottomDestination("cloud", R.string.nav_cloud, PixelIcons.Cloud),
 )
@@ -88,6 +91,7 @@ fun RetroBitRoot() {
     val container = container()
     val projectsVm: ProjectsViewModel = viewModel(factory = SimpleVmFactory { ProjectsViewModel(container) })
     val cloudVm: CloudViewModel = viewModel(factory = SimpleVmFactory { CloudViewModel(container) })
+    val chatSpaceVm: ChatSpaceViewModel = viewModel(factory = SimpleVmFactory { ChatSpaceViewModel(container) })
     val projects by projectsVm.projects.collectAsStateWithLifecycle()
 
     RetroBitTheme {
@@ -131,6 +135,14 @@ fun RetroBitRoot() {
                                     onCreateWithPrompt = { prompt, id ->
                                         navController.navigate("workspace/$id?prompt=${android.net.Uri.encode(prompt)}")
                                     },
+                                )
+                            }
+                        }
+                        composable("chat") {
+                            MainShell("chat", navController) {
+                                ChatSpaceScreen(
+                                    vm = chatSpaceVm,
+                                    onOpenCloud = { navigateTab(navController, "cloud") },
                                 )
                             }
                         }
@@ -219,6 +231,7 @@ private fun DashboardSidebar(
             SidebarItem(stringResource(R.string.nav_home), PixelIcons.Home, route.startsWith("projects")) { onNavigate("projects") }
             SidebarItem(stringResource(R.string.nav_search), PixelIcons.Search, false) { onNavigate("projects") }
             SidebarItem(stringResource(R.string.nav_all_projects), PixelIcons.Grid, false) { onNavigate("projects") }
+            SidebarItem(stringResource(R.string.nav_chat), PixelIcons.Comment, route.startsWith("chat")) { onNavigate("chat") }
             SidebarItem(stringResource(R.string.nav_templates), PixelIcons.Layout, route.startsWith("templates")) { onNavigate("templates") }
             SidebarItem(stringResource(R.string.nav_ai_cloud), PixelIcons.Cloud, route.startsWith("cloud")) { onNavigate("cloud") }
 

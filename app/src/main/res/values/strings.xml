@@ -3,6 +3,7 @@
 
     <!-- Navigasi bawah dan drawer -->
     <string name="nav_home">Beranda</string>
+    <string name="nav_chat">Chat</string>
     <string name="nav_templates">Template</string>
     <string name="nav_cloud">Cloud</string>
     <string name="nav_search">Cari</string>

@@ -137,6 +137,18 @@ Model bertanda `:free` otomatis dihitung **$0** pada estimasi biaya dan diberi b
 
 Batas di atas adalah angka publik per 2026-10 dan bisa berubah; angka final selalu ada di konsol masing-masing provider.
 
+### Mode Chat
+
+Tab **Chat** di bilah bawah (atau drawer) adalah obrolan biasa:
+
+- tidak memakai tool, tidak membuka proyek, tidak menulis file — satu permintaan, satu jawaban;
+- riwayat disimpan terpisah di `filesDir/chat_space.json`, bukan di `projects.json`, jadi menghapus obrolan tidak bisa merusak aplikasi yang sudah kamu buat;
+- setiap obrolan menyimpan salinan system prompt saat dibuat; default-nya persona global dari AI Cloud;
+- memakai provider yang sedang aktif, termasuk **Auto** dan model `:free`;
+- jawaban panjang dibatasi 4.096 token dan hanya 20 giliran terakhir yang dikirim ulang ke model.
+
+Di mode Demo, chat menjawab dengan penjelasan bahwa demo hanya menyusun aplikasi dari template — bukan jawaban palsu.
+
 ### Provider Auto
 
 Mode **Auto** mencoba provider yang key-nya sudah tersimpan, dari yang punya kuota gratis lebih dulu:

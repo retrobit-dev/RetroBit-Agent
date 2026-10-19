@@ -258,6 +258,41 @@ else
   UI_ISSUES=$((UI_ISSUES + 1))
 fi
 
+# --- plain chat mode ---------------------------------------------------------
+# Reached from the tab bar that is visible on every main screen, so no extra
+# back-navigation is needed after the Cloud screenshot.
+if tap_text "Chat"; then
+  sleep 2
+  shot 13-chat-list
+  crash_check chat-list || FAILED=1
+  if tap_text "Obrolan baru"; then
+    sleep 1
+    shot 14-chat-thread
+    if tap_text "Tulis pesan"; then
+      $ADB shell input text "tes%smode%schat" >>"$LOG" 2>&1
+      sleep 1
+      if tap_text "Kirim"; then
+        sleep 2
+        shot 15-chat-reply
+        if dump_ui && grep -qi "mode demo hanya" /tmp/ui.xml; then
+          log "event=chat-demo-reply"
+        else
+          log "event=chat-reply-missing"
+          UI_ISSUES=$((UI_ISSUES + 1))
+        fi
+      else
+        UI_ISSUES=$((UI_ISSUES + 1))
+      fi
+    else
+      UI_ISSUES=$((UI_ISSUES + 1))
+    fi
+  else
+    UI_ISSUES=$((UI_ISSUES + 1))
+  fi
+else
+  UI_ISSUES=$((UI_ISSUES + 1))
+fi
+
 log "ui_issues=$UI_ISSUES"
 log "failed=$FAILED"
 
