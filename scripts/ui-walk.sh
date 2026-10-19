@@ -148,8 +148,15 @@ else
 fi
 
 # --- dashboard drawer --------------------------------------------------------
-$ADB shell input keyevent KEYCODE_BACK >>"$LOG" 2>&1
-sleep 2
+# The soft keyboard may still be up, so BACK once closes it and only the second
+# press leaves the workspace. Keep pressing until the dashboard is visible.
+for _ in 1 2 3; do
+  $ADB shell input keyevent KEYCODE_BACK >>"$LOG" 2>&1
+  sleep 2
+  if dump_ui && grep -qi "Recents" /tmp/ui.xml; then
+    break
+  fi
+done
 shot 10-back-to-dashboard
 
 if tap_text "Menu"; then

@@ -6,7 +6,6 @@ import android.content.Intent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -23,7 +22,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
@@ -248,14 +246,16 @@ fun WorkspaceScreen(vm: WorkspaceViewModel, onBack: () -> Unit) {
         Row(
             Modifier
                 .fillMaxWidth()
-                .horizontalScroll(rememberScrollState())
-                .padding(horizontal = 10.dp, vertical = 4.dp),
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                .padding(horizontal = 8.dp, vertical = 4.dp),
+            horizontalArrangement = Arrangement.spacedBy(3.dp),
         ) {
+            // All six tabs share the width: no horizontal scrolling, so the last
+            // tab is never half hidden behind the screen edge.
             WorkspaceTab.entries.forEach { item ->
                 val selected = tab == item
-                Row(
+                Column(
                     Modifier
+                        .weight(1f)
                         .clip(RoundedCornerShape(3.dp))
                         .background(if (selected) Palette.Primary.copy(alpha = 0.16f) else Color.Transparent)
                         .border(
@@ -264,21 +264,24 @@ fun WorkspaceScreen(vm: WorkspaceViewModel, onBack: () -> Unit) {
                             RoundedCornerShape(3.dp),
                         )
                         .clickable { tab = item }
-                        .padding(horizontal = 9.dp, vertical = 7.dp),
-                    verticalAlignment = Alignment.CenterVertically,
+                        .padding(vertical = 6.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     Icon(
                         item.icon,
                         contentDescription = null,
                         tint = if (selected) Palette.Accent else MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(16.dp),
+                        modifier = Modifier.size(18.dp),
                     )
-                    Spacer(Modifier.width(5.dp))
+                    Spacer(Modifier.height(3.dp))
                     Text(
                         item.label,
                         style = MaterialTheme.typography.labelSmall,
                         color = if (selected) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
                         fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        fontSize = 10.sp,
                     )
                 }
             }
