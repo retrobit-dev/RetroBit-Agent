@@ -25,6 +25,34 @@ jobs:
         run: |
           chmod +x ./gradlew
           ./gradlew --no-daemon --console=plain lintDebug || true
+
+      - name: Summarise lint findings
+        if: always()
+        run: |
+          python3 - <<'PY'
+          import glob, sys, xml.etree.ElementTree as ET
+
+          files = glob.glob("app/build/reports/lint-results-debug.xml")
+          if not files:
+              print("::warning title=Lint::Tidak ada laporan lint (task gagal sebelum menulis report).")
+              sys.exit(0)
+
+          root = ET.parse(files[0]).getroot()
+          issues = root.findall("issue")
+          errors = [i for i in issues if i.get("severity") == "Error"]
+          warnings = [i for i in issues if i.get("severity") == "Warning"]
+          print(f"lint: {len(errors)} error, {len(warnings)} warning, {len(issues)} total")
+          for issue in (errors + warnings)[:8]:
+              loc = issue.find("location")
+              where = f"{loc.get('file')}:{loc.get('line')}" if loc is not None else "?"
+              msg = (issue.get("message") or "").replace("%", "%25").replace("\n", " ")
+              print(f"::warning title=lint/{issue.get('id')}::{msg[:400]} ({where})")
+          for issue in errors[:30]:
+              loc = issue.find("location")
+              where = f"{loc.get('file')}:{loc.get('line')}" if loc is not None else "?"
+              msg = (issue.get("message") or "").replace("%", "%25").replace("\n", " ")
+              print(f"::error title=lint/{issue.get('id')}::{msg[:400]} ({where})")
+          PY
       - name: Upload lint report
         uses: actions/upload-artifact@v7
         with:
