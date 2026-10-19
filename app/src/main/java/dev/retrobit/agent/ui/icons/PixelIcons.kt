@@ -51,7 +51,7 @@ object PixelIcons {
     val Lock: ImageVector by lazy { icon("Lock", "M8 2h8v2h-8zM6 4h2v6h-2zM16 4h2v6h-2zM2 10h20v2h-20zM10 14h4v4h-4zM2 12h2v8h-2zM20 12h2v8h-2zM2 20h20v2h-20z") }
     val MoreVertical: ImageVector by lazy { icon("MoreVertical", "M10 0h4v4h-4zM10 8h4v4h-4zM10 16h4v4h-4z") }
     val Palette: ImageVector by lazy { icon("Palette", "M8 2h8v2h-8zM4 4h16v2h-16zM4 6h2v2h-2zM18 6h2v2h-2zM10 6h4v4h-4zM2 8h4v2h-4zM18 8h4v2h-4zM2 10h20v4h-20zM2 14h4v2h-4zM18 14h4v2h-4zM10 14h4v4h-4zM4 16h2v2h-2zM18 16h2v2h-2zM4 18h16v2h-16zM8 20h8v2h-8z") }
-    val Smartphone: ImageVector by lazy { icon("Smartphone", "M4 2h16v2h-16zM4 4h2v14h-2zM18 4h2v14h-2zM10 16h4v2h-4zM4 18h16v2h-16z") }
+    val Preview: ImageVector by lazy { icon("Preview", "M2 2h20v2h-20zM10 6h4v2h-4zM8 8h8v4h-8zM10 12h4v2h-4zM2 4h2v12h-2zM20 4h2v12h-2zM2 16h20v2h-20z") }
     val Play: ImageVector by lazy { icon("Play", "M4 4h4v2h-4zM4 6h8v2h-8zM4 8h12v2h-12zM4 10h16v4h-16zM4 14h12v2h-12zM4 16h8v2h-8zM4 18h4v2h-4z") }
     val Reload: ImageVector by lazy { icon("Reload", "M8 2h8v2h-8zM6 4h2v2h-2zM16 4h2v2h-2zM20 4h4v2h-4zM18 6h6v2h-6zM4 6h2v4h-2zM20 8h4v2h-4zM2 10h2v4h-2zM22 14h2v2h-2zM4 14h2v4h-2zM20 16h2v2h-2zM6 18h2v2h-2zM18 18h2v2h-2zM8 20h10v2h-10z") }
     val Undo: ImageVector by lazy { icon("Undo", "M4 2h4v2h-4zM2 4h4v2h-4zM0 6h20v4h-20zM2 10h4v2h-4zM16 10h4v2h-4zM4 12h4v2h-4zM18 12h4v6h-4z") }

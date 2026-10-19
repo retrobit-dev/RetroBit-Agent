@@ -74,7 +74,7 @@ import dev.retrobit.agent.ui.icons.PixelIcons
 
 enum class WorkspaceTab(val label: String, val icon: ImageVector) {
     CHAT("Chat", PixelIcons.Comment),
-    PREVIEW("Preview", PixelIcons.Smartphone),
+    PREVIEW("Preview", PixelIcons.Preview),
     CODE("Kode", PixelIcons.Code),
     DESIGN("Desain", PixelIcons.Palette),
     DATA("Data", PixelIcons.Database),
