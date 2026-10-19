@@ -3,6 +3,8 @@ package dev.retrobit.agent.agent
 import dev.retrobit.agent.ai.AiClientFactory
 import dev.retrobit.agent.ai.AiConfig
 import dev.retrobit.agent.ai.AiException
+import dev.retrobit.agent.ai.AutoRouter
+import dev.retrobit.agent.ai.ProviderKind
 import dev.retrobit.agent.ai.TokenUsage
 import dev.retrobit.agent.ai.WireTurn
 import dev.retrobit.agent.ai.parseObject
@@ -54,14 +56,49 @@ class AgentEngine(
         val db = DatabaseManager(context, project.id)
         repository.filesFor(project.id).createSnapshot()
         return try {
-            if (config.isDemo) {
-                DemoAgent.run(project, prompt, repository, db, onEvent)
-            } else {
-                runCloud(project, prompt, history, config, db, onEvent)
+            when {
+                config.isDemo -> DemoAgent.run(project, prompt, repository, db, onEvent)
+                config.provider == ProviderKind.AUTO -> runAuto(project, prompt, history, config, db, onEvent)
+                else -> runCloud(project, prompt, history, config, db, onEvent)
             }
         } finally {
             db.close()
         }
+    }
+
+    /**
+     * Auto mode: walk the providers the user has keys for, cheapest first, and stop
+     * at the first one that produces a real answer. A candidate only counts as
+     * failed when it wrote nothing and said nothing, so partial work is never thrown
+     * away and restarted on another provider.
+     */
+    private suspend fun runAuto(
+        project: Project,
+        prompt: String,
+        history: List<ChatMessage>,
+        config: AiConfig,
+        db: DatabaseManager,
+        onEvent: suspend (AgentEvent) -> Unit,
+    ): ChatMessage {
+        val candidates = AutoRouter.candidates(secrets, config)
+        if (candidates.isEmpty()) {
+            return errorMessage(
+                "Mode Auto belum menemukan provider. Simpan minimal satu API key di AI Cloud — Gemini dan Groq punya kuota gratis — atau pakai mode Demo.",
+                emptyList(), emptyList(), config,
+            )
+        }
+        var last: ChatMessage? = null
+        candidates.forEachIndexed { index, candidate ->
+            currentCoroutineContext().ensureActive()
+            onEvent(AgentEvent.Notice("Auto memakai ${candidate.provider.label} · ${candidate.model}"))
+            val result = runCloud(project, prompt, history, candidate, db, onEvent)
+            if (!result.isError) return result
+            last = result
+            if (index < candidates.lastIndex) {
+                onEvent(AgentEvent.Notice("${candidate.provider.label} tidak menjawab, Auto mencoba provider berikutnya…"))
+            }
+        }
+        return last ?: errorMessage("Mode Auto gagal menjalankan agen.", emptyList(), emptyList(), config)
     }
 
     private suspend fun runCloud(

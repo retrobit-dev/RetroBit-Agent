@@ -178,6 +178,10 @@ fun CloudScreen(
                         )
                     }
                     Spacer(Modifier.height(12.dp))
+                    if (vm.autoMode) {
+                        AutoPlan(vm)
+                    }
+                    if (!vm.autoMode) {
                     CloudField(
                         label = "Base URL",
                         value = vm.baseUrl,
@@ -214,13 +218,19 @@ fun CloudScreen(
                                         .clickable { vm.updateModel(suggestion) }
                                         .padding(horizontal = 10.dp, vertical = 6.dp)
                                 ) {
-                                    Text(
-                                        suggestion,
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = if (vm.model == suggestion) Palette.Primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                                        fontFamily = MonoFont,
-                                        maxLines = 1,
-                                    )
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Text(
+                                            suggestion,
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = if (vm.model == suggestion) Palette.Primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                                            fontFamily = MonoFont,
+                                            maxLines = 1,
+                                        )
+                                        if (AiConfig.isFreeModel(suggestion)) {
+                                            Spacer(Modifier.width(5.dp))
+                                            FreeBadge()
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -258,6 +268,7 @@ fun CloudScreen(
                         }
                     }
 
+                    }
                     Spacer(Modifier.height(16.dp))
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
@@ -490,6 +501,71 @@ fun CloudScreen(
 }
 
 @Composable
+private fun FreeBadge() {
+    Box(
+        Modifier
+            .clip(RoundedCornerShape(2.dp))
+            .background(Palette.Success.copy(alpha = 0.16f))
+            .padding(horizontal = 4.dp, vertical = 1.dp)
+    ) {
+        Text(
+            "GRATIS",
+            style = MaterialTheme.typography.labelSmall,
+            color = Palette.Success,
+            fontFamily = MonoFont,
+        )
+    }
+}
+
+/** Shown instead of the URL/model/key fields when the provider is Auto. */
+@Composable
+private fun AutoPlan(vm: CloudViewModel) {
+    Column {
+        Text(
+            "Auto mencoba provider berurutan dan berhenti di yang pertama menjawab. Urutannya dari yang punya kuota gratis.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            lineHeight = 18.sp,
+        )
+        Spacer(Modifier.height(10.dp))
+        vm.autoTargets.forEach { target ->
+            val free = AiConfig.isFreeModel(target.model) || AiConfig.presetFor(target.kind).freeTier
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    if (target.hasKey) PixelIcons.Check else PixelIcons.Close,
+                    contentDescription = null,
+                    tint = if (target.hasKey) Palette.Success else MaterialTheme.colorScheme.outline,
+                    modifier = Modifier.size(13.dp),
+                )
+                Spacer(Modifier.width(7.dp))
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        "${target.kind.label} · ${target.model}",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = if (target.hasKey) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Text(
+                        if (target.hasKey) "siap dipakai" else "belum ada key",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                    )
+                }
+                if (free && target.hasKey) FreeBadge()
+            }
+            Spacer(Modifier.height(7.dp))
+        }
+        Text(
+            "Ollama ikut hanya kalau kolom key-nya diisi (boleh teks apa saja) — supaya Auto tidak menunggu server lokal yang mati.",
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+            lineHeight = 15.sp,
+        )
+    }
+}
+
+@Composable
 private fun ProviderTile(
     kind: ProviderKind,
     selected: Boolean,
@@ -537,8 +613,9 @@ private fun ProviderTile(
             )
             Text(
                 when {
+                    kind == ProviderKind.AUTO -> "pilih otomatis"
                     kind == ProviderKind.DEMO -> "tanpa key"
-                    requiresKey -> "API key"
+                    requiresKey -> if (AiConfig.presetFor(kind).freeTier) "API key · gratis" else "API key"
                     else -> "lokal / opsional"
                 },
                 style = MaterialTheme.typography.labelSmall,

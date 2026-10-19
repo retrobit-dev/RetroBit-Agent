@@ -25,7 +25,9 @@ class AiConfigTest {
 
     // Ollama runs on the local network and a custom endpoint may sit behind its
     // own auth, so only the hosted providers are keyed.
-    private val keyless = setOf(ProviderKind.DEMO, ProviderKind.OLLAMA, ProviderKind.CUSTOM)
+    private val keyless = setOf(
+        ProviderKind.AUTO, ProviderKind.DEMO, ProviderKind.OLLAMA, ProviderKind.CUSTOM,
+    )
 
     @Test
     fun `hosted providers require a key`() {
@@ -95,6 +97,50 @@ class AiConfigTest {
     @Test
     fun `unknown model gets the generic price`() {
         assertEquals(1.0 to 3.0, AiConfig.estimatedPricePerMillion("mystery-model"))
+    }
+
+    // --- free models ---------------------------------------------------------
+
+    @Test
+    fun `free models cost nothing`() {
+        assertEquals(0.0 to 0.0, AiConfig.estimatedPricePerMillion("google/gemma-4-31b-it:free"))
+        assertEquals(0.0 to 0.0, AiConfig.estimatedPricePerMillion("openrouter/free"))
+        assertTrue(AiConfig.isFreeModel("deepseek/deepseek-r1:FREE"))
+        assertFalse(AiConfig.isFreeModel("anthropic/claude-sonnet-4.5"))
+    }
+
+    @Test
+    fun `free marker is not confused with a paid prefix`() {
+        assertFalse(AiConfig.isFreeModel("openrouter/free-form-model"))
+        assertFalse(AiConfig.isFreeModel(""))
+    }
+
+    // --- auto router ---------------------------------------------------------
+
+    @Test
+    fun `auto priority starts with the providers that have a free tier`() {
+        assertEquals(ProviderKind.GEMINI, AutoRouter.PRIORITY.first().first)
+        val freeFirst = AutoRouter.PRIORITY.take(3).map { it.first }
+        assertEquals(listOf(ProviderKind.GEMINI, ProviderKind.GROQ, ProviderKind.OPENROUTER), freeFirst)
+    }
+
+    @Test
+    fun `auto priority is unique, catalogued and never demo or auto`() {
+        val kinds = AutoRouter.PRIORITY.map { it.first }
+        assertEquals(kinds.size, kinds.toSet().size)
+        kinds.forEach { kind ->
+            assertNotNull("no catalog entry for $kind", AiConfig.CATALOG.firstOrNull { it.kind == kind })
+            assertFalse(kind == ProviderKind.DEMO || kind == ProviderKind.AUTO || kind == ProviderKind.CUSTOM)
+        }
+        AutoRouter.PRIORITY.forEach { (_, model) ->
+            assertTrue("blank auto model", model.isNotBlank())
+        }
+    }
+
+    @Test
+    fun `auto prefers a free model on openrouter`() {
+        val model = AutoRouter.PRIORITY.first { it.first == ProviderKind.OPENROUTER }.second
+        assertTrue(AiConfig.isFreeModel(model))
     }
 }
 

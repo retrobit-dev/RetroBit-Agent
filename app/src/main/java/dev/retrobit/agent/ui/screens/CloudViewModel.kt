@@ -9,6 +9,8 @@ import dev.retrobit.agent.AppContainer
 import dev.retrobit.agent.agent.AgentEngine
 import dev.retrobit.agent.ai.AiClientFactory
 import dev.retrobit.agent.ai.AiConfig
+import dev.retrobit.agent.ai.AutoRouter
+import dev.retrobit.agent.ai.AutoTarget
 import dev.retrobit.agent.ai.ProviderKind
 import dev.retrobit.agent.data.SecretEntry
 import kotlinx.coroutines.launch
@@ -51,6 +53,10 @@ class CloudViewModel(private val container: AppContainer) : ViewModel() {
         private set
 
     val demoMode: Boolean get() = provider == ProviderKind.DEMO
+    val autoMode: Boolean get() = provider == ProviderKind.AUTO
+
+    /** Which providers Auto can see, and whether their key is already stored. */
+    val autoTargets: List<AutoTarget> get() = AutoRouter.targets(secrets)
 
     init {
         val current = config.value
@@ -67,7 +73,7 @@ class CloudViewModel(private val container: AppContainer) : ViewModel() {
     fun chooseProvider(kind: ProviderKind) {
         provider = kind
         val preset = AiConfig.presetFor(kind)
-        baseUrl = preset.baseUrl
+        baseUrl = if (kind == ProviderKind.AUTO) "" else preset.baseUrl
         model = preset.models.firstOrNull().orEmpty()
         apiKey = secrets.get(AgentEngine.keyFor(kind.name)).orEmpty()
         keyStored = apiKey.isNotBlank()
@@ -86,6 +92,26 @@ class CloudViewModel(private val container: AppContainer) : ViewModel() {
     fun save() {
         val preset = AiConfig.presetFor(provider)
         val cleanKey = apiKey.trim()
+        if (provider == ProviderKind.AUTO) {
+            val ready = autoTargets.any { it.usable }
+            settings.updateConfig { current ->
+                current.copy(
+                    provider = ProviderKind.AUTO,
+                    baseUrl = "",
+                    model = "auto",
+                    temperature = temperature.toDouble(),
+                    maxTokens = maxTokens.toIntOrNull()?.coerceIn(512, 64000) ?: 8192,
+                    connectedAt = if (ready) System.currentTimeMillis() else current.connectedAt,
+                )
+            }
+            savedMessage = if (ready) {
+                "Auto aktif. RetroBit akan memakai provider pertama yang punya key."
+            } else {
+                "Auto disimpan, tetapi belum ada API key. Isi key di provider mana pun di atas."
+            }
+            testResult = null
+            return
+        }
         if (provider != ProviderKind.DEMO) {
             if (baseUrl.isBlank()) {
                 savedMessage = "Base URL wajib diisi."
@@ -120,6 +146,10 @@ class CloudViewModel(private val container: AppContainer) : ViewModel() {
             testResult = ConnectionTest(true, "Mode demo berjalan offline, tanpa API key.")
             return
         }
+        if (provider == ProviderKind.AUTO) {
+            testAutoConnection()
+            return
+        }
         val preset = AiConfig.presetFor(provider)
         val key = apiKey.trim().ifBlank { secrets.get(AgentEngine.keyFor(provider.name)).orEmpty() }
         if (preset.requiresKey && key.isBlank()) {
@@ -141,6 +171,39 @@ class CloudViewModel(private val container: AppContainer) : ViewModel() {
                 onSuccess = { ConnectionTest(true, "Terhubung! Model menjawab: ${it.trim().ifBlank { "OK" }}") },
                 onFailure = { ConnectionTest(false, it.message ?: "Gagal terhubung") },
             )
+            testing = false
+        }
+    }
+
+    /** Probes the Auto chain in order and reports the first provider that answers. */
+    private fun testAutoConnection() {
+        val candidates = AutoRouter.candidates(secrets, config.value)
+        if (candidates.isEmpty()) {
+            testResult = ConnectionTest(false, "Belum ada API key. Isi key Gemini, Groq, atau provider lain di atas.")
+            return
+        }
+        testing = true
+        testResult = null
+        viewModelScope.launch {
+            var report: ConnectionTest? = null
+            for (candidate in candidates) {
+                val key = secrets.get(AgentEngine.keyFor(candidate.provider.name)).orEmpty()
+                val probe = candidate.copy(temperature = 0.0, maxTokens = 64)
+                val result = AiClientFactory.testConnection(probe, key)
+                report = result.fold(
+                    onSuccess = {
+                        ConnectionTest(
+                            true,
+                            "Auto memakai ${candidate.provider.label} · ${candidate.model}. Jawaban: ${it.trim().ifBlank { "OK" }}",
+                        )
+                    },
+                    onFailure = { failure ->
+                        ConnectionTest(false, "${candidate.provider.label}: ${failure.message ?: "gagal"}")
+                    },
+                )
+                if (report.ok) break
+            }
+            testResult = report
             testing = false
         }
     }

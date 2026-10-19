@@ -4,6 +4,7 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 enum class ProviderKind(val label: String) {
+    AUTO("Auto"),
     DEMO("Demo lokal"),
     OPENROUTER("OpenRouter"),
     OPENAI("OpenAI"),
@@ -25,6 +26,8 @@ data class ProviderPreset(
     val keyHint: String,
     val requiresKey: Boolean = true,
     val docsUrl: String = "",
+    /** Provider has a standing free tier even though the model id has no marker. */
+    val freeTier: Boolean = false,
 )
 
 @Serializable
@@ -46,14 +49,14 @@ data class AiConfig(
             ProviderPreset(
                 ProviderKind.OPENROUTER, "https://openrouter.ai/api/v1",
                 listOf(
+                    "openrouter/free",
+                    "google/gemma-4-31b-it:free",
+                    "nvidia/nemotron-3-super-120b-a12b:free",
                     "anthropic/claude-sonnet-4.5",
-                    "anthropic/claude-haiku-4.5",
-                    "openai/gpt-4.1",
                     "openai/gpt-4.1-mini",
                     "google/gemini-2.5-pro",
                     "deepseek/deepseek-chat-v3.1",
                     "qwen/qwen3-coder",
-                    "meta-llama/llama-3.3-70b-instruct",
                 ),
                 keyHint = "sk-or-v1-…", docsUrl = "openrouter.ai/keys"
             ),
@@ -69,13 +72,13 @@ data class AiConfig(
             ),
             ProviderPreset(
                 ProviderKind.GEMINI, "https://generativelanguage.googleapis.com",
-                listOf("gemini-2.5-flash", "gemini-2.5-pro"),
-                keyHint = "AIza…", docsUrl = "aistudio.google.com/apikey"
+                listOf("gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-2.5-pro"),
+                keyHint = "AIza…", docsUrl = "aistudio.google.com/apikey", freeTier = true
             ),
             ProviderPreset(
                 ProviderKind.GROQ, "https://api.groq.com/openai/v1",
-                listOf("llama-3.3-70b-versatile", "qwen/qwen3-32b", "openai/gpt-oss-120b"),
-                keyHint = "gsk_…", docsUrl = "console.groq.com/keys"
+                listOf("openai/gpt-oss-120b", "llama-3.3-70b-versatile", "qwen/qwen3-32b"),
+                keyHint = "gsk_…", docsUrl = "console.groq.com/keys", freeTier = true
             ),
             ProviderPreset(
                 ProviderKind.DEEPSEEK, "https://api.deepseek.com/v1",
@@ -84,8 +87,8 @@ data class AiConfig(
             ),
             ProviderPreset(
                 ProviderKind.MISTRAL, "https://api.mistral.ai/v1",
-                listOf("mistral-large-latest", "codestral-latest", "mistral-small-latest"),
-                keyHint = "…", docsUrl = "console.mistral.ai"
+                listOf("mistral-small-latest", "mistral-large-latest", "codestral-latest"),
+                keyHint = "…", docsUrl = "console.mistral.ai", freeTier = true
             ),
             ProviderPreset(
                 ProviderKind.TOGETHER, "https://api.together.xyz/v1",
@@ -95,12 +98,17 @@ data class AiConfig(
             ProviderPreset(
                 ProviderKind.OLLAMA, "http://10.0.2.2:11434/v1",
                 listOf("qwen2.5-coder:7b", "llama3.2", "deepseek-coder-v2"),
-                keyHint = "opsional", requiresKey = false, docsUrl = "ollama.com"
+                keyHint = "opsional", requiresKey = false, docsUrl = "ollama.com", freeTier = true
             ),
             ProviderPreset(
                 ProviderKind.CUSTOM, "https://",
                 listOf(""),
                 keyHint = "opsional", requiresKey = false, docsUrl = ""
+            ),
+            ProviderPreset(
+                ProviderKind.AUTO, "",
+                listOf("Auto"),
+                keyHint = "", requiresKey = false, docsUrl = ""
             ),
             ProviderPreset(
                 ProviderKind.DEMO, "",
@@ -111,8 +119,18 @@ data class AiConfig(
 
         fun presetFor(kind: ProviderKind): ProviderPreset = CATALOG.first { it.kind == kind }
 
+        /**
+         * OpenRouter marks zero-cost models with a `:free` suffix and also offers
+         * an `openrouter/free` router that picks one of them for you.
+         */
+        fun isFreeModel(model: String): Boolean {
+            val m = model.trim().lowercase()
+            return m == "openrouter/free" || m.endsWith(":free")
+        }
+
         /** Rough USD price per 1M tokens used for the usage estimate. */
         fun estimatedPricePerMillion(model: String): Pair<Double, Double> {
+            if (isFreeModel(model)) return 0.0 to 0.0
             val m = model.lowercase()
             return when {
                 "opus" in m -> 15.0 to 75.0
