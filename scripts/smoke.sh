@@ -65,7 +65,7 @@ grep -q "FATAL EXCEPTION" artifacts/crash.log && CRASH=1
 
 log "install=$INSTALL launch=$LAUNCH foreground=$FOREGROUND crash=$CRASH"
 
-if [ "$INSTALL" -ne 0 ] || [ "$LAUNCH" -ne 0 ] || [ "$FOREGROUND" -ne 1 ] || [ "$CRASH" -ne 1 ]; then
+if [ "$INSTALL" -ne 0 ] || [ "$LAUNCH" -ne 0 ] || [ "$FOREGROUND" -ne 1 ] || [ "$CRASH" -ne 0 ]; then
   log "== result: FAIL =="
   exit 1
 fi
