@@ -372,7 +372,7 @@ fun CloudScreen(
                     subtitle = "Bahasa balasan AI",
                     options = listOf("id" to "Indonesia", "en" to "English"),
                     selected = vm.language,
-                    onSelect = { vm.setLanguage(it) },
+                    onSelect = { vm.updateLanguage(it) },
                 )
                 Spacer(Modifier.height(14.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -386,7 +386,7 @@ fun CloudScreen(
                     }
                     Switch(
                         checked = vm.autoPreview,
-                        onCheckedChange = { vm.setAutoPreview(it) },
+                        onCheckedChange = { vm.updateAutoPreview(it) },
                         colors = SwitchDefaults.colors(
                             checkedThumbColor = Color.White,
                             checkedTrackColor = Palette.Primary,

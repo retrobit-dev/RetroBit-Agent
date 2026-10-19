@@ -162,12 +162,12 @@ class CloudViewModel(private val container: AppContainer) : ViewModel() {
         settings.themeMode = mode
     }
 
-    fun setLanguage(value: String) {
+    fun updateLanguage(value: String) {
         language = value
         settings.agentLanguage = value
     }
 
-    fun setAutoPreview(value: Boolean) {
+    fun updateAutoPreview(value: Boolean) {
         autoPreview = value
         settings.autoOpenPreview = value
     }
