@@ -50,33 +50,34 @@ jobs:
           api-level: 30
           target: default
           arch: x86_64
+          profile: pixel_2
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           script: |
-            LOG=smoke.log
-            : > $LOG
-            run() {
-              echo "\$ $*" >> $LOG
-              "$@" >> $LOG 2>&1
-              echo "exit=$?" >> $LOG
-            }
-            adb devices >> $LOG 2>&1
-            adb shell getprop sys.boot_completed >> $LOG 2>&1
-            adb install -r app/build/outputs/apk/release/app-release.apk >> $LOG 2>&1
-            echo "install_exit=$?" >> $LOG
-            adb shell pm list packages | grep dev.retrobit.agent >> $LOG 2>&1
-            echo "package_exit=$?" >> $LOG
-            adb logcat -c >> $LOG 2>&1
-            adb shell am start -W -n dev.retrobit.agent/.MainActivity >> $LOG 2>&1
-            echo "launch_exit=$?" >> $LOG
-            sleep 15
-            adb shell dumpsys activity activities | grep -E "mResumedActivity|topResumedActivity" >> $LOG 2>&1
+            LOG=/tmp/smoke.log
+            : > "$LOG"
             mkdir -p artifacts
-            adb exec-out screencap -p > artifacts/dashboard.png 2>> $LOG
-            adb logcat -d -b crash >> artifacts/crash.log 2>&1
-            adb logcat -d | grep -E "FATAL EXCEPTION|AndroidRuntime" | head -60 >> artifacts/crash.log 2>&1
-            cp $LOG artifacts/smoke.log
-            tail -80 $LOG
+            adb devices >> "$LOG" 2>&1 || true
+            adb wait-for-device >> "$LOG" 2>&1 || true
+            adb shell getprop sys.boot_completed >> "$LOG" 2>&1 || true
+            adb install -r app/build/outputs/apk/release/app-release.apk >> "$LOG" 2>&1
+            echo "install_exit=$?" >> "$LOG"
+            adb shell pm list packages > /tmp/packages.txt 2>&1 || true
+            grep dev.retrobit.agent /tmp/packages.txt >> "$LOG" 2>&1
+            echo "package_exit=$?" >> "$LOG"
+            adb logcat -c >> "$LOG" 2>&1 || true
+            adb shell am start -W -n dev.retrobit.agent/.MainActivity >> "$LOG" 2>&1
+            echo "launch_exit=$?" >> "$LOG"
+            sleep 15
+            adb shell dumpsys activity activities > /tmp/activities.txt 2>&1 || true
+            grep -E "mResumedActivity|topResumedActivity" /tmp/activities.txt >> "$LOG" 2>&1 || true
+            adb exec-out screencap -p > artifacts/dashboard.png 2>> "$LOG" || true
+            adb shell input swipe 160 500 160 200 >> "$LOG" 2>&1 || true
+            sleep 2
+            adb exec-out screencap -p > artifacts/dashboard-2.png 2>> "$LOG" || true
+            adb logcat -d -b crash > artifacts/crash.log 2>&1 || true
+            cp "$LOG" artifacts/smoke.log
+            tail -60 "$LOG"
             exit 0
 
       - name: Report smoke diagnostics
@@ -85,12 +86,13 @@ jobs:
           python3 - <<'PY'
           import pathlib, re, sys, urllib.parse
 
-          log = pathlib.Path("smoke.log")
+          log = pathlib.Path("artifacts/smoke.log")
           text = log.read_text(errors="replace") if log.exists() else "(smoke.log tidak ada)"
 
           def annotate(level, title, body):
-              body = urllib.parse.quote(body[-3000:], safe=" \n-_.:/=")
-              print(f"::{level} title={title}::{body}")
+              escaped = body[-2500:].replace("%", "%25").replace("\r", "")
+              escaped = escaped.replace("\n", "%0A")
+              print(f"::{level} title={title}::{escaped}")
 
           install_ok = re.search(r"install_exit=0", text) is not None
           launch_ok = re.search(r"launch_exit=0", text) is not None
