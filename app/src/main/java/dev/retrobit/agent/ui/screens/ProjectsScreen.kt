@@ -438,22 +438,23 @@ private fun PlatformChip(label: String, icon: androidx.compose.ui.graphics.vecto
 @Composable
 private fun FilterChip(label: String, active: Boolean, onClick: () -> Unit) {
     val colors = MaterialTheme.colorScheme
-    // The tinted pill stays compact, but the tappable area is a full 48 dp.
+    // Compact pill on the outside, full 48 dp tap target on the inside.
     Box(
         modifier = Modifier
             .heightIn(min = 48.dp)
-            .clip(RoundedCornerShape(2.dp))
-            .background(if (active) colors.primary else Color.Transparent)
-            .border(1.dp, if (active) colors.primary else colors.outlineVariant, RoundedCornerShape(2.dp))
             .clickable(onClick = onClick)
-            .semantics(mergeDescendants = true) {}
-            .padding(horizontal = 11.dp),
+            .semantics(mergeDescendants = true) {},
         contentAlignment = Alignment.Center,
     ) {
         Text(
             label.uppercase(),
             style = MaterialTheme.typography.labelSmall,
             color = if (active) colors.onPrimary else colors.onSurfaceVariant,
+            modifier = Modifier
+                .clip(RoundedCornerShape(2.dp))
+                .background(if (active) colors.primary else Color.Transparent)
+                .border(1.dp, if (active) colors.primary else colors.outlineVariant, RoundedCornerShape(2.dp))
+                .padding(horizontal = 16.dp, vertical = 7.dp),
         )
     }
 }
