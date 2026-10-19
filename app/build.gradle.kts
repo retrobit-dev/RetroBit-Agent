@@ -1,3 +1,5 @@
+import java.io.File as JFile
+import java.util.Base64
 import java.util.Properties
 
 plugins {
@@ -23,11 +25,11 @@ private fun loadSigningConfig(): Properties? {
     }
     val b64 = System.getenv("RELEASE_KEYSTORE_BASE64")
     if (!b64.isNullOrBlank()) {
-        val decoded = java.io.File(
+        val decoded = JFile(
             System.getenv("RUNNER_TEMP") ?: System.getProperty("java.io.tmpdir"),
             "retrobit-release.jks",
         )
-        decoded.writeBytes(java.util.Base64.getDecoder().decode(b64))
+        decoded.writeBytes(Base64.getDecoder().decode(b64))
         props.setProperty("storeFile", decoded.absolutePath)
         System.getenv("RELEASE_KEYSTORE_PASSWORD")?.let { props.setProperty("storePassword", it) }
         System.getenv("RELEASE_KEY_ALIAS")?.let { props.setProperty("keyAlias", it) }
