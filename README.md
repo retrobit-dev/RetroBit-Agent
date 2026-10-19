@@ -203,6 +203,13 @@ tools/pixel_icons.py           # generator ikon: grid 12x12 -> ImageVector + con
 app/src/main/res/font/         # salinan font agar bisa dipakai Compose
 ```
 
+Pengujian:
+
+```
+./gradlew testDebugUnitTest   # 24 unit test JVM (design token + konfigurasi AI)
+./gradlew lintDebug          # Android lint
+```
+
 Penyimpanan di perangkat:
 
 ```
@@ -237,7 +244,7 @@ filesDir/
 - Belum ada sistem plugin/ekstensi; tool agen didefinisikan di `AgentToolRunner`.
 - Snapshot hanya memulihkan file sumber, bukan database atau design metadata.
 - Preview LAN menyajikan file statis tanpa runtime `RetroBitDB`/`__RETROBIT_ENV__`.
-- Belum ada unit test; verifikasi berjalan lewat CI build dan smoke test emulator yang menelusuri semua tab.
+- Unit test baru mencakup dua area: token design (`DesignSystemTest`) dan katalog provider/error AI (`AiConfigTest`). Alur UI dan penyimpanan masih diverifikasi lewat smoke test emulator, belum lewat test otomatis.
 
 ## Troubleshooting
 
