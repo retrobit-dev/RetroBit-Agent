@@ -44,6 +44,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -347,20 +348,29 @@ private fun ComposerCard(
         Row(verticalAlignment = Alignment.CenterVertically) {
             Box(
                 Modifier
-                    .size(34.dp)
-                    .clip(RoundedCornerShape(2.dp))
-                    .border(1.dp, colors.outlineVariant, RoundedCornerShape(2.dp))
-                    .clickable(onClick = onOpenCreate),
+                    .size(48.dp)
+                    .clickable(onClick = onOpenCreate)
+                    .semantics(mergeDescendants = true) {},
                 contentAlignment = Alignment.Center,
             ) {
-                Icon(PixelIcons.Plus, "Template", tint = colors.onSurfaceVariant, modifier = Modifier.size(15.dp))
+                Box(
+                    Modifier
+                        .size(34.dp)
+                        .clip(RoundedCornerShape(2.dp))
+                        .border(1.dp, colors.outlineVariant, RoundedCornerShape(2.dp)),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(PixelIcons.Plus, "Template", tint = colors.onSurfaceVariant, modifier = Modifier.size(15.dp))
+                }
             }
             Spacer(Modifier.weight(1f))
             Row(
                 Modifier
+                    .heightIn(min = 48.dp)
                     .clip(RoundedCornerShape(2.dp))
                     .clickable(onClick = onOpenCloud)
-                    .padding(horizontal = 7.dp, vertical = 5.dp),
+                    .semantics(mergeDescendants = true) {}
+                    .padding(horizontal = 7.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
@@ -376,19 +386,26 @@ private fun ComposerCard(
             Spacer(Modifier.width(8.dp))
             Box(
                 Modifier
-                    .size(38.dp)
-                    .clip(RoundedCornerShape(3.dp))
-                    .background(if (value.isBlank()) colors.surfaceVariant else colors.primary)
-                    .border(1.dp, colors.outline, RoundedCornerShape(3.dp))
-                    .clickable(enabled = value.isNotBlank(), onClick = onSend),
+                    .size(48.dp)
+                    .clickable(enabled = value.isNotBlank(), onClick = onSend)
+                    .semantics(mergeDescendants = true) {},
                 contentAlignment = Alignment.Center,
             ) {
-                Icon(
-                    PixelIcons.Send,
-                    "Kirim",
-                    tint = if (value.isBlank()) colors.onSurfaceVariant else colors.onPrimary,
-                    modifier = Modifier.size(17.dp),
-                )
+                Box(
+                    Modifier
+                        .size(38.dp)
+                        .clip(RoundedCornerShape(3.dp))
+                        .background(if (value.isBlank()) colors.surfaceVariant else colors.primary)
+                        .border(1.dp, colors.outline, RoundedCornerShape(3.dp)),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        PixelIcons.Send,
+                        "Kirim",
+                        tint = if (value.isBlank()) colors.onSurfaceVariant else colors.onPrimary,
+                        modifier = Modifier.size(17.dp),
+                    )
+                }
             }
         }
     }
@@ -419,17 +436,24 @@ private fun PlatformChip(label: String, icon: androidx.compose.ui.graphics.vecto
 @Composable
 private fun FilterChip(label: String, active: Boolean, onClick: () -> Unit) {
     val colors = MaterialTheme.colorScheme
-    Text(
-        label.uppercase(),
-        style = MaterialTheme.typography.labelSmall,
-        color = if (active) colors.onPrimary else colors.onSurfaceVariant,
+    // The tinted pill stays compact, but the tappable area is a full 48 dp.
+    Box(
         modifier = Modifier
+            .heightIn(min = 48.dp)
             .clip(RoundedCornerShape(2.dp))
             .background(if (active) colors.primary else Color.Transparent)
             .border(1.dp, if (active) colors.primary else colors.outlineVariant, RoundedCornerShape(2.dp))
             .clickable(onClick = onClick)
-            .padding(horizontal = 11.dp, vertical = 6.dp),
-    )
+            .semantics(mergeDescendants = true) {}
+            .padding(horizontal = 11.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            label.uppercase(),
+            style = MaterialTheme.typography.labelSmall,
+            color = if (active) colors.onPrimary else colors.onSurfaceVariant,
+        )
+    }
 }
 
 @Composable

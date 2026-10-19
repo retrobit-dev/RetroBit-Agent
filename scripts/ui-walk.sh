@@ -114,7 +114,7 @@ for node in root.iter("node"):
     if w <= 0 or h <= 0 or (w >= minimum and h >= minimum):
         continue
     label = (node.get("content-desc") or node.get("text") or node.get("resource-id") or "?").strip()
-    small.append(f"{label[:28]}({w}x{h})")
+    small.append(f"{label[:24]}({w}x{h}@{x1},{y1})")
 print(f"event=touch-targets phase={phase} min_px={minimum} small={len(small)}")
 if small:
     print("event=touch-target-small " + " ".join(small[:12]))
