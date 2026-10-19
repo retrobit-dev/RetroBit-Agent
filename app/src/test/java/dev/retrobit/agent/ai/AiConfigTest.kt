@@ -23,14 +23,36 @@ class AiConfigTest {
         assertTrue(AiConfig().isDemo)
     }
 
+    // Ollama runs on the local network and a custom endpoint may sit behind its
+    // own auth, so only the hosted providers are keyed.
+    private val keyless = setOf(ProviderKind.DEMO, ProviderKind.OLLAMA, ProviderKind.CUSTOM)
+
     @Test
-    fun `remote providers require a key and document it`() {
-        ProviderKind.entries.filter { it != ProviderKind.DEMO }.forEach { kind ->
+    fun `hosted providers require a key`() {
+        ProviderKind.entries.filter { it !in keyless }.forEach { kind ->
             val preset = AiConfig.presetFor(kind)
             assertTrue("${kind.label} should require a key", preset.requiresKey)
+            assertTrue("${kind.label} needs a key hint", preset.keyHint.isNotBlank())
             assertTrue("${kind.label} needs a base url", preset.baseUrl.isNotBlank())
             assertTrue("${kind.label} needs at least one model", preset.models.isNotEmpty())
         }
+    }
+
+    @Test
+    fun `local and custom providers stay usable without a key`() {
+        keyless.forEach { kind ->
+            val preset = AiConfig.presetFor(kind)
+            assertFalse("${kind.label} should not require a key", preset.requiresKey)
+        }
+        // Custom endpoints are the one preset whose URL the user must fill in.
+        assertEquals("https://", AiConfig.presetFor(ProviderKind.CUSTOM).baseUrl)
+    }
+
+    @Test
+    fun `every catalog entry has a unique kind`() {
+        val kinds = AiConfig.CATALOG.map { it.kind }
+        assertEquals(kinds.size, kinds.toSet().size)
+        assertEquals(ProviderKind.entries.toSet(), kinds.toSet())
     }
 
     @Test

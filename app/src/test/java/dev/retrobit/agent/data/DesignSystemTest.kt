@@ -65,9 +65,18 @@ class DesignSystemTest {
     }
 
     @Test
-    fun `fallback keeps radius and font`() {
+    fun `fallback keeps radius but restores the bundled font`() {
         val snapped = mono.copy(primary = "#FF0000", radius = 12, font = "Inter").grayscaleFallback()
         assertEquals(12, snapped.radius)
-        assertEquals("Inter", snapped.font)
+        // A foreign font would not exist in the project's assets folder, so the
+        // fallback deliberately puts Pixel Operator back.
+        assertEquals("Pixel Operator", snapped.font)
+    }
+
+    @Test
+    fun `fallback keeps the light-dark mode`() {
+        val light = mono.copy(mode = "light", primary = "#FF0000").grayscaleFallback()
+        assertEquals("light", light.mode)
+        assertEquals("light", light.copy(mode = "light").mode)
     }
 }
