@@ -416,11 +416,13 @@ private fun PlatformChip(label: String, icon: androidx.compose.ui.graphics.vecto
     val colors = MaterialTheme.colorScheme
     Row(
         Modifier
+            .heightIn(min = 48.dp)
             .clip(RoundedCornerShape(2.dp))
             .background(if (active) colors.primary else colors.surface.copy(alpha = 0.5f))
             .border(1.dp, if (active) colors.primary else colors.outlineVariant, RoundedCornerShape(2.dp))
             .clickable(onClick = onClick)
-            .padding(horizontal = 10.dp, vertical = 7.dp),
+            .semantics(mergeDescendants = true) {}
+            .padding(horizontal = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Icon(icon, null, tint = if (active) colors.onPrimary else colors.onSurfaceVariant, modifier = Modifier.size(15.dp))

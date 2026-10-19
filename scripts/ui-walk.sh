@@ -91,12 +91,16 @@ tap_text_scrolling() {
 touch_target_check() {
   local phase="$1"
   dump_ui || return 0
-  local density
+  local density size_w size_h
   density=$($ADB shell wm density 2>/dev/null | sed -n 's/.*: *//p' | head -1)
   [ -n "$density" ] || density=420
-  python3 - "$phase" "$density" <<'PY2' >>"$LOG" 2>&1
+  set -- $($ADB shell wm size 2>/dev/null | tail -1 | sed -E 's/.*: ([0-9]+)x([0-9]+).*/\1 \2/')
+  size_w=${1:-1080}
+  size_h=${2:-1920}
+  python3 - "$phase" "$density" "$size_w" "$size_h" <<'PY2' >>"$LOG" 2>&1
 import re, sys, xml.etree.ElementTree as ET
 phase, density = sys.argv[1], int(sys.argv[2])
+screen_w, screen_h = int(sys.argv[3]), int(sys.argv[4])
 minimum = max(48, density * 48 // 160)
 try:
     root = ET.parse("/tmp/ui.xml").getroot()
@@ -110,11 +114,15 @@ for node in root.iter("node"):
     if not m:
         continue
     x1, y1, x2, y2 = map(int, m.groups())
+    # A node clipped by the screen edge is not a small target, just half visible.
+    if y2 >= screen_h - 2 or x2 >= screen_w - 2:
+        continue
     w, h = x2 - x1, y2 - y1
     if w <= 0 or h <= 0 or (w >= minimum and h >= minimum):
         continue
     label = (node.get("content-desc") or node.get("text") or node.get("resource-id") or "?").strip()
-    small.append(f"{label[:24]}({w}x{h}@{x1},{y1})")
+    dp = lambda px: round(px * 160 / density)
+    small.append(f"{label[:24]}({dp(w)}x{dp(h)}dp@{x1},{y1})")
 print(f"event=touch-targets phase={phase} min_px={minimum} small={len(small)}")
 if small:
     print("event=touch-target-small " + " ".join(small[:12]))
