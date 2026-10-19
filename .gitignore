@@ -15,3 +15,7 @@ app/build
 # local signing overrides; the demo key in signing/ IS committed on purpose
 /signing/*.jks
 *.hprof
+
+# python bytecode from tools/
+__pycache__/
+*.pyc
