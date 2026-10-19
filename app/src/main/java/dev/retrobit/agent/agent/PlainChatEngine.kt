@@ -65,10 +65,9 @@ class PlainChatEngine(
         val config = settings.config.value
         if (config.isDemo) {
             return failure(
-                "Mode demo hanya menyusun aplikasi dari template dan tidak memanggil model, " +
-                    "jadi obrolan bebas belum bisa dijawab.\n\n" +
-                    "Buka **AI Cloud** dan simpan satu API key gratis (Gemini, Groq, atau OpenRouter), " +
-                    "lalu pilih provider itu atau **Auto**. Setelah itu chat ini langsung berfungsi.",
+                "Mode demo tidak memanggil model, jadi obrolan belum bisa dijawab.\n\n" +
+                    "Buka **AI Cloud**, simpan satu key gratis (Gemini, Groq, atau OpenRouter), " +
+                    "lalu pilih provider itu atau **Auto**.",
                 "",
             )
         }
