@@ -301,6 +301,8 @@ fun LoadingDots(color: Color = Palette.Accent) {
 }
 
 /** Parses #RRGGBB / #AARRGGBB into a Compose Color without ever throwing. */
+fun hexColor(value: Long): Color = Color(value)
+
 fun hexColor(hex: String, fallback: Color = Palette.Accent): Color = runCatching {
     Color(android.graphics.Color.parseColor(if (hex.startsWith("#")) hex else "#$hex"))
 }.getOrDefault(fallback)

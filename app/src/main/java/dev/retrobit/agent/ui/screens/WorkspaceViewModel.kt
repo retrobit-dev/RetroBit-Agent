@@ -170,6 +170,14 @@ class WorkspaceViewModel(
         }
     }
 
+    /** Thread writes go through the repository on IO; the in-memory list is already updated. */
+    private fun persistMessages() {
+        val snapshot = _messages.value
+        viewModelScope.launch(Dispatchers.IO) {
+            repo.saveThread(projectId, snapshot)
+        }
+    }
+
     fun send(prompt: String) {
         val text = prompt.trim()
         if (text.isEmpty() || _live.value.running) return

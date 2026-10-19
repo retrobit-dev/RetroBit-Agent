@@ -56,7 +56,8 @@ fun DesignPane(vm: WorkspaceViewModel, modifier: Modifier = Modifier) {
     val project by vm.project.collectAsStateWithLifecycle()
     var colorTarget by remember { mutableStateOf<TokenTarget?>(null) }
 
-    val dirty = project != null && project.design != design
+    val current = project
+    val dirty = current != null && current.design != design
 
     Column(
         modifier
