@@ -85,6 +85,43 @@ tap_text_scrolling() {
   return 0
 }
 
+# Accessibility gate. Material expands many small icons to a 48 dp touch
+# target, but any custom clickable box does not, so measure what the device
+# actually exposes and report the offenders.
+touch_target_check() {
+  local phase="$1"
+  dump_ui || return 0
+  local density
+  density=$($ADB shell wm density 2>/dev/null | sed -n 's/.*: *//p' | head -1)
+  [ -n "$density" ] || density=420
+  python3 - "$phase" "$density" <<'PY2' >>"$LOG" 2>&1
+import re, sys, xml.etree.ElementTree as ET
+phase, density = sys.argv[1], int(sys.argv[2])
+minimum = max(48, density * 48 // 160)
+try:
+    root = ET.parse("/tmp/ui.xml").getroot()
+except Exception:
+    sys.exit(0)
+small = []
+for node in root.iter("node"):
+    if node.get("clickable") != "true":
+        continue
+    m = re.match(r"\[(\d+),(\d+)\]\[(\d+),(\d+)\]", node.get("bounds", ""))
+    if not m:
+        continue
+    x1, y1, x2, y2 = map(int, m.groups())
+    w, h = x2 - x1, y2 - y1
+    if w <= 0 or h <= 0 or (w >= minimum and h >= minimum):
+        continue
+    label = (node.get("content-desc") or node.get("text") or node.get("resource-id") or "?").strip()
+    small.append(f"{label[:28]}({w}x{h})")
+print(f"event=touch-targets phase={phase} min_px={minimum} small={len(small)}")
+if small:
+    print("event=touch-target-small " + " ".join(small[:12]))
+PY2
+  rm -f /tmp/ui.xml
+}
+
 crash_check() {
   $ADB logcat -d -b crash 2>/dev/null > artifacts/crash.log
   if grep -q "FATAL EXCEPTION" artifacts/crash.log 2>/dev/null; then
@@ -105,10 +142,12 @@ sleep 1
 $ADB shell input swipe 540 700 540 1600 300 >>"$LOG" 2>&1
 sleep 1
 shot 01-dashboard
+touch_target_check dashboard
 
 if tap_text_scrolling "Nimbus"; then
   sleep 3
   shot 02-workspace-chat
+  touch_target_check workspace
   crash_check workspace || FAILED=1
 else
   UI_ISSUES=$((UI_ISSUES + 1))
