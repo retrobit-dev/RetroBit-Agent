@@ -285,7 +285,7 @@ if tap_text "Chat"; then
       if tap_text "Kirim"; then
         sleep 3
         shot 15-chat-reply
-        if dump_ui && grep -qi "mode demo" /tmp/ui.xml; then
+        if dump_ui && grep -qiE "mode demo|api key gratis" /tmp/ui.xml; then
           log "event=chat-reply-demo"
         else
           log "event=chat-reply-missing"

@@ -224,10 +224,11 @@ private fun ChatThread(
 ) {
     val listState = rememberLazyListState()
     val lastId = conversation.messages.lastOrNull()?.id
+    // Jump to the newest answer, top-aligned, so a long reply is read from its
+    // first line instead of being scrolled past.
     LaunchedEffect(lastId, vm.sending) {
-        val target = if (conversation.messages.isEmpty()) 0 else conversation.messages.size
-        if (listState.layoutInfo.totalItemsCount > 0) {
-            listState.animateScrollToItem(target.coerceAtMost(listState.layoutInfo.totalItemsCount - 1))
+        if (conversation.messages.isNotEmpty()) {
+            listState.animateScrollToItem(conversation.messages.lastIndex)
         }
     }
 
