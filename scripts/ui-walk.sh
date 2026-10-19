@@ -9,7 +9,6 @@ ADB=${ADB:-adb}
 export LOG
 
 log() { echo "$*" | tee -a "$LOG" >/dev/null; }
-note() { echo "$*" >&2; log "$*"; }
 
 shot() {
   local name="$1"
@@ -23,14 +22,9 @@ dump_ui() {
   [ -s /tmp/ui.xml ]
 }
 
-# tap_text <substring>  — taps the centre of the first node whose text or
-# content-desc contains the substring (case-insensitive).
-tap_text() {
-  local needle="$1"
-  local xy
-  for attempt in 1 2 3; do
-    dump_ui || { sleep 1; continue; }
-    xy=$(python3 - "$needle" <<'PY'
+# find_xy <substring>  -> prints "x y" of the first matching node
+find_xy() {
+  python3 - "$1" <<'PY'
 import re, sys, xml.etree.ElementTree as ET
 needle = sys.argv[1].lower()
 try:
@@ -47,8 +41,15 @@ for node in root.iter("node"):
             sys.exit(0)
 sys.exit(1)
 PY
-)
-    [ -n "${xy:-}" ] && break
+}
+
+# tap_text <substring> — taps the centre of the first matching node.
+tap_text() {
+  local needle="$1" xy=""
+  for _ in 1 2 3; do
+    if dump_ui; then
+      xy=$(find_xy "$needle") && break
+    fi
     sleep 1
   done
   if [ -z "${xy:-}" ]; then
@@ -72,9 +73,8 @@ crash_check() {
   return 0
 }
 
-# ---------------------------------------------------------------- walk-through
-FAILED=0
 UI_ISSUES=0
+FAILED=0
 
 shot 01-dashboard
 
@@ -86,9 +86,9 @@ else
   UI_ISSUES=$((UI_ISSUES + 1))
 fi
 
-for tab in "Preview:03-preview" "Kode:04-code" "Desain:05-design" "Data:06-data" "Vault:07-vault" "Chat:08-chat"; do
-  label=${tab%%:*}
-  name=${tab##*:}
+for pair in "Preview:03-preview" "Kode:04-code" "Desain:05-design" "Data:06-data" "Vault:07-vault" "Chat:08-chat"; do
+  label=${pair%%:*}
+  name=${pair##*:}
   if tap_text "$label"; then
     sleep 3
     shot "$name"
@@ -98,23 +98,36 @@ for tab in "Preview:03-preview" "Kode:04-code" "Desain:05-design" "Data:06-data"
   fi
 done
 
-# Send a demo prompt and wait for the agent to finish writing files.
-# Compose text fields are not always exposed to uiautomator, so fall back to a
-# coordinate tap on the composer (lower part of the screen).
-if ! tap_text "Minta perubahan"; then
+# --- type a prompt -----------------------------------------------------------
+SEND_XY=""
+if dump_ui; then
+  SEND_XY=$(find_xy "Kirim" || true)
+fi
+
+if [ -n "$SEND_XY" ]; then
+  SX=$(echo "$SEND_XY" | cut -d' ' -f1)
+  SY=$(echo "$SEND_XY" | cut -d' ' -f2)
+  $ADB shell input tap $((SX - 300)) "$SY" >>"$LOG" 2>&1
+  log "event=tap-composer at=$((SX - 300)),$SY"
+else
   SIZE=$($ADB shell wm size | tail -1 | sed -E 's/.*: ([0-9]+)x([0-9]+).*/\1 \2/')
   W=$(echo "$SIZE" | cut -d' ' -f1)
   H=$(echo "$SIZE" | cut -d' ' -f2)
-  if [ -n "${W:-}" ] && [ -n "${H:-}" ]; then
-    $ADB shell input tap $((W / 2)) $((H * 66 / 100)) >>"$LOG" 2>&1
-    log "event=tap-composer-fallback at=$((W / 2)),$((H * 66 / 100))"
-    sleep 1
-  fi
+  $ADB shell input tap $((W / 2)) $((H * 70 / 100)) >>"$LOG" 2>&1
+  log "event=tap-composer-fallback"
 fi
+sleep 2
 
 $ADB shell input text "buat%saplikasi%spencatat%stugas%smingguan" >>"$LOG" 2>&1
-sleep 1
+sleep 2
 shot 09-prompt-typed
+
+if dump_ui && grep -qi "pencatat" /tmp/ui.xml; then
+  log "event=prompt-typed"
+else
+  log "event=prompt-typing-failed"
+  UI_ISSUES=$((UI_ISSUES + 1))
+fi
 
 if tap_text "Kirim"; then
   log "event=prompt-sent"
@@ -122,23 +135,45 @@ if tap_text "Kirim"; then
     sleep 5
     crash_check prompt || { FAILED=1; break; }
   done
-  sleep 5
+  sleep 6
   shot 09-after-prompt
+  if dump_ui && grep -qi "pencatat" /tmp/ui.xml; then
+    log "event=prompt-in-transcript"
+  else
+    log "event=prompt-missing-from-transcript"
+    UI_ISSUES=$((UI_ISSUES + 1))
+  fi
 else
   UI_ISSUES=$((UI_ISSUES + 1))
 fi
 
-# Back to the dashboard.
+# --- dashboard drawer --------------------------------------------------------
 $ADB shell input keyevent KEYCODE_BACK >>"$LOG" 2>&1
 sleep 2
 shot 10-back-to-dashboard
 
+if tap_text "Menu"; then
+  sleep 2
+  shot 11-drawer
+  crash_check drawer || FAILED=1
+  if tap_text "AI Cloud"; then
+    sleep 3
+    shot 12-cloud
+    crash_check cloud || FAILED=1
+  else
+    UI_ISSUES=$((UI_ISSUES + 1))
+  fi
+else
+  UI_ISSUES=$((UI_ISSUES + 1))
+fi
+
 log "ui_issues=$UI_ISSUES"
 log "failed=$FAILED"
 
-# Tap misses are tolerated (semantics vary per API level) but a crash is not.
-if [ "$UI_ISSUES" -ge 3 ]; then
-  log "event=too-many-tap-misses"
+# A couple of tap misses are tolerated (Compose semantics differ per API level),
+# but half the walk failing means something is genuinely broken.
+if [ "$UI_ISSUES" -ge 4 ]; then
+  log "event=too-many-ui-issues"
   exit 1
 fi
 [ "$FAILED" -eq 0 ] || exit 1
