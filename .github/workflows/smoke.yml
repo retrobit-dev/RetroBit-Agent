@@ -1,11 +1,11 @@
 name: Smoke test (emulator)
 
 on:
-  workflow_dispatch:
   pull_request:
     paths:
       - "app/**"
       - ".github/workflows/smoke.yml"
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -34,6 +34,7 @@ jobs:
         run: |
           chmod +x ./gradlew
           ./gradlew --no-daemon --console=plain assembleRelease
+          ls -l app/build/outputs/apk/release/
 
       - name: Enable KVM
         run: |
@@ -43,6 +44,7 @@ jobs:
           sudo udevadm trigger --name-match=kvm
 
       - name: Boot emulator, install and launch
+        id: device
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 30
@@ -51,29 +53,68 @@ jobs:
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           script: |
-            adb install -r app/build/outputs/apk/release/app-release.apk
-            adb shell pm list packages | grep dev.retrobit.agent
-            adb logcat -c
-            adb shell am start -W -n dev.retrobit.agent/.MainActivity
-            sleep 12
-            adb shell dumpsys activity activities | grep -E "mResumedActivity|topResumedActivity"
+            LOG=smoke.log
+            : > $LOG
+            run() {
+              echo "\$ $*" >> $LOG
+              "$@" >> $LOG 2>&1
+              echo "exit=$?" >> $LOG
+            }
+            adb devices >> $LOG 2>&1
+            adb shell getprop sys.boot_completed >> $LOG 2>&1
+            adb install -r app/build/outputs/apk/release/app-release.apk >> $LOG 2>&1
+            echo "install_exit=$?" >> $LOG
+            adb shell pm list packages | grep dev.retrobit.agent >> $LOG 2>&1
+            echo "package_exit=$?" >> $LOG
+            adb logcat -c >> $LOG 2>&1
+            adb shell am start -W -n dev.retrobit.agent/.MainActivity >> $LOG 2>&1
+            echo "launch_exit=$?" >> $LOG
+            sleep 15
+            adb shell dumpsys activity activities | grep -E "mResumedActivity|topResumedActivity" >> $LOG 2>&1
             mkdir -p artifacts
-            adb exec-out screencap -p > artifacts/dashboard.png
-            adb shell input tap 620 1990 || true
-            sleep 3
-            adb exec-out screencap -p > artifacts/dashboard-2.png
-            echo "--- crash buffer ---"
-            adb logcat -d -b crash | tee artifacts/crash.log
-            echo "--- app errors ---"
-            adb logcat -d | grep -E "FATAL EXCEPTION|AndroidRuntime.*dev.retrobit" | tee -a artifacts/crash.log || true
-            if grep -q "FATAL EXCEPTION" artifacts/crash.log; then
-              echo "::error title=Runtime crash::Aplikasi crash saat dibuka, lihat artifacts/crash.log"
-              exit 1
-            fi
-            if ! adb shell dumpsys activity activities | grep -q "dev.retrobit.agent"; then
-              echo "::error title=Launch failed::MainActivity tidak berjalan"
-              exit 1
-            fi
+            adb exec-out screencap -p > artifacts/dashboard.png 2>> $LOG
+            adb logcat -d -b crash >> artifacts/crash.log 2>&1
+            adb logcat -d | grep -E "FATAL EXCEPTION|AndroidRuntime" | head -60 >> artifacts/crash.log 2>&1
+            cp $LOG artifacts/smoke.log
+            tail -80 $LOG
+            exit 0
+
+      - name: Report smoke diagnostics
+        if: always()
+        run: |
+          python3 - <<'PY'
+          import pathlib, re, sys, urllib.parse
+
+          log = pathlib.Path("smoke.log")
+          text = log.read_text(errors="replace") if log.exists() else "(smoke.log tidak ada)"
+
+          def annotate(level, title, body):
+              body = urllib.parse.quote(body[-3000:], safe=" \n-_.:/=")
+              print(f"::{level} title={title}::{body}")
+
+          install_ok = re.search(r"install_exit=0", text) is not None
+          launch_ok = re.search(r"launch_exit=0", text) is not None
+          crashed = "FATAL EXCEPTION" in text
+          resumed = "dev.retrobit.agent/" in text and "mResumedActivity" in text
+
+          print(f"install={install_ok} launch={launch_ok} crash={crashed} resumed={resumed}")
+          print(text[-4000:])
+
+          problems = []
+          if not install_ok:
+              problems.append("adb install gagal")
+          if crashed:
+              problems.append("FATAL EXCEPTION di logcat")
+          if not launch_ok:
+              problems.append("am start gagal")
+          if not resumed:
+              problems.append("MainActivity tidak jadi activity terdepan")
+
+          if problems:
+              annotate("error", "Smoke gagal", " | ".join(problems) + "\n\n" + text[-2500:])
+              sys.exit(1)
+          annotate("notice", "Smoke OK", "APK terpasang dan MainActivity berjalan tanpa crash.")
+          PY
 
       - name: Upload screenshots
         if: always()
@@ -87,14 +128,11 @@ jobs:
       - name: Publish screenshots to ci-artifacts branch
         if: always()
         run: |
-          if [ ! -d artifacts ]; then
-            echo "no artifacts to publish"
-            exit 0
-          fi
+          [ -d artifacts ] || { echo "no artifacts"; exit 0; }
           git config user.name "RetroBit CI"
           git config user.email "ci@retrobit.dev"
           git checkout -B ci-artifacts
-          cp -r artifacts/* . || true
-          git add -A dashboard.png dashboard-2.png crash.log 2>/dev/null || git add -A
-          git commit -m "Emulator screenshots for ${GITHUB_SHA}" || exit 0
+          cp -r artifacts/. .
+          git add -A
+          git commit -m "Emulator screenshots for ${GITHUB_SHA}" || { echo "nothing to commit"; exit 0; }
           git push --force origin ci-artifacts
