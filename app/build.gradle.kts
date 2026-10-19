@@ -70,10 +70,11 @@ android {
     }
 
     buildTypes {
+        // If no release key is available, fall back to AGP's debug keystore so every
+        // APK that CI produces is installable (both variants share one signature).
+        val signer = signingConfigs.findByName("release") ?: signingConfigs.getByName("debug")
         debug {
-            // Same key as release so `adb install -r` (and Android's updater) accepts
-            // swapping a debug build for a release build of the same version.
-            signingConfig = signingConfigs.findByName("release")
+            signingConfig = signer
             applicationIdSuffix = ""
         }
         release {
@@ -83,7 +84,7 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            signingConfig = signingConfigs.findByName("release")
+            signingConfig = signer
         }
     }
 

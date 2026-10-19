@@ -11,7 +11,7 @@
 .cxx
 .kotlin
 app/build
-keystore.properties
 *.jks
-*.keystore
+# local signing overrides; the demo key in signing/ IS committed on purpose
+/signing/*.jks
 *.hprof

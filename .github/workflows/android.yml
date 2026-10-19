@@ -52,23 +52,34 @@ jobs:
         if: failure()
         run: |
           python3 - <<'PY'
-          import re, pathlib
+          import pathlib, re
+
           log = pathlib.Path("build.log")
           if not log.exists():
               raise SystemExit(0)
-          seen = 0
-          for raw in log.read_text(errors="replace").splitlines():
+          lines = log.read_text(errors="replace").splitlines()
+
+          def emit(title, message):
+              message = message.replace("%", "%25").replace("\r", "").replace("\n", "%0A")
+              print(f"::error title={title}::{message[:6000]}")
+
+          for raw in lines:
               m = re.match(r"e: file://(\S+?):(\d+):(\d+) (.+)$", raw.strip())
               if m:
-                  path = m.group(1).split("/RetroBit-Agent/RetroBit-Agent/")[-1]
-                  print(f"::error file={path},line={m.group(2)},col={m.group(3)},title=Kotlin::{m.group(4)}")
-                  seen += 1
-                  continue
-              if "FAILURE: Build failed" in raw or "Execution failed for task" in raw or "What went wrong" in raw:
-                  print(f"::error title=Gradle::{raw.strip()[:240]}")
-              if seen > 120:
-                  print("::error title=CI::Too many compile errors, see build.log")
-                  break
+                  path = m.group(1)
+                  idx = path.find("app/src/")
+                  if idx > 0:
+                      path = path[idx:]
+                  print(
+                      f"::error file={path},line={m.group(2)},col={m.group(3)},"
+                      f"title=Kotlin::{m.group(4)}"
+                  )
+
+          for i, raw in enumerate(lines):
+              if "What went wrong:" in raw or re.search(r"> Task :\S+ FAILED", raw):
+                  emit("Gradle", "\n".join(lines[i:i + 12]))
+              if raw.startswith("Caused by:") or raw.startswith("AAPT:") or raw.startswith("ERROR:"):
+                  emit("Gradle", raw)
           PY
 
       - name: Verify signatures
