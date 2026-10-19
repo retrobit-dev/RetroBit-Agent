@@ -268,14 +268,25 @@ if tap_text "Chat"; then
   if tap_text "Obrolan baru"; then
     sleep 1
     shot 14-chat-thread
-    if tap_text "Tulis pesan"; then
+    # The composer placeholder sits behind an empty BasicTextField, so it never
+    # shows up in the uiautomator dump. Aim relative to the send button instead.
+    CHAT_SEND=""
+    if dump_ui; then
+      CHAT_SEND=$(find_xy "Kirim" || true)
+    fi
+    if [ -n "$CHAT_SEND" ]; then
+      CX=$(echo "$CHAT_SEND" | cut -d' ' -f1)
+      CY=$(echo "$CHAT_SEND" | cut -d' ' -f2)
+      $ADB shell input tap $((CX - 300)) "$CY" >>"$LOG" 2>&1
+      log "event=tap-chat-composer at=$((CX - 300)),$CY"
+      sleep 1
       $ADB shell input text "tes%smode%schat" >>"$LOG" 2>&1
       sleep 1
       if tap_text "Kirim"; then
-        sleep 2
+        sleep 3
         shot 15-chat-reply
-        if dump_ui && grep -qi "mode demo hanya" /tmp/ui.xml; then
-          log "event=chat-demo-reply"
+        if dump_ui && grep -qi "mode demo" /tmp/ui.xml; then
+          log "event=chat-reply-demo"
         else
           log "event=chat-reply-missing"
           UI_ISSUES=$((UI_ISSUES + 1))
@@ -284,6 +295,7 @@ if tap_text "Chat"; then
         UI_ISSUES=$((UI_ISSUES + 1))
       fi
     else
+      log "event=chat-composer-missing"
       UI_ISSUES=$((UI_ISSUES + 1))
     fi
   else

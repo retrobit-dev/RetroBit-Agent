@@ -32,6 +32,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -427,7 +429,9 @@ private fun ChatComposer(
                     textStyle = MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.onSurface),
                     cursorBrush = SolidColor(Palette.Accent),
                     maxLines = 6,
-                    modifier = Modifier.fillMaxWidth(),
+                    // The drawn placeholder is invisible to TalkBack, so the field
+                    // carries the label itself.
+                    modifier = Modifier.fillMaxWidth().semantics { contentDescription = "Tulis pesan" },
                 )
             }
             Spacer(Modifier.width(8.dp))
