@@ -152,6 +152,12 @@ fun PreviewPane(
                         databaseEnabled = true
                         allowFileAccess = true
                         allowContentAccess = false
+                        // Preview pages live under file://; without these the WebView
+                        // refuses to read sibling files such as the bundled font.
+                        @Suppress("DEPRECATION")
+                        allowFileAccessFromFileURLs = true
+                        @Suppress("DEPRECATION")
+                        allowUniversalAccessFromFileURLs = true
                         cacheMode = WebSettings.LOAD_DEFAULT
                         mediaPlaybackRequiresUserGesture = false
                         mixedContentMode = WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE
@@ -218,7 +224,7 @@ fun PreviewPane(
         LaunchedEffect(html, reloadSignal, filesRoot, webRef.value) {
             val web = webRef.value ?: return@LaunchedEffect
             val base = "file://${filesRoot.absolutePath.trimEnd('/')}/"
-            val source = html.ifBlank { "<html><body style='font-family:sans-serif;color:#8D8DA3;background:#0B0B12;padding:32px'>Belum ada index.html</body></html>" }
+            val source = html.ifBlank { "<html><body style='font-family:monospace;color:#8E8E86;background:#0A0A0A;padding:32px'>Belum ada index.html</body></html>" }
             val injected = PreviewInjector.inject(source, design, exposedSecrets)
             hasError = false
             loading = true
