@@ -9,6 +9,10 @@ Aplikasi Android native (Kotlin + Jetpack Compose) untuk membangun aplikasi web 
   <img alt="License" src="https://img.shields.io/badge/license-belum%20ditentukan-lightgrey" />
 </p>
 
+<p align="center">
+  <img src="docs/screenshots/dashboard.png" alt="Dashboard RetroBit" width="300" />
+</p>
+
 <p align="left">
   <a href="https://github.com/retrobit-dev/RetroBit-Agent/actions/workflows/android.yml"><img alt="Android CI" src="https://github.com/retrobit-dev/RetroBit-Agent/actions/workflows/android.yml/badge.svg?branch=arena%2F98eaa796-retrobit-agent" /></a>
 </p>
