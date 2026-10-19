@@ -19,4 +19,11 @@
     <string name="dashboard_promo_title">Undang teman</string>
     <string name="dashboard_promo_body">Dapat kredit gratis</string>
     <string name="dashboard_footer_subtitle">Ruang kerja lokal · di perangkat</string>
+    <string name="dashboard_templates_link">Template -></string>
+
+    <!-- Drawer -->
+    <string name="drawer_cloud_subtitle">Provider, model &amp; prompt sistem</string>
+
+    <!-- Cloud -->
+    <string name="cloud_footer_version">RetroBit Agent %1$s · dibuat dengan Jetpack Compose</string>
 </resources>

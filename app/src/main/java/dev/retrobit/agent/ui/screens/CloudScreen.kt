@@ -45,10 +45,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.unit.sp
+import dev.retrobit.agent.BuildConfig
+import dev.retrobit.agent.R
 import dev.retrobit.agent.ai.AiConfig
 import dev.retrobit.agent.ai.ProviderKind
 import dev.retrobit.agent.ui.components.BrandMark
@@ -457,7 +460,7 @@ fun CloudScreen(
         }
         Spacer(Modifier.height(16.dp))
         Text(
-            "RetroBit Agent 0.1 · dibuat dengan Jetpack Compose",
+            stringResource(R.string.cloud_footer_version, BuildConfig.VERSION_NAME),
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
             modifier = Modifier.align(Alignment.CenterHorizontally),

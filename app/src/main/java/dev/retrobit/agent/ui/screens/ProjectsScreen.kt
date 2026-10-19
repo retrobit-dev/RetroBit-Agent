@@ -219,7 +219,7 @@ fun ProjectsScreen(
                 Pill("${filtered.size}", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Spacer(Modifier.weight(1f))
                 Text(
-                    "Templates ->",
+                    stringResource(R.string.dashboard_templates_link),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier

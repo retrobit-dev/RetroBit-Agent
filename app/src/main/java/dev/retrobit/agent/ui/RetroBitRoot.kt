@@ -1,6 +1,5 @@
 package dev.retrobit.agent.ui
 
-import androidx.annotation.StringRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -76,7 +75,7 @@ import dev.retrobit.agent.ui.theme.RetroBitTheme
 import dev.retrobit.agent.ui.icons.PixelIcons
 import dev.retrobit.agent.ui.theme.PixelFont
 
-private data class BottomDestination(val route: String, @StringRes val labelRes: Int, val icon: ImageVector)
+private data class BottomDestination(val route: String, val labelRes: Int, val icon: ImageVector)
 
 private val destinations = listOf(
     BottomDestination("projects", R.string.nav_home, PixelIcons.Home),
@@ -299,7 +298,7 @@ private fun DashboardSidebar(
                 Column(Modifier.weight(1f)) {
                     Text("AI Cloud", style = MaterialTheme.typography.labelLarge, color = colors.onSurface)
                     Text(
-                        "Provider, model & system prompt",
+                        stringResource(R.string.drawer_cloud_subtitle),
                         style = MaterialTheme.typography.labelSmall,
                         color = colors.onSurfaceVariant,
                     )

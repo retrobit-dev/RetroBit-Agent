@@ -232,7 +232,7 @@ fi
 for _ in 1 2 3; do
   $ADB shell input keyevent KEYCODE_BACK >>"$LOG" 2>&1
   sleep 2
-  if dump_ui && grep -qi "Recents" /tmp/ui.xml; then
+  if dump_ui && grep -qi "Terbaru" /tmp/ui.xml; then
     break
   fi
 done
