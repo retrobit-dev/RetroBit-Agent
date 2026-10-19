@@ -14,6 +14,8 @@ Aplikasi Android native (Kotlin + Jetpack Compose) untuk membangun aplikasi web 
   <img src="docs/screenshots/workspace.png" alt="Workspace dengan enam tab" width="200" />
   <img src="docs/screenshots/preview.png" alt="Preview aplikasi" width="200" />
   <img src="docs/screenshots/agent.png" alt="Agen demo menulis file" width="200" />
+  <img src="docs/screenshots/drawer.png" alt="Drawer navigasi" width="200" />
+  <img src="docs/screenshots/cloud.png" alt="Halaman AI Cloud" width="200" />
 </p>
 
 <p align="left">
