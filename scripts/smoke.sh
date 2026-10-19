@@ -52,6 +52,12 @@ adb exec-out screencap -p > artifacts/dashboard.png 2>>"$LOG"
 adb shell input swipe 540 1500 540 600 300 2>/dev/null
 sleep 2
 adb exec-out screencap -p > artifacts/dashboard-scrolled.png 2>>"$LOG"
+# Put the list back at the top before the UI walk: the drawer button lives in
+# the first row and a scroll position left over from this step hid it.
+adb shell input swipe 540 700 540 1600 300 2>/dev/null
+sleep 1
+adb shell input swipe 540 700 540 1600 300 2>/dev/null
+sleep 1
 
 log "== crash buffer =="
 adb logcat -d -b crash 2>/dev/null > artifacts/crash.log

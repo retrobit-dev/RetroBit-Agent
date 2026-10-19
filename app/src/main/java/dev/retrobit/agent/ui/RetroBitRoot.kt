@@ -412,8 +412,10 @@ private fun navigateTab(navController: androidx.navigation.NavHostController, ro
 
 @Composable
 private fun RetroBottomBar(current: String, onNavigate: (String) -> Unit) {
+    // Opaque on purpose: the dashboard list scrolls underneath and a translucent
+    // bar let cards show through the navigation strip.
     Surface(
-        color = MaterialTheme.colorScheme.background.copy(alpha = 0.96f),
+        color = MaterialTheme.colorScheme.background,
         contentColor = MaterialTheme.colorScheme.onSurface,
     ) {
         Column {
@@ -427,7 +429,7 @@ private fun RetroBottomBar(current: String, onNavigate: (String) -> Unit) {
                 Modifier
                     .fillMaxWidth()
                     .navigationBarsPadding()
-                    .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.5f))
+                    .background(MaterialTheme.colorScheme.background)
                     .padding(horizontal = 12.dp, vertical = 7.dp),
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
                 verticalAlignment = Alignment.CenterVertically,

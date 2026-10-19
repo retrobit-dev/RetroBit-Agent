@@ -76,6 +76,12 @@ crash_check() {
 UI_ISSUES=0
 FAILED=0
 
+# Make sure the dashboard is scrolled to the top: its header carries the drawer
+# button and the hero headline that the screenshots are meant to show.
+$ADB shell input swipe 540 700 540 1600 300 >>"$LOG" 2>&1
+sleep 1
+$ADB shell input swipe 540 700 540 1600 300 >>"$LOG" 2>&1
+sleep 1
 shot 01-dashboard
 
 if tap_text "Nimbus"; then
