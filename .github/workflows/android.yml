@@ -56,6 +56,29 @@ jobs:
 
           reports = list(pathlib.Path("app/build/test-results/testDebugUnitTest").glob("*.xml"))
           if not reports:
+              # No reports means the task died before running tests — almost always a
+              # compile error. Surface test.log so the annotation names the file.
+              log = pathlib.Path("test.log")
+              text = log.read_text(errors="replace") if log.exists() else ""
+              lines = text.splitlines()
+              shown = False
+              for raw in lines:
+                  m = re.match(r"e: file://(\S+?):(\d+):(\d+) (.+)$", raw.strip())
+                  if m:
+                      path = m.group(1)
+                      idx = path.find("app/src/")
+                      if idx > 0:
+                          path = path[idx:]
+                      print(f"::error file={path},line={m.group(2)},col={m.group(3)},title=Kotlin::{m.group(4)}")
+                      shown = True
+              for i, raw in enumerate(lines):
+                  if "What went wrong:" in raw or re.search(r"> Task :\S+ FAILED", raw):
+                      detail = "\n".join(lines[i:i + 12]).replace("%", "%25").replace("\r", "").replace("\n", "%0A")
+                      print(f"::error title=Gradle::{detail[:3000]}")
+                      shown = True
+              if not shown:
+                  tail = "\n".join(lines[-25:]).replace("%", "%25").replace("\r", "").replace("\n", "%0A")
+                  print(f"::error title=Tests::{tail[:3000]}")
               sys.exit(0)
           failed = 0
           for report in reports:
