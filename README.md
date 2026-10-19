@@ -52,6 +52,18 @@ Atau lewat terminal:
 
 > Build pertama membutuhkan internet untuk mengunduh Gradle dan dependensi Maven.
 
+## Unduh & pasang APK
+
+Rilis resmi: **<https://github.com/retrobit-dev/RetroBit-Agent/releases>**
+
+1. Unduh `app-release.apk` dari rilis terbaru.
+2. Buka file itu di HP (Files → Downloads → ketuk APK), izinkan **Install unknown apps** untuk aplikasi Files/browser.
+3. Atau lewat komputer: `adb install -r app-release.apk`.
+
+APK rilis ditandatangani (v1 + v2) dengan kunci demo di `signing/`, jadi versi berikutnya bisa dipasang sebagai *update*.
+
+> **Penting kalau kamu pernah memasang build lama (≤ v0.1.0):** build itu memakai kunci debug Android, berbeda dengan kunci rilis sekarang. Uninstall dulu aplikasinya sekali (`adb uninstall dev.retrobit.agent` atau tekan lama ikon → Uninstall), baru pasang `app-release.apk`. Setelah itu update berikutnya cukup ditimpa.
+
 ## Build di GitHub Actions
 
 Repo ini punya workflow `.github/workflows/android.yml` yang membangun APK debug di runner Ubuntu GitHub — tidak perlu memasang JDK/Android SDK di komputer.

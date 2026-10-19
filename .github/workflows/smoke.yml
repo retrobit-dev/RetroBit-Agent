@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: smoke-${{ github.ref }}
@@ -86,15 +86,3 @@ jobs:
           path: artifacts/
           if-no-files-found: ignore
           retention-days: 14
-
-      - name: Publish screenshots to ci-artifacts branch
-        if: always()
-        run: |
-          [ -d artifacts ] || { echo "no artifacts"; exit 0; }
-          git config user.name "RetroBit CI"
-          git config user.email "ci@retrobit.dev"
-          git checkout -B ci-artifacts
-          cp -r artifacts/. .
-          git add -A
-          git commit -m "Emulator screenshots for ${GITHUB_SHA}" || { echo "nothing to commit"; exit 0; }
-          git push --force origin ci-artifacts
