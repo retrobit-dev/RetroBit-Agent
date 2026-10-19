@@ -55,14 +55,19 @@ import dev.retrobit.agent.ui.components.toolVisual
 import dev.retrobit.agent.ui.theme.MonoFont
 import dev.retrobit.agent.ui.theme.Palette
 import dev.retrobit.agent.ui.icons.PixelIcons
+import androidx.compose.ui.graphics.vector.ImageVector
 
-private data class Suggestion(val emoji: String, val title: String, val prompt: String)
+private data class Suggestion(
+    val icon: ImageVector,
+    val title: String,
+    val prompt: String,
+)
 
 private val starterSuggestions = listOf(
-    Suggestion("☕", "Landing page produk", "Buat landing page untuk brand kopi lokal bernama Kopi Senja. Gunakan tema gelap yang hangat."),
-    Suggestion("🛍️", "Toko online", "Buat toko online sederhana dengan katalog produk, keranjang, dan checkout."),
-    Suggestion("✅", "Aplikasi tugas", "Buat aplikasi daftar tugas dengan filter, prioritas, dan penyimpanan data."),
-    Suggestion("🎨", "Ubah tema", "Ubah tema aplikasi jadi lebih terang dan elegan dengan aksen emas."),
+    Suggestion(PixelIcons.Layout, "Landing page produk", "Buat landing page untuk brand kopi lokal bernama Kopi Senja. Gunakan tema gelap yang hangat."),
+    Suggestion(PixelIcons.Grid, "Toko online", "Buat toko online sederhana dengan katalog produk, keranjang, dan checkout."),
+    Suggestion(PixelIcons.CheckDouble, "Aplikasi tugas", "Buat aplikasi daftar tugas dengan filter, prioritas, dan penyimpanan data."),
+    Suggestion(PixelIcons.Palette, "Ubah tema", "Ubah tema aplikasi jadi lebih terang dan elegan dengan aksen emas."),
 )
 
 @Composable
@@ -175,7 +180,7 @@ private fun ChatWelcome(project: Project, demoMode: Boolean, onSend: (String) ->
                     .padding(12.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text("🧪", fontSize = 15.sp)
+                Icon(PixelIcons.Info, null, tint = Palette.Accent, modifier = Modifier.size(15.dp))
                 Spacer(Modifier.width(8.dp))
                 Text(
                     "Mode demo membuat aplikasi dari template. Hubungkan provider di AI Cloud untuk instruksi bebas.",
@@ -199,7 +204,7 @@ private fun SuggestionCard(suggestion: Suggestion, modifier: Modifier = Modifier
             .clickable(onClick = onClick)
             .padding(12.dp)
     ) {
-        Icon(PixelIcons.Sparkles, null, tint = Palette.Accent, modifier = Modifier.size(15.dp))
+        Icon(suggestion.icon, null, tint = MaterialTheme.colorScheme.onSurface, modifier = Modifier.size(16.dp))
         Spacer(Modifier.height(8.dp))
         Text(
             suggestion.title,

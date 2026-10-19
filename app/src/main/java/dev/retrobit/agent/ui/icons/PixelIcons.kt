@@ -29,7 +29,7 @@ object PixelIcons {
     val Plus: ImageVector by lazy { icon("Plus", "M13 11h7v2h-7v7h-2v-7H4v-2h7V4h2v7Z") }
     val ArrowLeft: ImageVector by lazy { icon("ArrowLeft", "M20 11v2H4v-2zM8 13v2H6v-2zm2 2v2H8v-2zm2 2v2h-2v-2zm-4-6V9H6v2z", "M10 15V7H8v8zm2 2V5h-2v12z") }
     val ArrowRight: ImageVector by lazy { icon("ArrowRight", "M4 11v2h16v-2zm12 2v2h2v-2zm-2 2v2h2v-2zm-2 2v2h2v-2zm4-6V9h2v2z", "M14 15V7h2v8zm-2 2V5h2v12z") }
-    val Sparkles: ImageVector by lazy { icon("Sparkles", "M11 1h2v4h-2zm0 22h2v-4h-2zM9 5h2v4H9zm0 14h2v-4H9zm4-14h2v4h-2zm0 14h2v-4h-2zM5 9h4v2H5zm14 0h-4v2h4zM1 11h4v2H1zm22 0h-4v2h4zM5 13h4v2H5zm14 0h-4v2h4zm0-12h2v6h-2z", "M17 3h6v2h-6zM3 17h2v2H3zm-2 2h2v2H1zm2 2h2v2H3zm2-2h2v2H5z") }
+    val Sparkles: ImageVector by lazy { icon("Sparkles", "M11 2h2v4h-2zM9 6h6v4H9zM5 10h14v4H5zM9 14h6v4H9zM11 18h2v4h-2zM18 4h2v2h-2z") }
     val Comment: ImageVector by lazy { icon("Comment", "M4 2h16v2H4zm0 14h14v2H4zM2 4h2v12H2zm18 0h2v18h-2zm-2 14h2v2h-2z") }
     val Check: ImageVector by lazy { icon("Check", "M10 18H8v-2h2v2Zm-2-2H6v-2h2v2Zm4-2v2h-2v-2h2Zm-6 0H4v-2h2v2Zm8 0h-2v-2h2v2Zm2-2h-2v-2h2v2Zm2-2h-2V8h2v2Zm2-2h-2V6h2v2Z") }
     val CheckDouble: ImageVector by lazy { icon("CheckDouble", "M7 18H5v-2h2v2Zm6 0h-2v-2h2v2Zm-8-2H3v-2h2v2Zm4 0H7v-2h2v2Zm6-2v2h-2v-2h2ZM3 14H1v-2h2v2Zm8 0H9v-2h2v2Zm6 0h-2v-2h2v2Zm-4-2h-2v-2h2v2Zm6 0h-2v-2h2v2Zm-4-2h-2V8h2v2Zm6 0h-2V8h2v2Zm-4-2h-2V6h2v2Zm6 0h-2V6h2v2Z") }

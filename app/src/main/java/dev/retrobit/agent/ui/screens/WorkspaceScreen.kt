@@ -249,8 +249,8 @@ fun WorkspaceScreen(vm: WorkspaceViewModel, onBack: () -> Unit) {
             Modifier
                 .fillMaxWidth()
                 .horizontalScroll(rememberScrollState())
-                .padding(horizontal = 12.dp, vertical = 4.dp),
-            horizontalArrangement = Arrangement.spacedBy(5.dp),
+                .padding(horizontal = 10.dp, vertical = 4.dp),
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
         ) {
             WorkspaceTab.entries.forEach { item ->
                 val selected = tab == item
@@ -264,7 +264,7 @@ fun WorkspaceScreen(vm: WorkspaceViewModel, onBack: () -> Unit) {
                             RoundedCornerShape(3.dp),
                         )
                         .clickable { tab = item }
-                        .padding(horizontal = 11.dp, vertical = 8.dp),
+                        .padding(horizontal = 9.dp, vertical = 8.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Icon(

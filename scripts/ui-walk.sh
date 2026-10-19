@@ -99,19 +99,31 @@ for tab in "Preview:03-preview" "Kode:04-code" "Desain:05-design" "Data:06-data"
 done
 
 # Send a demo prompt and wait for the agent to finish writing files.
-if tap_text "Minta perubahan"; then
-  $ADB shell input text "buat%saplikasi%spencatat%stugas%smingguan" >>"$LOG" 2>&1
-  sleep 1
-  if tap_text "Kirim"; then
-    log "event=prompt-sent"
-    for _ in $(seq 1 12); do
-      sleep 5
-      crash_check prompt || { FAILED=1; break; }
-    done
-    shot 09-after-prompt
-  else
-    UI_ISSUES=$((UI_ISSUES + 1))
+# Compose text fields are not always exposed to uiautomator, so fall back to a
+# coordinate tap on the composer (lower part of the screen).
+if ! tap_text "Minta perubahan"; then
+  SIZE=$($ADB shell wm size | tail -1 | sed -E 's/.*: ([0-9]+)x([0-9]+).*/\1 \2/')
+  W=$(echo "$SIZE" | cut -d' ' -f1)
+  H=$(echo "$SIZE" | cut -d' ' -f2)
+  if [ -n "${W:-}" ] && [ -n "${H:-}" ]; then
+    $ADB shell input tap $((W / 2)) $((H * 66 / 100)) >>"$LOG" 2>&1
+    log "event=tap-composer-fallback at=$((W / 2)),$((H * 66 / 100))"
+    sleep 1
   fi
+fi
+
+$ADB shell input text "buat%saplikasi%spencatat%stugas%smingguan" >>"$LOG" 2>&1
+sleep 1
+shot 09-prompt-typed
+
+if tap_text "Kirim"; then
+  log "event=prompt-sent"
+  for _ in $(seq 1 10); do
+    sleep 5
+    crash_check prompt || { FAILED=1; break; }
+  done
+  sleep 5
+  shot 09-after-prompt
 else
   UI_ISSUES=$((UI_ISSUES + 1))
 fi
@@ -123,5 +135,11 @@ shot 10-back-to-dashboard
 
 log "ui_issues=$UI_ISSUES"
 log "failed=$FAILED"
+
+# Tap misses are tolerated (semantics vary per API level) but a crash is not.
+if [ "$UI_ISSUES" -ge 3 ]; then
+  log "event=too-many-tap-misses"
+  exit 1
+fi
 [ "$FAILED" -eq 0 ] || exit 1
 exit 0
