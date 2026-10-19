@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: smoke-${{ github.ref }}
@@ -79,6 +79,18 @@ jobs:
           print(f"::error title=Smoke gagal::{detail}")
           sys.exit(1)
           PY
+
+      - name: Publish screenshots to ci-artifacts branch
+        if: always()
+        run: |
+          [ -d artifacts ] || { echo "no artifacts"; exit 0; }
+          git config user.name "RetroBit CI"
+          git config user.email "ci@retrobit.dev"
+          export GIT_INDEX_FILE="$(mktemp -u)"
+          git add -f artifacts
+          TREE=$(git write-tree)
+          COMMIT=$(git commit-tree "$TREE" -m "Screenshots for ${GITHUB_SHA}")
+          git push --force origin "$COMMIT:refs/heads/ci-artifacts"
 
       - name: Upload screenshots
         if: always()
