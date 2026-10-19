@@ -206,7 +206,7 @@ app/src/main/res/font/         # salinan font agar bisa dipakai Compose
 Pengujian:
 
 ```
-./gradlew testDebugUnitTest   # 24 unit test JVM (design token + konfigurasi AI)
+./gradlew testDebugUnitTest   # 51 unit test JVM (design token, konfigurasi AI, ProjectFiles)
 ./gradlew lintDebug          # Android lint
 ```
 
@@ -249,7 +249,7 @@ filesDir/
 - Belum ada sistem plugin/ekstensi; tool agen didefinisikan di `AgentToolRunner`.
 - Snapshot hanya memulihkan file sumber, bukan database atau design metadata.
 - Preview LAN menyajikan file statis tanpa runtime `RetroBitDB`/`__RETROBIT_ENV__`.
-- Unit test baru mencakup dua area: token design (`DesignSystemTest`) dan katalog provider/error AI (`AiConfigTest`). Alur UI dan penyimpanan masih diverifikasi lewat smoke test emulator, belum lewat test otomatis.
+- Unit test mencakup tiga area: token design (`DesignSystemTest`), katalog provider/error AI (`AiConfigTest`), dan filesystem proyek (`ProjectFilesTest`: traversal, zip-slip, snapshot). Alur UI dan database masih diverifikasi lewat smoke test emulator, belum lewat test otomatis.
 
 ## Troubleshooting
 
