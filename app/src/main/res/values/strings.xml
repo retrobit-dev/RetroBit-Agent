@@ -1,4 +1,22 @@
-<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">RetroBit</string>
+
+    <!-- Navigasi bawah dan drawer -->
+    <string name="nav_home">Beranda</string>
+    <string name="nav_templates">Template</string>
+    <string name="nav_cloud">Cloud</string>
+    <string name="nav_search">Cari</string>
+    <string name="nav_all_projects">Semua proyek</string>
+    <string name="nav_ai_cloud">AI Cloud</string>
+    <string name="nav_recents">TERBARU</string>
+
+    <!-- Dashboard -->
+    <string name="dashboard_subtitle">studio cyberdeck</string>
+    <string name="dashboard_recents">Terbaru</string>
+    <string name="dashboard_filter_all">Semua</string>
+    <string name="dashboard_filter_saved">Disimpan</string>
+    <string name="dashboard_composer_hint">Aplikasi yang…</string>
+    <string name="dashboard_promo_title">Undang teman</string>
+    <string name="dashboard_promo_body">Dapat kredit gratis</string>
+    <string name="dashboard_footer_subtitle">Ruang kerja lokal · di perangkat</string>
 </resources>

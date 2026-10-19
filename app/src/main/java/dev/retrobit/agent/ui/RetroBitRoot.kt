@@ -1,5 +1,6 @@
 package dev.retrobit.agent.ui
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -23,11 +24,13 @@ import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.navigation.NavType
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.navArgument
+import dev.retrobit.agent.R
 import dev.retrobit.agent.data.Project
 import dev.retrobit.agent.ui.components.BrandMark
 import dev.retrobit.agent.ui.components.Pill
@@ -73,12 +76,12 @@ import dev.retrobit.agent.ui.theme.RetroBitTheme
 import dev.retrobit.agent.ui.icons.PixelIcons
 import dev.retrobit.agent.ui.theme.PixelFont
 
-private data class BottomDestination(val route: String, val label: String, val icon: ImageVector)
+private data class BottomDestination(val route: String, @StringRes val labelRes: Int, val icon: ImageVector)
 
 private val destinations = listOf(
-    BottomDestination("projects", "Home", PixelIcons.Home),
-    BottomDestination("templates", "Templates", PixelIcons.Layout),
-    BottomDestination("cloud", "Cloud", PixelIcons.Cloud),
+    BottomDestination("projects", R.string.nav_home, PixelIcons.Home),
+    BottomDestination("templates", R.string.nav_templates, PixelIcons.Layout),
+    BottomDestination("cloud", R.string.nav_cloud, PixelIcons.Cloud),
 )
 
 @Composable
@@ -214,15 +217,15 @@ private fun DashboardSidebar(
             }
             Spacer(Modifier.height(18.dp))
 
-            SidebarItem("Dashboard", PixelIcons.Home, route.startsWith("projects")) { onNavigate("projects") }
-            SidebarItem("Search", PixelIcons.Search, false) { onNavigate("projects") }
-            SidebarItem("All projects", PixelIcons.Grid, false) { onNavigate("projects") }
-            SidebarItem("Templates", PixelIcons.Layout, route.startsWith("templates")) { onNavigate("templates") }
-            SidebarItem("AI Cloud", PixelIcons.Cloud, route.startsWith("cloud")) { onNavigate("cloud") }
+            SidebarItem(stringResource(R.string.nav_home), PixelIcons.Home, route.startsWith("projects")) { onNavigate("projects") }
+            SidebarItem(stringResource(R.string.nav_search), PixelIcons.Search, false) { onNavigate("projects") }
+            SidebarItem(stringResource(R.string.nav_all_projects), PixelIcons.Grid, false) { onNavigate("projects") }
+            SidebarItem(stringResource(R.string.nav_templates), PixelIcons.Layout, route.startsWith("templates")) { onNavigate("templates") }
+            SidebarItem(stringResource(R.string.nav_ai_cloud), PixelIcons.Cloud, route.startsWith("cloud")) { onNavigate("cloud") }
 
             Spacer(Modifier.height(20.dp))
             Text(
-                "RECENTS",
+                stringResource(R.string.nav_recents),
                 style = MaterialTheme.typography.labelSmall,
                 color = colors.onSurfaceVariant,
                 letterSpacing = 1.4.sp,
@@ -315,9 +318,9 @@ private fun DashboardSidebar(
                 Icon(PixelIcons.Star, null, tint = colors.onSurfaceVariant, modifier = Modifier.size(14.dp))
                 Spacer(Modifier.width(8.dp))
                 Column(Modifier.weight(1f)) {
-                    Text("Refer friends", style = MaterialTheme.typography.labelMedium, color = colors.onSurface)
+                    Text(stringResource(R.string.dashboard_promo_title), style = MaterialTheme.typography.labelMedium, color = colors.onSurface)
                     Text(
-                        "Earn free credits",
+                        stringResource(R.string.dashboard_promo_body),
                         style = MaterialTheme.typography.labelSmall,
                         color = colors.onSurfaceVariant,
                     )
@@ -329,9 +332,9 @@ private fun DashboardSidebar(
                 BrandMark(26.dp, "R")
                 Spacer(Modifier.width(8.dp))
                 Column {
-                    Text("Retro Bit", style = MaterialTheme.typography.labelMedium, color = colors.onSurface)
+                    Text(stringResource(R.string.app_name), style = MaterialTheme.typography.labelMedium, color = colors.onSurface)
                     Text(
-                        "Local workspace · on-device",
+                        stringResource(R.string.dashboard_footer_subtitle),
                         style = MaterialTheme.typography.labelSmall,
                         color = colors.onSurfaceVariant,
                     )
@@ -436,6 +439,7 @@ private fun RetroBottomBar(current: String, onNavigate: (String) -> Unit) {
             ) {
                 destinations.forEach { destination ->
                     val selected = current == destination.route
+                    val label = stringResource(destination.labelRes)
                     Column(
                         Modifier
                             .weight(1f)
@@ -464,14 +468,14 @@ private fun RetroBottomBar(current: String, onNavigate: (String) -> Unit) {
                         ) {
                             Icon(
                                 destination.icon,
-                                contentDescription = destination.label,
+                                contentDescription = label,
                                 tint = if (selected) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.size(20.dp),
                             )
                         }
                         Spacer(Modifier.height(2.dp))
                         Text(
-                            destination.label,
+                            label,
                             style = MaterialTheme.typography.labelSmall,
                             color = if (selected) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
                             fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,

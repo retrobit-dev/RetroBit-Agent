@@ -44,6 +44,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -51,6 +52,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import dev.retrobit.agent.R
 import dev.retrobit.agent.data.Project
 import dev.retrobit.agent.ui.LocalDrawer
 import dev.retrobit.agent.data.TemplateInfo
@@ -119,7 +121,7 @@ fun ProjectsScreen(
                 Column(Modifier.weight(1f)) {
                     Text("RetroBit", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onBackground)
                     Text(
-                        "cyberdeck studio",
+                        stringResource(R.string.dashboard_subtitle),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         letterSpacing = 1.sp,
@@ -212,7 +214,7 @@ fun ProjectsScreen(
 
         item {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("Recents", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onBackground)
+                Text(stringResource(R.string.dashboard_recents), style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onBackground)
                 Spacer(Modifier.width(7.dp))
                 Pill("${filtered.size}", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Spacer(Modifier.weight(1f))
@@ -231,8 +233,8 @@ fun ProjectsScreen(
         item {
             Column {
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    FilterChip("All", filter == "all") { filter = "all" }
-                    FilterChip("Saved", filter == "saved") { filter = "saved" }
+                    FilterChip(stringResource(R.string.dashboard_filter_all), filter == "all") { filter = "all" }
+                    FilterChip(stringResource(R.string.dashboard_filter_saved), filter == "saved") { filter = "saved" }
                 }
                 Spacer(Modifier.height(10.dp))
                 SearchField(value = search, onValueChange = { search = it })
@@ -329,7 +331,7 @@ private fun ComposerCard(
         ) {
             if (value.isEmpty()) {
                 Text(
-                    "An app that…",
+                    stringResource(R.string.dashboard_composer_hint),
                     style = MaterialTheme.typography.bodyLarge,
                     color = colors.onSurfaceVariant.copy(alpha = 0.8f),
                     modifier = Modifier.padding(top = 4.dp),
