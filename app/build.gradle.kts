@@ -52,8 +52,8 @@ android {
         applicationId = "dev.retrobit.agent"
         minSdk = 26
         targetSdk = 35
-        versionCode = 8
-        versionName = "0.2.6"
+        versionCode = 9
+        versionName = "0.2.7"
 
         vectorDrawables { useSupportLibrary = true }
     }
@@ -80,8 +80,11 @@ android {
             applicationIdSuffix = ""
         }
         release {
-            isMinifyEnabled = false
-            isShrinkResources = false
+            // R8 trims the unused Compose/OkHttp surface and resource shrinking
+            // drops drawables nothing references. The smoke walk installs this
+            // exact build, so a shrinking mistake fails CI instead of shipping.
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
