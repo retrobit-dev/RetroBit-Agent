@@ -28,7 +28,7 @@ Aplikasi Android native (Kotlin + Jetpack Compose) untuk membangun aplikasi web 
 | **AI Cloud** | Hubungkan OpenRouter, OpenAI, Anthropic, Gemini, Groq, DeepSeek, Mistral, Together AI, Ollama lokal, atau endpoint OpenAI-compatible sendiri. Ada uji koneksi, pemilih model, estimasi pemakaian token/biaya, dan **system prompt global** untuk semua chat baru. |
 | **Secret** | Vault terenkripsi (AES-GCM + Android Keystore) untuk API key. Secret hanya masuk ke preview bila kamu centang "expose", dan AI hanya tahu **nama** secret — bukan nilainya. |
 | **Database** | SQLite per proyek: buat tabel, tambah kolom, isi data contoh, jalankan query, lihat hasil. Kode di preview bisa mengaksesnya lewat `window.RetroBitDB`. |
-| **Dashboard** | Beranda bergaya rork/cyberdeck: drawer dengan recents, hero "What will you build, Retro?", composer satu baris, pemilih target iPhone/Android/Web, dan filter All/Saved. Tema monokrom e-paper dengan font Pixel Operator dan ikon pixelarticons. |
+| **Dashboard** | Beranda bergaya rork/cyberdeck: drawer dengan recents, hero "What will you build, Retro?", composer satu baris, pemilih target iPhone/Android/Web, dan filter All/Saved. Tema monokrom e-paper dengan font Pixel Operator dan set ikon piksel 12×12 buatan sendiri. |
 | **Chat / Agent** | Agen dengan 11 tool (baca/tulis/edit/hapus file, rename, update design, tabel & SQL, minta secret). Setiap perintah AI otomatis membuat snapshot yang bisa dipulihkan. |
 | **Template** | 7 starter: SaaS (Nimbus), tugas (Flow), toko online (Lumen), kesehatan (Pulse), chat (Relay), portofolio (Atelier), dan kanvas kosong. |
 | **Ekspor** | Bagikan proyek sebagai ZIP lewat FileProvider (file `_meta` tidak ikut). |
@@ -182,12 +182,13 @@ app/src/main/java/dev/retrobit/agent/
 └── ui/
     ├── RetroBitRoot.kt        # NavHost + drawer dashboard + bottom bar
     ├── DrawerController.kt    # CompositionLocal pembuka drawer
-    ├── icons/PixelIcons.kt    # 52 ikon pixelarticons (24x24 ImageVector)
+    ├── icons/PixelIcons.kt    # 44 ikon piksel 12x12 (24x24 ImageVector)
     ├── theme/, components/    # tema e-paper, markdown, komponen bersama
     └── screens/               # Projects (dashboard), Templates, Cloud, Workspace + 6 pane
 app/src/main/assets/templates/ # saas, tasks, commerce, fitness, chat, portfolio, blank
 app/src/main/assets/fonts/     # PixelOperator.ttf + PixelOperator-Bold.ttf
-app/src/main/assets/licenses/  # NOTICE.txt (CC0 font, MIT icons)
+app/src/main/assets/licenses/  # NOTICE.txt (CC0 font)
+tools/pixel_icons.py           # generator ikon: grid 12x12 -> ImageVector + contact sheet
 app/src/main/res/font/         # salinan font agar bisa dipakai Compose
 ```
 
@@ -216,7 +217,7 @@ filesDir/
 ## Lisensi aset
 
 - **Pixel Operator** — Jayvee Enaguas (HarvettFox96), CC0 1.0. Dipakai untuk seluruh UI Compose dan aplikasi yang dibuat.
-- **pixelarticons** — Gerrit Halfmann, MIT. Path SVG dikonversi menjadi `ImageVector` di `PixelIcons.kt`.
+- **Ikon RetroBit** — digambar sendiri di grid 12×12, ditulis sebagai `ImageVector` oleh `tools/pixel_icons.py`. Tidak ada aset ikon pihak ketiga yang tersisa.
 - Detail lengkap ada di `app/src/main/assets/licenses/NOTICE.txt`.
 
 ## Batasan yang diketahui
@@ -225,7 +226,7 @@ filesDir/
 - Belum ada sistem plugin/ekstensi; tool agen didefinisikan di `AgentToolRunner`.
 - Snapshot hanya memulihkan file sumber, bukan database atau design metadata.
 - Preview LAN menyajikan file statis tanpa runtime `RetroBitDB`/`__RETROBIT_ENV__`.
-- Belum ada unit test/UI test; verifikasi dilakukan lewat build Android Studio.
+- Belum ada unit test; verifikasi berjalan lewat CI build dan smoke test emulator yang menelusuri semua tab.
 
 ## Troubleshooting
 

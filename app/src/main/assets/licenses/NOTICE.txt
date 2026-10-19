@@ -8,9 +8,8 @@ RetroBit Agent — bundled third-party assets
           app/src/main/assets/fonts/PixelOperator-Bold.ttf,
           app/src/main/res/font/pixel_operator*.ttf
 
-2) pixelarticons
-   Author: Gerrit Halfmann
-   License: MIT
-   https://github.com/halfmage/pixelarticons
-   Used as 24x24 vector paths in
-   app/src/main/java/dev/retrobit/agent/ui/icons/PixelIcons.kt
+2) RetroBit pixel icons
+   Authored for this project on a 12x12 grid and rendered as 24x24 vector
+   paths in app/src/main/java/dev/retrobit/agent/ui/icons/PixelIcons.kt.
+   The generator (tools/pixel_icons.py) and the artwork are part of this
+   repository.
