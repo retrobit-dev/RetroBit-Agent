@@ -43,8 +43,32 @@ jobs:
 
       - name: Build debug APK
         run: |
+          set -o pipefail
           chmod +x ./gradlew
-          ./gradlew --no-daemon --stacktrace assembleDebug
+          ./gradlew --no-daemon --console=plain --stacktrace assembleDebug 2>&1 | tee build.log
+
+      - name: Annotate Kotlin and Gradle errors
+        if: failure()
+        run: |
+          python3 - <<'PY'
+          import re, pathlib
+          log = pathlib.Path("build.log")
+          if not log.exists():
+              raise SystemExit(0)
+          seen = 0
+          for raw in log.read_text(errors="replace").splitlines():
+              m = re.match(r"e: file://(\S+?):(\d+):(\d+) (.+)$", raw.strip())
+              if m:
+                  path = m.group(1).split("/RetroBit-Agent/RetroBit-Agent/")[-1]
+                  print(f"::error file={path},line={m.group(2)},col={m.group(3)},title=Kotlin::{m.group(4)}")
+                  seen += 1
+                  continue
+              if "FAILURE: Build failed" in raw or "Execution failed for task" in raw or "What went wrong" in raw:
+                  print(f"::error title=Gradle::{raw.strip()[:240]}")
+              if seen > 120:
+                  print("::error title=CI::Too many compile errors, see build.log")
+                  break
+          PY
 
       - name: Collect APK info
         if: success()
@@ -69,5 +93,6 @@ jobs:
           path: |
             app/build/reports/**
             app/build/outputs/logs/**
+            build.log
           if-no-files-found: ignore
           retention-days: 7
