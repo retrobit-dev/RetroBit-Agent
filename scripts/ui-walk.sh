@@ -63,6 +63,28 @@ tap_text() {
   return 0
 }
 
+# tap_text_scrolling <substring> — like tap_text, but scrolls the page down
+# until the node exists (the dashboard is taller than the screen).
+tap_text_scrolling() {
+  local needle="$1" xy=""
+  for _ in 1 2 3 4 5 6; do
+    if dump_ui; then
+      xy=$(find_xy "$needle") && break
+    fi
+    $ADB shell input swipe 540 1400 540 900 250 >>"$LOG" 2>&1
+    sleep 1
+  done
+  if [ -z "${xy:-}" ]; then
+    log "event=tap-miss text=\"$needle\""
+    return 1
+  fi
+  # shellcheck disable=SC2086
+  $ADB shell input tap $xy >>"$LOG" 2>&1
+  log "event=tap text=\"$needle\" at=$xy"
+  sleep 1.5
+  return 0
+}
+
 crash_check() {
   $ADB logcat -d -b crash 2>/dev/null > artifacts/crash.log
   if grep -q "FATAL EXCEPTION" artifacts/crash.log 2>/dev/null; then
@@ -84,7 +106,7 @@ $ADB shell input swipe 540 700 540 1600 300 >>"$LOG" 2>&1
 sleep 1
 shot 01-dashboard
 
-if tap_text "Nimbus"; then
+if tap_text_scrolling "Nimbus"; then
   sleep 3
   shot 02-workspace-chat
   crash_check workspace || FAILED=1
@@ -162,6 +184,11 @@ for _ in 1 2 3; do
   if dump_ui && grep -qi "Recents" /tmp/ui.xml; then
     break
   fi
+done
+# The header (with the drawer button) only exists at the very top of the list.
+for _ in 1 2 3; do
+  $ADB shell input swipe 540 700 540 1600 250 >>"$LOG" 2>&1
+  sleep 1
 done
 shot 10-back-to-dashboard
 
