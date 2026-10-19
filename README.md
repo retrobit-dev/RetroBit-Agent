@@ -104,6 +104,7 @@ Workflow memakai JDK 17 (Temurin), Gradle wrapper 8.9, `gradle/actions/setup-gra
 
 | Provider | Base URL default | Contoh model |
 | --- | --- | --- |
+| Auto | — | memilih dari key yang tersimpan |
 | Demo lokal | — | `retrobit-demo` (tanpa key) |
 | OpenRouter | `https://openrouter.ai/api/v1` | `anthropic/claude-sonnet-4.5`, `qwen/qwen3-coder` |
 | OpenAI | `https://api.openai.com/v1` | `gpt-4.1`, `gpt-4.1-mini` |
@@ -119,6 +120,32 @@ Workflow memakai JDK 17 (Temurin), Gradle wrapper 8.9, `gradle/actions/setup-gra
 - Key disimpan di `SharedPreferences` terenkripsi; tidak pernah ditulis ke file proyek atau log.
 - Ollama dari emulator memakai `10.0.2.2`; dari perangkat fisik gunakan IP komputer (`http://192.168.x.x:11434/v1`). Cleartext HTTP diizinkan untuk kasus lokal ini.
 - Model reasoning OpenAI (`o3`, `o4`, `gpt-5…`) otomatis memakai `max_completion_tokens` dan tanpa `temperature`.
+
+### Model gratis
+
+Tidak ada API gratis tanpa syarat: setiap provider memberi kuota sendiri, dengan batas harian yang bisa berubah. Yang tersedia lewat aplikasi ini:
+
+| Provider | Cara | Batas khas |
+| --- | --- | --- |
+| Google Gemini | key dari AI Studio, model `gemini-2.5-flash` | ± 10–15 permintaan/menit, ± 250–1.500/hari |
+| Groq | key gratis, `openai/gpt-oss-120b` | ± 30/menit, 1.000/hari (per model) |
+| OpenRouter | model berakhiran `:free`, atau router `openrouter/free` | 20/menit, 50/hari (1.000/hari setelah pernah top-up $10) |
+| Mistral | `mistral-small-latest` | plan eksperimen gratis |
+| Ollama / LM Studio | server sendiri | tanpa batas, butuh komputer yang menyala |
+
+Model bertanda `:free` otomatis dihitung **$0** pada estimasi biaya dan diberi badge **GRATIS** di AI Cloud. Provider yang punya kuota gratis (Gemini, Groq, Mistral, Ollama) juga ditandai `API key · gratis`.
+
+Batas di atas adalah angka publik per 2026-10 dan bisa berubah; angka final selalu ada di konsol masing-masing provider.
+
+### Provider Auto
+
+Mode **Auto** mencoba provider yang key-nya sudah tersimpan, dari yang punya kuota gratis lebih dulu:
+
+`Gemini → Groq → OpenRouter (openrouter/free) → Mistral → Together → DeepSeek → Anthropic → OpenAI → Ollama`
+
+Auto berhenti di provider pertama yang benar-benar menjawab. Provider baru dianggap gagal kalau ia tidak menulis file dan tidak mengembalikan teks — jadi pekerjaan setengah jadi tidak diulang di provider lain. Ollama hanya ikut kalau kolom key-nya diisi (boleh teks apa saja), supaya Auto tidak menunggu server lokal yang mati. Tanpa satu pun key, Auto memberi pesan yang menyuruh mengisi key atau memakai mode Demo.
+
+Auto **bukan** seperti model picker di layanan berlangganan: RetroBit tidak punya server yang membayari inference, jadi Auto memilih dari key milikmu, bukan dari model yang dibayar aplikasi.
 
 ## Design system
 
