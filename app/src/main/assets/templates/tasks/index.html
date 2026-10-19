@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+<meta name="theme-color" content="#0B0B12" />
+<title>Flow — Task harian</title>
+<style id="rb-design">
+/*RB_DESIGN_START*/
+:root{
+  --rb-primary:#7C5CFF;--rb-accent:#39D0FF;--rb-bg:#0B0B12;--rb-surface:#15151F;
+  --rb-text:#F5F5FA;--rb-muted:#8C8CA1;--rb-radius:20px;
+  --rb-font:'Inter',system-ui,-apple-system,sans-serif;
+}
+/*RB_DESIGN_END*/
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:var(--rb-bg);color:var(--rb-text);font-family:var(--rb-font);min-height:100vh}
+body::before{content:"";position:fixed;inset:0;background:radial-gradient(80% 50% at 50% -10%,color-mix(in srgb,var(--rb-primary) 22%,transparent),transparent 70%);pointer-events:none}
+.app{position:relative;max-width:520px;margin:0 auto;padding:28px 20px 130px;min-height:100vh}
+.top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px}
+.date{font-size:12.5px;color:var(--rb-muted);letter-spacing:.02em;margin-bottom:6px}
+h1{font-size:28px;letter-spacing:-.03em;margin:0;font-weight:750}
+.avatar{width:44px;height:44px;border-radius:14px;background:linear-gradient(135deg,var(--rb-primary),var(--rb-accent));display:grid;place-items:center;font-weight:700;font-size:16px;box-shadow:0 10px 24px -10px var(--rb-primary)}
+.progress-card{background:linear-gradient(135deg,color-mix(in srgb,var(--rb-primary) 26%,transparent),color-mix(in srgb,var(--rb-accent) 10%,transparent));border:1px solid rgba(255,255,255,.1);border-radius:var(--rb-radius);padding:20px;display:flex;align-items:center;gap:18px;margin-bottom:22px;position:relative;overflow:hidden}
+.progress-card::after{content:"";position:absolute;right:-40px;top:-60px;width:180px;height:180px;border-radius:50%;background:var(--rb-accent);opacity:.12;filter:blur(40px)}
+.ring{position:relative;width:66px;height:66px;flex:none}
+.ring svg{transform:rotate(-90deg)}
+.ring b{position:absolute;inset:0;display:grid;place-items:center;font-size:15px;letter-spacing:-.02em}
+.progress-copy h3{margin:0 0 4px;font-size:15.5px}
+.progress-copy p{margin:0;font-size:12.5px;color:var(--rb-muted);line-height:1.5}
+.streak{margin-left:auto;text-align:center;font-size:11px;color:var(--rb-muted)}
+.streak b{display:block;font-size:20px;color:var(--rb-text)}
+.add{display:flex;gap:10px;margin-bottom:20px}
+.add input{flex:1;background:var(--rb-surface);border:1px solid rgba(255,255,255,.09);color:var(--rb-text);padding:16px 18px;border-radius:calc(var(--rb-radius) * .8);font-size:14px;font-family:inherit;outline:none;transition:.2s border-color}
+.add input:focus{border-color:color-mix(in srgb,var(--rb-primary) 60%,transparent)}
+.add input::placeholder{color:var(--rb-muted)}
+.add button{width:54px;border-radius:calc(var(--rb-radius) * .8);border:0;background:linear-gradient(135deg,var(--rb-primary),var(--rb-accent));color:#fff;font-size:24px;cursor:pointer;display:grid;place-items:center;transition:.2s transform;box-shadow:0 10px 26px -12px var(--rb-primary)}
+.add button:active{transform:scale(.94)}
+.chips{display:flex;gap:8px;margin-bottom:16px;overflow-x:auto;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:none;border:1px solid rgba(255,255,255,.09);background:transparent;color:var(--rb-muted);font-family:inherit;font-size:12.5px;font-weight:600;padding:9px 16px;border-radius:999px;cursor:pointer;transition:.2s}
+.chip.active{background:var(--rb-text);color:var(--rb-bg);border-color:var(--rb-text)}
+.list{display:flex;flex-direction:column;gap:10px}
+.task{display:flex;align-items:flex-start;gap:14px;background:var(--rb-surface);border:1px solid rgba(255,255,255,.06);padding:16px;border-radius:calc(var(--rb-radius) * .8);animation:pop .25s ease both;transition:.25s opacity,.25s transform}
+@keyframes pop{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.task.done{opacity:.55}
+.task.done .t-title{text-decoration:line-through;color:var(--rb-muted)}
+.check{width:24px;height:24px;border-radius:8px;border:1.5px solid rgba(255,255,255,.25);background:transparent;cursor:pointer;flex:none;display:grid;place-items:center;color:transparent;font-size:13px;transition:.2s;margin-top:1px}
+.task.done .check{background:var(--rb-primary);border-color:var(--rb-primary);color:#fff}
+.t-main{flex:1;min-width:0}
+.t-title{font-size:14px;line-height:1.4;word-break:break-word}
+.t-meta{display:flex;gap:8px;margin-top:7px;align-items:center;font-size:11px;color:var(--rb-muted)}
+.tag{padding:3px 9px;border-radius:999px;font-weight:600;font-size:10.5px}
+.tag.high{background:rgba(255,90,90,.13);color:#FF8080}
+.tag.medium{background:rgba(255,190,70,.12);color:#FFC96B}
+.tag.low{background:rgba(70,210,150,.12);color:#6BE3B0}
+.del{background:none;border:0;color:var(--rb-muted);font-size:16px;cursor:pointer;padding:2px 4px;opacity:.55;transition:.2s opacity}
+.del:hover{opacity:1;color:#FF8080}
+.empty{text-align:center;padding:56px 20px;color:var(--rb-muted)}
+.empty .big{font-size:38px;margin-bottom:12px}
+.empty p{font-size:13.5px;line-height:1.6;margin:0}
+.bar{position:fixed;left:0;right:0;bottom:0;background:color-mix(in srgb,var(--rb-bg) 86%,transparent);backdrop-filter:blur(20px);border-top:1px solid rgba(255,255,255,.07);padding:12px 0 calc(12px + env(safe-area-inset-bottom))}
+.bar-in{max-width:520px;margin:0 auto;display:flex;justify-content:space-around}
+.nav{background:none;border:0;color:var(--rb-muted);font-family:inherit;font-size:10.5px;display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;padding:4px 14px;border-radius:12px}
+.nav.active{color:var(--rb-text)}
+.nav .ni{font-size:19px}
+.nav.active .ni{color:var(--rb-accent);filter:drop-shadow(0 0 12px var(--rb-accent))}
+.fab-hint{text-align:center;font-size:10.5px;color:var(--rb-muted);margin-top:22px;opacity:.7}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="top">
+    <div>
+      <div class="date" id="date"></div>
+      <h1>Halo, Ayu 👋</h1>
+    </div>
+    <div class="avatar">A</div>
+  </div>
+
+  <div class="progress-card">
+    <div class="ring">
+      <svg width="66" height="66" viewBox="0 0 66 66">
+        <circle cx="33" cy="33" r="28" fill="none" stroke="rgba(255,255,255,.14)" stroke-width="6"/>
+        <circle id="ring-fg" cx="33" cy="33" r="28" fill="none" stroke="url(#g)" stroke-width="6"
+          stroke-linecap="round" stroke-dasharray="175.9" stroke-dashoffset="175.9"/>
+        <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stop-color="var(--rb-primary)"/><stop offset="1" stop-color="var(--rb-accent)"/>
+        </linearGradient></defs>
+      </svg>
+      <b id="pct">0%</b>
+    </div>
+    <div class="progress-copy">
+      <h3 id="progress-title">Fokus hari ini</h3>
+      <p id="progress-sub">Belum ada tugas. Yuk mulai satu!</p>
+    </div>
+    <div class="streak"><b id="streak">0</b>hari beruntun</div>
+  </div>
+
+  <form class="add" id="form">
+    <input id="input" placeholder="Tambah tugas baru…" autocomplete="off" maxlength="140" />
+    <button type="submit" aria-label="Tambah">+</button>
+  </form>
+
+  <div class="chips" id="chips">
+    <button class="chip active" data-filter="all">Semua</button>
+    <button class="chip" data-filter="active">Aktif</button>
+    <button class="chip" data-filter="done">Selesai</button>
+    <button class="chip" data-filter="high">Prioritas</button>
+  </div>
+
+  <div class="list" id="list"></div>
+  <div class="empty" id="empty" style="display:none">
+    <div class="big">🌿</div>
+    <p>Semua beres. Tidak ada tugas<br/>yang tertinggal di filter ini.</p>
+  </div>
+  <div class="fab-hint">Data tersimpan di perangkat kamu</div>
+</div>
+
+<div class="bar"><div class="bar-in">
+  <button class="nav active"><span class="ni">◈</span>Tugas</button>
+  <button class="nav" onclick="toast('Kalender segera hadir')"><span class="ni">▦</span>Kalender</button>
+  <button class="nav" onclick="toast('Statistik segera hadir')"><span class="ni">◔</span>Statistik</button>
+  <button class="nav" onclick="toast('Pengaturan segera hadir')"><span class="ni">⚙</span>Setelan</button>
+</div></div>
+
+<div id="toast" style="position:fixed;left:50%;bottom:96px;transform:translate(-50%,40px);background:var(--rb-text);color:var(--rb-bg);padding:11px 18px;border-radius:11px;font-size:12.5px;font-weight:600;opacity:0;transition:.3s;z-index:20;white-space:nowrap">Halo</div>
+<script>
+const KEY = 'flow.tasks.v1';
+const PRIORITIES = ['medium','high','low'];
+let tasks = [];
+let filter = 'all';
+const $ = (s) => document.querySelector(s);
+const elList = $('#list');
+const elEmpty = $('#empty');
+const elInput = $('#input');
+
+function load(){
+  try{ tasks = JSON.parse(localStorage.getItem(KEY)) || []; }catch(e){ tasks = []; }
+  if(!Array.isArray(tasks)) tasks = [];
+}
+function save(){ localStorage.setItem(KEY, JSON.stringify(tasks)); }
+
+function seedIfEmpty(){
+  if(tasks.length) return;
+  tasks = [
+    {id: 1, title: 'Review desain onboarding', done: false, priority: 'high', created: Date.now()},
+    {id: 2, title: 'Balas email klien Nimbus', done: true, priority: 'medium', created: Date.now()},
+    {id: 3, title: 'Olahraga 20 menit', done: false, priority: 'low', created: Date.now()}
+  ];
+  save();
+}
+
+function priorityOf(t){ return t.priority || 'medium'; }
+function filtered(){
+  if(filter === 'active') return tasks.filter(t => !t.done);
+  if(filter === 'done') return tasks.filter(t => t.done);
+  if(filter === 'high') return tasks.filter(t => priorityOf(t) === 'high');
+  return tasks;
+}
+const LABEL = {high:'Prioritas', medium:'Sedang', low:'Santai'};
+
+function render(){
+  const items = filtered();
+  elList.innerHTML = '';
+  elEmpty.style.display = items.length ? 'none' : 'block';
+  const frag = document.createDocumentFragment();
+  items.forEach(t => {
+    const div = document.createElement('div');
+    div.className = 'task' + (t.done ? ' done' : '');
+    div.innerHTML = `
+      <button class="check" aria-label="Tandai">✓</button>
+      <div class="t-main">
+        <div class="t-title"></div>
+        <div class="t-meta"><span class="tag ${priorityOf(t)}">${LABEL[priorityOf(t)]}</span><span>${new Date(t.created).toLocaleDateString('id-ID',{day:'numeric',month:'short'})}</span></div>
+      </div>
+      <button class="del" aria-label="Hapus">✕</button>`;
+    div.querySelector('.t-title').textContent = t.title;
+    div.querySelector('.check').onclick = () => toggle(t.id);
+    div.querySelector('.del').onclick = () => remove(t.id);
+    frag.appendChild(div);
+  });
+  elList.appendChild(frag);
+  updateProgress();
+}
+
+function updateProgress(){
+  const total = tasks.length;
+  const done = tasks.filter(t => t.done).length;
+  const pct = total ? Math.round(done / total * 100) : 0;
+  const C = 175.9;
+  $('#ring-fg').style.strokeDashoffset = String(C - C * pct / 100);
+  $('#pct').textContent = pct + '%';
+  $('#progress-title').textContent = total && done === total ? 'Semua selesai! 🎉' : 'Fokus hari ini';
+  $('#progress-sub').textContent = total ? `${done} dari ${total} tugas selesai` : 'Belum ada tugas. Yuk mulai satu!';
+  const today = new Date().toDateString();
+  let streakData = {};
+  try{ streakData = JSON.parse(localStorage.getItem('flow.streak')) || {}; }catch(e){}
+  if(total && done === total && !streakData[today]){
+    streakData[today] = true;
+    localStorage.setItem('flow.streak', JSON.stringify(streakData));
+  }
+  $('#streak').textContent = Object.keys(streakData).length;
+}
+
+function toggle(id){
+  tasks = tasks.map(t => t.id === id ? {...t, done: !t.done} : t);
+  save(); render();
+}
+function remove(id){
+  tasks = tasks.filter(t => t.id !== id);
+  save(); render();
+  toast('Tugas dihapus');
+}
+function add(title){
+  tasks.unshift({id: Date.now(), title, done: false, priority: PRIORITIES[Math.floor(Math.random()*PRIORITIES.length)], created: Date.now()});
+  save(); render();
+}
+$('#form').addEventListener('submit', (e) => {
+  e.preventDefault();
+  const value = elInput.value.trim();
+  if(!value) return;
+  add(value);
+  elInput.value = '';
+  elInput.focus();
+});
+document.querySelectorAll('.chip').forEach(chip => {
+  chip.onclick = () => {
+    document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+    chip.classList.add('active');
+    filter = chip.dataset.filter;
+    render();
+  };
+});
+let toastTimer;
+function toast(msg){
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.style.opacity = 1; el.style.transform = 'translate(-50%,0)';
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { el.style.opacity = 0; el.style.transform = 'translate(-50%,40px)'; }, 2000);
+}
+$('#date').textContent = new Date().toLocaleDateString('id-ID', {weekday:'long', day:'numeric', month:'long'});
+load(); seedIfEmpty(); render();
+</script>
+</body>
+</html>

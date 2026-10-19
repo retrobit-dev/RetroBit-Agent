@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+<meta name="theme-color" content="#0B0B12" />
+<title>Lumen — Toko desain</title>
+<style id="rb-design">
+/*RB_DESIGN_START*/
+:root{
+  --rb-primary:#7C5CFF;--rb-accent:#39D0FF;--rb-bg:#0B0B12;--rb-surface:#15151F;
+  --rb-text:#F5F5FA;--rb-muted:#8C8CA1;--rb-radius:20px;
+  --rb-font:'Inter',system-ui,-apple-system,sans-serif;
+}
+/*RB_DESIGN_END*/
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:var(--rb-bg);color:var(--rb-text);font-family:var(--rb-font);padding-bottom:110px}
+.hero{padding:22px 20px 26px;background:radial-gradient(120% 90% at 50% -20%,color-mix(in srgb,var(--rb-primary) 30%,transparent),transparent 65%)}
+.nav{display:flex;justify-content:space-between;align-items:center;max-width:1060px;margin:0 auto 26px}
+.brand{display:flex;align-items:center;gap:9px;font-weight:750;font-size:17px;letter-spacing:-.02em}
+.dot-logo{width:26px;height:26px;border-radius:9px;background:linear-gradient(135deg,var(--rb-primary),var(--rb-accent))}
+.nav-actions{display:flex;gap:8px;align-items:center}
+.icon-btn{width:40px;height:40px;border-radius:12px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);color:var(--rb-text);font-size:16px;cursor:pointer;position:relative}
+.badge{position:absolute;top:-5px;right:-5px;min-width:18px;height:18px;border-radius:9px;background:var(--rb-accent);color:#04121A;font-size:10px;font-weight:800;display:grid;place-items:center;padding:0 4px}
+.hero-in{max-width:1060px;margin:0 auto}
+.hero h1{font-size:clamp(30px,7vw,48px);line-height:1.05;letter-spacing:-.04em;margin:0 0 12px;max-width:520px}
+.hero h1 em{font-style:normal;color:var(--rb-accent)}
+.hero p{margin:0;color:var(--rb-muted);font-size:14px;max-width:440px;line-height:1.6}
+.section{max-width:1060px;margin:0 auto;padding:0 20px}
+.cats{display:flex;gap:8px;overflow-x:auto;margin:6px 0 22px;scrollbar-width:none}
+.cats::-webkit-scrollbar{display:none}
+.cat{flex:none;border:1px solid rgba(255,255,255,.1);background:transparent;color:var(--rb-muted);font-family:inherit;font-weight:600;font-size:12.5px;padding:9px 16px;border-radius:999px;cursor:pointer;transition:.2s}
+.cat.active{background:var(--rb-text);color:var(--rb-bg);border-color:var(--rb-text)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:14px}
+.card{background:var(--rb-surface);border:1px solid rgba(255,255,255,.07);border-radius:var(--rb-radius);overflow:hidden;transition:.25s transform,.25s border-color}
+.card:hover{transform:translateY(-3px);border-color:color-mix(in srgb,var(--rb-primary) 45%,transparent)}
+.thumb{aspect-ratio:1/1;display:grid;place-items:center;font-size:44px;position:relative;overflow:hidden}
+.thumb::after{content:"";position:absolute;inset:0;background:radial-gradient(70% 60% at 30% 20%,rgba(255,255,255,.22),transparent)}
+.t1{background:linear-gradient(145deg,#FFB86B,#FF6B9D)}
+.t2{background:linear-gradient(145deg,#7C5CFF,#39D0FF)}
+.t3{background:linear-gradient(145deg,#22D3A5,#0EA5E9)}
+.t4{background:linear-gradient(145deg,#F472B6,#8B5CF6)}
+.t5{background:linear-gradient(145deg,#FDE68A,#F59E0B)}
+.t6{background:linear-gradient(145deg,#94A3B8,#334155)}
+.info{padding:13px 14px 14px}
+.name{font-size:13.5px;font-weight:600;margin:0 0 3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cat-label{font-size:10.5px;color:var(--rb-muted);margin:0 0 11px;text-transform:uppercase;letter-spacing:.08em}
+.row{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.price{font-size:13.5px;font-weight:750;letter-spacing:-.01em}
+.add{width:30px;height:30px;border-radius:9px;border:0;background:color-mix(in srgb,var(--rb-primary) 20%,transparent);color:var(--rb-accent);font-size:16px;cursor:pointer;transition:.2s}
+.add:hover{background:var(--rb-primary);color:#fff}
+.filters{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:14px}
+.filters h2{font-size:17px;margin:0;letter-spacing:-.01em}
+.filters span{font-size:11.5px;color:var(--rb-muted)}
+.sheet{position:fixed;left:0;right:0;bottom:0;background:color-mix(in srgb,var(--rb-surface) 96%,transparent);backdrop-filter:blur(24px);border-radius:24px 24px 0 0;border:1px solid rgba(255,255,255,.1);border-bottom:0;padding:20px 20px calc(20px + env(safe-area-inset-bottom));transform:translateY(105%);transition:.4s cubic-bezier(.2,.8,.2,1);z-index:30;max-height:80vh;overflow:auto}
+.sheet.open{transform:none}
+.sheet-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+.sheet-head b{font-size:16px}
+.close{background:rgba(255,255,255,.07);border:0;color:var(--rb-text);width:30px;height:30px;border-radius:9px;cursor:pointer}
+.cart-empty{text-align:center;color:var(--rb-muted);font-size:13px;padding:24px 0}
+.cart-item{display:flex;gap:12px;align-items:center;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.06)}
+.ci-thumb{width:44px;height:44px;border-radius:11px;display:grid;place-items:center;font-size:20px;flex:none}
+.ci-main{flex:1;min-width:0}
+.ci-main b{display:block;font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ci-main span{font-size:11.5px;color:var(--rb-muted)}
+.qty{display:flex;align-items:center;gap:8px;font-size:12.5px}
+.qty button{width:24px;height:24px;border-radius:7px;border:1px solid rgba(255,255,255,.12);background:none;color:var(--rb-text);cursor:pointer}
+.total{display:flex;justify-content:space-between;font-size:14px;font-weight:700;padding:16px 0 12px}
+.checkout{width:100%;border:0;padding:16px;border-radius:14px;background:linear-gradient(135deg,var(--rb-primary),var(--rb-accent));color:#fff;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;box-shadow:0 16px 36px -18px var(--rb-primary)}
+.checkout:active{transform:scale(.98)}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);opacity:0;pointer-events:none;transition:.3s;z-index:25}
+.overlay.show{opacity:1;pointer-events:auto}
+.toast{position:fixed;left:50%;top:18px;transform:translate(-50%,-80px);background:var(--rb-text);color:var(--rb-bg);padding:11px 18px;border-radius:11px;font-size:12.5px;font-weight:650;transition:.35s cubic-bezier(.2,.8,.2,1);z-index:40;white-space:nowrap;max-width:90vw;overflow:hidden;text-overflow:ellipsis}
+.toast.show{transform:translate(-50%,0)}
+@media (min-width:760px){ body{padding-bottom:0} .sheet{max-width:420px;left:auto;right:24px;bottom:24px;border-radius:22px;border-bottom:1px solid rgba(255,255,255,.1)} .overlay{display:none} }
+</style>
+</head>
+<body>
+<header class="hero">
+  <div class="nav">
+    <div class="brand"><div class="dot-logo"></div> Lumen</div>
+    <div class="nav-actions">
+      <button class="icon-btn" onclick="toast('Pencarian segera hadir')" aria-label="Cari">⌕</button>
+      <button class="icon-btn" onclick="openCart()" aria-label="Keranjang">🛍<span class="badge" id="badge">0</span></button>
+    </div>
+  </div>
+  <div class="hero-in">
+    <h1>Desain kecil, <em>dampak besar.</em></h1>
+    <p>Koleksi objek dan aset digital pilihan untuk mempercantik produkmu. Dikirim instan.</p>
+  </div>
+</header>
+
+<main class="section">
+  <div class="cats" id="cats"></div>
+  <div class="filters"><h2 id="cat-title">Semua produk</h2><span id="count"></span></div>
+  <div class="grid" id="grid"></div>
+</main>
+
+<div class="overlay" id="overlay" onclick="closeCart()"></div>
+<aside class="sheet" id="sheet" aria-label="Keranjang">
+  <div class="sheet-head"><b>Keranjang kamu</b><button class="close" onclick="closeCart()" aria-label="Tutup">✕</button></div>
+  <div id="cart-body"></div>
+</aside>
+<div class="toast" id="toast">Ditambahkan</div>
+
+<script>
+const PRODUCTS = [
+  {id:1,name:'Serum Kaca 30ml',cat:'Skincare',price:189000,emoji:'🧴',art:'t2'},
+  {id:2,name:'Lilin Aroma Senja',cat:'Home',price:145000,emoji:'🕯️',art:'t1'},
+  {id:3,name:'Pouch Kanvas',cat:'Aksesori',price:98000,emoji:'👝',art:'t3'},
+  {id:4,name:'Cetakan Kopi V60',cat:'Dapur',price:265000,emoji:'☕',art:'t5'},
+  {id:5,name:'Poster Bunga Kering',cat:'Seni',price:120000,emoji:'🌾',art:'t4'},
+  {id:6,name:'Kotak Perak Mini',cat:'Aksesori',price:210000,emoji:'📦',art:'t6'},
+  {id:7,name:'Sabun Oat',cat:'Skincare',price:65000,emoji:'🧼',art:'t3'},
+  {id:8,name:'Vas Keramik',cat:'Home',price:175000,emoji:'🏺',art:'t1'}
+];
+let cart = {};
+let activeCat = 'Semua';
+let catList = ['Semua', ...new Set(PRODUCTS.map(p => p.cat))];
+const rupiah = (n) => 'Rp' + n.toLocaleString('id-ID');
+const $ = (s) => document.querySelector(s);
+
+function renderCats(){
+  $('#cats').innerHTML = catList.map(c =>
+    `<button class="cat ${c===activeCat?'active':''}" data-cat="${c}">${c}</button>`
+  ).join('');
+  document.querySelectorAll('.cat').forEach(b => b.onclick = () => { activeCat = b.dataset.cat; renderCats(); renderGrid(); });
+}
+function renderGrid(){
+  const items = PRODUCTS.filter(p => activeCat === 'Semua' || p.cat === activeCat);
+  $('#cat-title').textContent = activeCat === 'Semua' ? 'Semua produk' : activeCat;
+  $('#count').textContent = items.length + ' item';
+  $('#grid').innerHTML = items.map(p => `
+    <article class="card">
+      <div class="thumb ${p.art}">${p.emoji}</div>
+      <div class="info">
+        <p class="name">${p.name}</p>
+        <p class="cat-label">${p.cat}</p>
+        <div class="row"><span class="price">${rupiah(p.price)}</span>
+          <button class="add" onclick="addToCart(${p.id})" aria-label="Tambah">+</button>
+        </div>
+      </div>
+    </article>`).join('');
+}
+function addToCart(id){
+  cart[id] = (cart[id] || 0) + 1;
+  renderCart();
+  const p = PRODUCTS.find(x => x.id === id);
+  showToast(p.name + ' masuk keranjang');
+}
+function changeQty(id, delta){
+  cart[id] = (cart[id] || 0) + delta;
+  if(cart[id] <= 0) delete cart[id];
+  renderCart();
+}
+function cartCount(){ return Object.values(cart).reduce((a,b)=>a+b,0); }
+function cartTotal(){
+  return Object.entries(cart).reduce((sum,[id,qty]) => sum + PRODUCTS.find(p => p.id === +id).price * qty, 0);
+}
+function renderCart(){
+  $('#badge').textContent = cartCount();
+  const entries = Object.entries(cart);
+  if(!entries.length){
+    $('#cart-body').innerHTML = `<div class="cart-empty">Keranjang masih kosong.<br/>Yuk pilih sesuatu yang cantik ✨</div>`;
+    return;
+  }
+  $('#cart-body').innerHTML = entries.map(([id,qty]) => {
+    const p = PRODUCTS.find(x => x.id === +id);
+    return `<div class="cart-item">
+      <div class="ci-thumb ${p.art}">${p.emoji}</div>
+      <div class="ci-main"><b>${p.name}</b><span>${rupiah(p.price)}</span></div>
+      <div class="qty"><button onclick="changeQty(${id},-1)">−</button>${qty}<button onclick="changeQty(${id},1)">+</button></div>
+    </div>`;
+  }).join('') + `<div class="total"><span>Total</span><span>${rupiah(cartTotal())}</span></div>
+    <button class="checkout" onclick="checkout()">Checkout · ${rupiah(cartTotal())}</button>`;
+}
+function openCart(){ $('#sheet').classList.add('open'); $('#overlay').classList.add('show'); }
+function closeCart(){ $('#sheet').classList.remove('open'); $('#overlay').classList.remove('show'); }
+function checkout(){
+  if(!cartCount()) return;
+  cart = {};
+  renderCart();
+  closeCart();
+  showToast('Pesanan diterima! Terima kasih 🎉');
+}
+let toastTimer;
+function showToast(msg){
+  const el = $('#toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2200);
+}
+renderCats(); renderGrid(); renderCart();
+</script>
+</body>
+</html>

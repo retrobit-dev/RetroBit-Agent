@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="theme-color" content="#0B0B12" />
+<title>Atelier — Karya pilihan</title>
+<style id="rb-design">
+/*RB_DESIGN_START*/
+:root{
+  --rb-primary:#7C5CFF;--rb-accent:#39D0FF;--rb-bg:#0B0B12;--rb-surface:#15151F;
+  --rb-text:#F5F5FA;--rb-muted:#8C8CA1;--rb-radius:20px;
+  --rb-font:'Inter',system-ui,-apple-system,sans-serif;
+}
+/*RB_DESIGN_END*/
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--rb-bg);color:var(--rb-text);font-family:var(--rb-font);-webkit-font-smoothing:antialiased}
+a{color:inherit;text-decoration:none}
+.wrap{width:min(1080px,90%);margin:0 auto}
+header{border-bottom:1px solid color-mix(in srgb,var(--rb-text) 12%,transparent)}
+nav{display:flex;align-items:center;justify-content:space-between;padding:22px 0}
+.brand{font-weight:800;letter-spacing:-.03em;font-size:18px}
+.brand sup{color:var(--rb-accent);font-size:9px;margin-left:2px}
+.links{display:flex;gap:26px;font-size:12.5px;color:var(--rb-muted);letter-spacing:.02em}
+.links a{transition:.2s color}.links a:hover{color:var(--rb-text)}
+.hero{padding:clamp(56px,10vw,110px) 0 clamp(40px,7vw,70px)}
+.eyebrow{font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--rb-muted);margin-bottom:26px;display:flex;align-items:center;gap:12px}
+.eyebrow::before{content:"";width:34px;height:1px;background:var(--rb-accent)}
+h1{font-size:clamp(42px,9vw,88px);line-height:.98;letter-spacing:-.05em;margin:0 0 30px;font-weight:800;max-width:900px}
+h1 em{font-style:italic;font-weight:400;color:var(--rb-accent)}
+.hero-foot{display:flex;justify-content:space-between;align-items:flex-end;gap:30px;flex-wrap:wrap}
+.lede{max-width:420px;font-size:14.5px;line-height:1.7;color:var(--rb-muted);margin:0}
+.cta{display:inline-flex;align-items:center;gap:10px;font-size:13px;font-weight:650;border-bottom:1px solid var(--rb-text);padding-bottom:5px;transition:.2s gap}
+.cta:hover{gap:16px}
+.work{padding:20px 0 clamp(60px,9vw,100px)}
+.section-label{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:26px;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--rb-muted)}
+.grid{display:grid;grid-template-columns:repeat(12,1fr);gap:18px}
+.project{position:relative;border-radius:var(--rb-radius);overflow:hidden;border:1px solid color-mix(in srgb,var(--rb-text) 10%,transparent);min-height:280px;display:flex;flex-direction:column;justify-content:flex-end;padding:24px;cursor:pointer;transition:.4s transform,.4s border-color}
+.project:hover{transform:translateY(-4px);border-color:color-mix(in srgb,var(--rb-primary) 50%,transparent)}
+.project.wide{grid-column:span 7}
+.project.narrow{grid-column:span 5}
+.project.full{grid-column:span 12;min-height:340px}
+.p-bg{position:absolute;inset:0;z-index:-1}
+.p1{background:linear-gradient(135deg,#2B1B69,#7C5CFF 60%,#39D0FF)}
+.p2{background:linear-gradient(135deg,#4A1D2E,#FF6B9D 60%,#FFB86B)}
+.p3{background:linear-gradient(135deg,#0C332B,#22D3A5 60%,#67E8F9)}
+.p4{background:linear-gradient(135deg,#1F2430,#64748B 60%,#CBD5E1)}
+.p-bg::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,transparent 30%,rgba(0,0,0,.65));opacity:.85}
+.p-tag{position:absolute;top:20px;left:20px;font-size:10px;letter-spacing:.14em;text-transform:uppercase;background:rgba(0,0,0,.3);backdrop-filter:blur(8px);padding:6px 11px;border-radius:999px;border:1px solid rgba(255,255,255,.2);color:#fff}
+.project h3{margin:0 0 8px;font-size:clamp(20px,3vw,30px);letter-spacing:-.03em;color:#fff;line-height:1.05}
+.project p{margin:0;font-size:12px;color:rgba(255,255,255,.7);max-width:420px;line-height:1.5}
+.project .arrow{position:absolute;right:22px;bottom:22px;width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,.15);backdrop-filter:blur(8px);display:grid;place-items:center;color:#fff;font-size:15px;transition:.3s transform}
+.project:hover .arrow{transform:translate(3px,-3px)}
+.about{border-top:1px solid color-mix(in srgb,var(--rb-text) 12%,transparent);padding:clamp(50px,8vw,80px) 0}
+.about-grid{display:grid;grid-template-columns:1fr 1fr;gap:40px;align-items:start}
+.about h2{font-size:clamp(26px,4vw,40px);letter-spacing:-.04em;margin:0;line-height:1.15}
+.about p{color:var(--rb-muted);font-size:14px;line-height:1.8;margin:0 0 18px}
+.skills{display:flex;flex-wrap:wrap;gap:7px;margin-top:22px}
+.skills span{font-size:11px;border:1px solid color-mix(in srgb,var(--rb-text) 18%,transparent);padding:6px 12px;border-radius:999px;color:var(--rb-muted)}
+.contact{padding:clamp(50px,8vw,80px) 0;text-align:center;border-top:1px solid color-mix(in srgb,var(--rb-text) 12%,transparent)}
+.contact h2{font-size:clamp(30px,6vw,56px);letter-spacing:-.045em;margin:0 0 22px;line-height:1.02}
+.contact h2 em{font-style:italic;font-weight:400;color:var(--rb-accent)}
+.mail{font-size:clamp(14px,2.4vw,18px);border-bottom:1px solid color-mix(in srgb,var(--rb-text) 40%,transparent);padding-bottom:5px;user-select:all}
+footer{border-top:1px solid color-mix(in srgb,var(--rb-text) 12%,transparent);padding:24px 0;font-size:11px;color:var(--rb-muted);display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap}
+.reveal{opacity:0;transform:translateY(16px);transition:.8s cubic-bezier(.2,.7,.2,1)}
+.reveal.in{opacity:1;transform:none}
+.toast{position:fixed;left:50%;top:18px;transform:translate(-50%,-80px);background:var(--rb-text);color:var(--rb-bg);padding:11px 18px;border-radius:11px;font-size:12px;font-weight:650;transition:.35s;z-index:20}
+.toast.show{transform:translate(-50%,0)}
+@media (max-width:760px){
+  .links{display:none}
+  .grid{grid-template-columns:1fr;gap:14px}
+  .project.wide,.project.narrow,.project.full{grid-column:span 1;min-height:240px}
+  .about-grid{grid-template-columns:1fr;gap:22px}
+  .hero-foot{flex-direction:column;align-items:flex-start;gap:22px}
+}
+</style>
+</head>
+<body>
+<header><div class="wrap"><nav>
+  <div class="brand">atelier<sup>®</sup></div>
+  <div class="links"><a href="#karya">Karya</a><a href="#tentang">Tentang</a><a href="#kontak">Kontak</a></div>
+</nav></div></header>
+
+<main>
+  <section class="hero"><div class="wrap">
+    <div class="eyebrow reveal">Studio desain produk · Jakarta</div>
+    <h1 class="reveal">Membangun produk digital yang <em>terasa manusiawi.</em></h1>
+    <div class="hero-foot reveal">
+      <p class="lede">Saya Ayu, desainer produk yang membantu tim mengubah ide rumit menjadi antarmuka yang jernih dan menyenangkan.</p>
+      <a class="cta" href="#karya">Lihat karya pilihan <span>→</span></a>
+    </div>
+  </div></section>
+
+  <section class="work wrap" id="karya">
+    <div class="section-label"><span>Karya pilihan</span><span>2024 — 2026</span></div>
+    <div class="grid">
+      <article class="project wide reveal" onclick="openProject('Nimbus')">
+        <div class="p-bg p1"></div>
+        <div class="p-tag">SaaS Platform</div>
+        <h3>Nimbus</h3>
+        <p>Workspace AI untuk tim produk. Dari dashboard hingga onboarding, dirancang dalam 6 minggu.</p>
+        <div class="arrow">↗</div>
+      </article>
+      <article class="project narrow reveal" onclick="openProject('Lumen')">
+        <div class="p-bg p2"></div>
+        <div class="p-tag">E-commerce</div>
+        <h3>Lumen</h3>
+        <p>Toko objek desain dengan pengalaman checkout satu layar.</p>
+        <div class="arrow">↗</div>
+      </article>
+      <article class="project narrow reveal" onclick="openProject('Pulse')">
+        <div class="p-bg p3"></div>
+        <div class="p-tag">Health App</div>
+        <h3>Pulse</h3>
+        <p>Pelacak kebiasaan yang terasa lembut, bukan menghakimi.</p>
+        <div class="arrow">↗</div>
+      </article>
+      <article class="project wide reveal" onclick="openProject('Relay')">
+        <div class="p-bg p4"></div>
+        <div class="p-tag">Design System</div>
+        <h3>Relay</h3>
+        <p>Sistem desain lintas platform dengan 240 komponen dan dokumentasi hidup.</p>
+        <div class="arrow">↗</div>
+      </article>
+    </div>
+  </section>
+
+  <section class="about" id="tentang"><div class="wrap about-grid">
+    <h2 class="reveal">Kepada detail,<br/>dengan rasa ingin tahu.</h2>
+    <div class="reveal">
+      <p>Saya percaya produk terbaik lahir dari pemahaman yang dalam tentang orang yang memakainya. Selama 8 tahun terakhir, saya bekerja dengan startup tahap awal hingga perusahaan publik.</p>
+      <p>Pendekatan saya: riset singkat, prototipe cepat, lalu iterasi bersama tim engineering sampai setiap piksel terasa tepat.</p>
+      <div class="skills"><span>Product Design</span><span>Design Systems</span><span>Prototyping</span><span>User Research</span><span>Motion</span></div>
+    </div>
+  </div></section>
+
+  <section class="contact" id="kontak"><div class="wrap reveal">
+    <h2>Punya proyek?<br/><em>Mari bicara.</em></h2>
+    <a class="mail" href="mailto:halo@atelier.id">halo@atelier.id</a>
+  </div></section>
+</main>
+
+<footer class="wrap"><span>© 2026 Atelier Studio</span><span>Dibuat dengan RetroBit</span></footer>
+<div class="toast" id="toast">Halo</div>
+
+<script>
+const io = new IntersectionObserver((entries) => {
+  entries.forEach(e => { if(e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target); } });
+}, {threshold:.12});
+document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+
+let timer;
+function openProject(name){
+  const el = document.getElementById('toast');
+  el.textContent = 'Membuka studi kasus ' + name + '…';
+  el.classList.add('show');
+  clearTimeout(timer);
+  timer = setTimeout(() => el.classList.remove('show'), 2200);
+}
+</script>
+</body>
+</html>
