@@ -344,7 +344,7 @@ private fun SecretDialog(
                         IconButton(onClick = { visible = !visible }) {
                             Icon(
                                 if (visible) PixelIcons.EyeOff else PixelIcons.Eye,
-                                null,
+                                if (visible) "Sembunyikan nilai" else "Tampilkan nilai",
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.size(17.dp),
                             )

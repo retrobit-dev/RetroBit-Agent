@@ -42,6 +42,42 @@ jobs:
           fi
           echo "ANDROID_HOME=$ANDROID_HOME"
 
+      - name: Unit tests
+        run: |
+          set -o pipefail
+          chmod +x ./gradlew
+          ./gradlew --no-daemon --console=plain testDebugUnitTest 2>&1 | tee test.log
+
+      - name: Annotate failing unit tests
+        if: failure()
+        run: |
+          python3 - <<'PY'
+          import pathlib, re, sys, xml.etree.ElementTree as ET
+
+          reports = list(pathlib.Path("app/build/test-results/testDebugUnitTest").glob("*.xml"))
+          if not reports:
+              sys.exit(0)
+          failed = 0
+          for report in reports:
+              try:
+                  root = ET.parse(report).getroot()
+              except Exception:
+                  continue
+              for case in root.iter("testcase"):
+                  problem = case.find("failure")
+                  if problem is None:
+                      problem = case.find("error")
+                  if problem is None:
+                      continue
+                  failed += 1
+                  name = f"{case.get('classname')}.{case.get('name')}"
+                  detail = (problem.get("message") or problem.text or "").strip()
+                  detail = detail.replace("%", "%25").replace("\r", "").replace("\n", "%0A")
+                  print(f"::error title=Test failed::{name}%0A{detail[:3000]}")
+          if failed == 0:
+              print("::error title=Tests::Gradle gagal tetapi tidak ada laporan test; lihat test.log.")
+          PY
+
       - name: Build release APK (signed)
         run: |
           set -o pipefail
