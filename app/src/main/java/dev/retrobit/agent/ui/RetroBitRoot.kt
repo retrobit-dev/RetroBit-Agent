@@ -366,7 +366,7 @@ private fun SidebarItem(
             .padding(horizontal = 10.dp, vertical = 11.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Icon(icon, null, tint = if (selected) colors.onSurface else colors.onSurfaceVariant, modifier = Modifier.size(16.dp))
+        Icon(icon, null, tint = if (selected) colors.onSurface else colors.onSurfaceVariant, modifier = Modifier.size(18.dp))
         Spacer(Modifier.width(10.dp))
         Text(
             label,
@@ -464,7 +464,7 @@ private fun RetroBottomBar(current: String, onNavigate: (String) -> Unit) {
                                 destination.icon,
                                 contentDescription = destination.label,
                                 tint = if (selected) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.size(18.dp),
+                                modifier = Modifier.size(20.dp),
                             )
                         }
                         Spacer(Modifier.height(2.dp))

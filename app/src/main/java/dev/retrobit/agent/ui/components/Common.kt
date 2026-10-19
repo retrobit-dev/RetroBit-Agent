@@ -322,7 +322,7 @@ fun toolVisual(tool: String): ToolVisual = when (tool) {
     "inspect_database" -> ToolVisual(PixelIcons.Database, Palette.Accent)
     "request_secret" -> ToolVisual(PixelIcons.Key, Palette.Warning)
     "plan" -> ToolVisual(PixelIcons.Sparkles, Palette.Primary)
-    "verify" -> ToolVisual(PixelIcons.CheckDouble, Palette.Success)
+    "verify" -> ToolVisual(PixelIcons.Check, Palette.Success)
     else -> ToolVisual(PixelIcons.Sparkles, Palette.Muted)
 }
 

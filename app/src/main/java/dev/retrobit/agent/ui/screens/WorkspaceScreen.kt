@@ -193,7 +193,7 @@ fun WorkspaceScreen(vm: WorkspaceViewModel, onBack: () -> Unit) {
                     )
                     DropdownMenuItem(
                         text = { Text(if (lan.running) "Preview LAN aktif" else "Preview via LAN") },
-                        leadingIcon = { Icon(PixelIcons.Globe, null, modifier = Modifier.size(17.dp)) },
+                        leadingIcon = { Icon(PixelIcons.Wifi, null, modifier = Modifier.size(17.dp)) },
                         onClick = { menuOpen = false; lanOpen = true },
                     )
                     DropdownMenuItem(
@@ -264,14 +264,14 @@ fun WorkspaceScreen(vm: WorkspaceViewModel, onBack: () -> Unit) {
                             RoundedCornerShape(3.dp),
                         )
                         .clickable { tab = item }
-                        .padding(horizontal = 9.dp, vertical = 8.dp),
+                        .padding(horizontal = 9.dp, vertical = 7.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Icon(
                         item.icon,
                         contentDescription = null,
                         tint = if (selected) Palette.Accent else MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(14.dp),
+                        modifier = Modifier.size(16.dp),
                     )
                     Spacer(Modifier.width(5.dp))
                     Text(
@@ -527,7 +527,7 @@ private fun LanSheet(
                         .background(Palette.Accent.copy(alpha = 0.12f)),
                     contentAlignment = Alignment.Center,
                 ) {
-                    Icon(PixelIcons.Globe, null, tint = Palette.Accent, modifier = Modifier.size(18.dp))
+                    Icon(PixelIcons.Wifi, null, tint = Palette.Accent, modifier = Modifier.size(18.dp))
                 }
                 Spacer(Modifier.width(10.dp))
                 Column(Modifier.weight(1f)) {

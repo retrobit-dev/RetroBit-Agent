@@ -347,7 +347,7 @@ fun PreviewToolbar(
         }
         if (onOpenExternal != null) {
             IconButton(onClick = onOpenExternal, modifier = Modifier.size(34.dp)) {
-                Icon(PixelIcons.ExternalLink, contentDescription = "Buka di browser", tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(18.dp))
+                Icon(PixelIcons.Browser, contentDescription = "Buka di browser", tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(18.dp))
             }
         }
     }

@@ -197,7 +197,7 @@ fun ProjectsScreen(
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     PlatformChip("iPhone", PixelIcons.Apple, platform == "iphone") { platform = "iphone" }
                     PlatformChip("Android", PixelIcons.Android, platform == "android") { platform = "android" }
-                    PlatformChip("Web", PixelIcons.Globe, platform == "web") { platform = "web" }
+                    PlatformChip("Web", PixelIcons.Browser, platform == "web") { platform = "web" }
                 }
                 Spacer(Modifier.height(7.dp))
                 Text(
@@ -406,7 +406,7 @@ private fun PlatformChip(label: String, icon: androidx.compose.ui.graphics.vecto
             .padding(horizontal = 10.dp, vertical = 7.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Icon(icon, null, tint = if (active) colors.onPrimary else colors.onSurfaceVariant, modifier = Modifier.size(13.dp))
+        Icon(icon, null, tint = if (active) colors.onPrimary else colors.onSurfaceVariant, modifier = Modifier.size(15.dp))
         Spacer(Modifier.width(6.dp))
         Text(
             label,

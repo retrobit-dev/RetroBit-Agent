@@ -66,7 +66,7 @@ private data class Suggestion(
 private val starterSuggestions = listOf(
     Suggestion(PixelIcons.Layout, "Landing page produk", "Buat landing page untuk brand kopi lokal bernama Kopi Senja. Gunakan tema gelap yang hangat."),
     Suggestion(PixelIcons.Grid, "Toko online", "Buat toko online sederhana dengan katalog produk, keranjang, dan checkout."),
-    Suggestion(PixelIcons.CheckDouble, "Aplikasi tugas", "Buat aplikasi daftar tugas dengan filter, prioritas, dan penyimpanan data."),
+    Suggestion(PixelIcons.Check, "Aplikasi tugas", "Buat aplikasi daftar tugas dengan filter, prioritas, dan penyimpanan data."),
     Suggestion(PixelIcons.Palette, "Ubah tema", "Ubah tema aplikasi jadi lebih terang dan elegan dengan aksen emas."),
 )
 
@@ -434,7 +434,7 @@ private fun StepRow(step: AgentStep, isLast: Boolean, running: Boolean) {
                         strokeWidth = 1.4.dp,
                     )
                 } else {
-                    Icon(visual.icon, contentDescription = null, tint = visual.tint, modifier = Modifier.size(12.dp))
+                    Icon(visual.icon, contentDescription = null, tint = visual.tint, modifier = Modifier.size(14.dp))
                 }
             }
             if (!isLast) {

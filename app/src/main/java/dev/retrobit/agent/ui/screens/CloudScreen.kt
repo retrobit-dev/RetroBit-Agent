@@ -583,7 +583,7 @@ private fun ResultBanner(ok: Boolean, message: String) {
         verticalAlignment = Alignment.Top,
     ) {
         Icon(
-            if (ok) PixelIcons.CheckDouble else PixelIcons.Warning,
+            if (ok) PixelIcons.Check else PixelIcons.Warning,
             contentDescription = null,
             tint = tint,
             modifier = Modifier.size(15.dp),
