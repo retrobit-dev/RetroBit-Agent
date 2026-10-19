@@ -66,8 +66,22 @@ grep -q "FATAL EXCEPTION" artifacts/crash.log && CRASH=1
 log "install=$INSTALL launch=$LAUNCH foreground=$FOREGROUND crash=$CRASH"
 
 if [ "$INSTALL" -ne 0 ] || [ "$LAUNCH" -ne 0 ] || [ "$FOREGROUND" -ne 1 ] || [ "$CRASH" -ne 0 ]; then
-  log "== result: FAIL =="
+  log "== result: FAIL (basic) =="
   exit 1
 fi
+log "== basic: OK =="
+
+# ------------------------------------------------------------- deep UI walk
+if [ "${RUN_UI_WALK:-1}" = "1" ]; then
+  log "== ui walk =="
+  if bash scripts/ui-walk.sh; then
+    log "ui_walk=ok"
+  else
+    log "ui_walk=failed"
+    log "== result: FAIL (ui) =="
+    exit 1
+  fi
+fi
+
 log "== result: OK =="
 exit 0
