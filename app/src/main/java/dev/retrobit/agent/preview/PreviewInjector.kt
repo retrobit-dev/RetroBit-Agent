@@ -87,7 +87,7 @@ object PreviewInjector {
                 if (!el) {
                   el = document.createElement('div');
                   el.id = '__rb_toast';
-                  el.style.cssText = 'position:fixed;left:50%;bottom:24px;transform:translate(-50%,16px);font-size:13px;font-weight:600;padding:11px 18px;border-radius:12px;border:1px solid rgba(255,255,255,.14);box-shadow:0 18px 40px -18px #000;z-index:2147483647;opacity:0;transition:.3s;pointer-events:none;max-width:86vw;text-align:center;';
+                  el.style.cssText = 'position:fixed;left:50%;bottom:24px;transform:translate(-50%,16px);font-size:13px;font-weight:600;padding:10px 16px;border-radius:2px;border:1px solid rgba(255,255,255,.28);box-shadow:0 12px 30px -16px #000;letter-spacing:.02em;z-index:2147483647;opacity:0;transition:.3s;pointer-events:none;max-width:86vw;text-align:center;';
                   el.style.background = rbBg;
                   el.style.color = rbText;
                   el.style.fontFamily = rbFont;

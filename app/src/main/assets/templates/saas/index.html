@@ -3,16 +3,23 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<meta name="theme-color" content="#0B0B12" />
+<meta name="theme-color" content="#0A0A0A" />
 <title>Nimbus — Ship faster</title>
 <style id="rb-design">
 /*RB_DESIGN_START*/
 :root{
-  --rb-primary:#7C5CFF;--rb-accent:#39D0FF;--rb-bg:#0B0B12;--rb-surface:#15151F;
-  --rb-text:#F5F5FA;--rb-muted:#8C8CA1;--rb-radius:20px;
-  --rb-font:'Inter',system-ui,-apple-system,sans-serif;
+  --rb-primary:#DEDED5;
+  --rb-accent:#F4F4EC;
+  --rb-bg:#0A0A0A;
+  --rb-surface:#141413;
+  --rb-text:#EAEAE2;
+  --rb-muted:#8E8E86;
+  --rb-radius:4px;
+  --rb-font:'Pixel Operator',ui-monospace,'Courier New',monospace;
 }
 /*RB_DESIGN_END*/
+@font-face{font-family:'Pixel Operator';src:url('assets/fonts/PixelOperator.ttf') format('truetype');font-weight:400;font-display:swap}
+@font-face{font-family:'Pixel Operator';src:url('assets/fonts/PixelOperator-Bold.ttf') format('truetype');font-weight:700;font-display:swap}
 *{box-sizing:border-box}
 html{scroll-behavior:smooth}
 body{margin:0;background:var(--rb-bg);color:var(--rb-text);font-family:var(--rb-font);-webkit-font-smoothing:antialiased}
@@ -43,7 +50,7 @@ h1 span{background:linear-gradient(120deg,var(--rb-primary),var(--rb-accent));-w
 .hero-actions{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
 .trust{margin-top:22px;font-size:12.5px;color:var(--rb-muted)}
 .app-shot{margin:56px auto 0;max-width:920px;border-radius:var(--rb-radius);border:1px solid rgba(255,255,255,.1);background:linear-gradient(180deg,rgba(255,255,255,.08),rgba(255,255,255,.02));padding:10px;box-shadow:0 60px 120px -50px #000}
-.shot-inner{border-radius:calc(var(--rb-radius) - 6px);overflow:hidden;background:#0D0D15;border:1px solid rgba(255,255,255,.06)}
+.shot-inner{border-radius:calc(var(--rb-radius) - 6px);overflow:hidden;background:#121212;border:1px solid rgba(255,255,255,.06)}
 .shot-bar{display:flex;gap:6px;padding:11px 14px;border-bottom:1px solid rgba(255,255,255,.06);align-items:center}
 .shot-bar i{width:9px;height:9px;border-radius:50%;background:rgba(255,255,255,.16)}
 .shot-bar em{margin-left:10px;font-style:normal;font-size:11px;color:var(--rb-muted)}
@@ -96,6 +103,9 @@ footer{border-top:1px solid rgba(255,255,255,.07);padding:34px 0;color:var(--rb-
   .shot-side{display:none}
   .hero{padding-top:48px}
 }
+
+/* retro cyberdeck: kill soft glows, snap radii to the token */
+.glow{display:none!important}
 </style>
 </head>
 <body>

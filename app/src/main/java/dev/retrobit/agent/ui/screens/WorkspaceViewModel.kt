@@ -59,6 +59,7 @@ data class LanState(
 class WorkspaceViewModel(
     private val container: AppContainer,
     val projectId: String,
+    private val initialPrompt: String? = null,
 ) : ViewModel() {
 
     private val repo = container.repository
@@ -70,6 +71,9 @@ class WorkspaceViewModel(
     val config = settings.config
     val autoPreview = settings.autoPreviewFlow
     val filesRoot: File get() = repo.filesFor(projectId).root
+
+    /** Current global persona, used as the draft when a chat has no override yet. */
+    fun settingsPrompt(): String = settings.systemPrompt
 
     private val _messages = MutableStateFlow<List<ChatMessage>>(emptyList())
     val messages: StateFlow<List<ChatMessage>> = _messages.asStateFlow()
@@ -140,6 +144,9 @@ class WorkspaceViewModel(
             val loaded = repo.project(projectId)
             if (loaded != null && !designDirty) _design.value = loaded.design
             _messages.value = repo.loadThread(projectId)
+            if (!initialPrompt.isNullOrBlank() && _messages.value.isEmpty()) {
+                send(initialPrompt)
+            }
             refreshFiles()
             refreshDb()
             refreshSecrets()
@@ -174,19 +181,23 @@ class WorkspaceViewModel(
         _live.value = LiveAgentState(running = true, startedAt = System.currentTimeMillis())
         agentJob = viewModelScope.launch {
             try {
-                val result = container.engine.run(currentProject, text, prior) { event ->
-                    when (event) {
-                        is AgentEvent.StepStarted -> _live.update { state ->
-                            if (state.steps.any { it.id == event.step.id }) state
-                            else state.copy(steps = state.steps + event.step)
+                // Whole agent loop (file snapshots, tool IO, SQLite, network) runs off
+                // the main thread; UI state is published through StateFlow updates.
+                val result = withContext(Dispatchers.IO) {
+                    container.engine.run(currentProject, text, prior) { event ->
+                        when (event) {
+                            is AgentEvent.StepStarted -> _live.update { state ->
+                                if (state.steps.any { it.id == event.step.id }) state
+                                else state.copy(steps = state.steps + event.step)
+                            }
+                            is AgentEvent.StepFinished -> _live.update { state ->
+                                state.copy(steps = state.steps.map { if (it.id == event.step.id) event.step else it })
+                            }
+                            is AgentEvent.AssistantText -> _live.update { state ->
+                                state.copy(text = if (state.text.isBlank()) event.text else state.text + "\n\n" + event.text)
+                            }
+                            is AgentEvent.Notice -> _live.update { it.copy(notice = event.text) }
                         }
-                        is AgentEvent.StepFinished -> _live.update { state ->
-                            state.copy(steps = state.steps.map { if (it.id == event.step.id) event.step else it })
-                        }
-                        is AgentEvent.AssistantText -> _live.update { state ->
-                            state.copy(text = if (state.text.isBlank()) event.text else state.text + "\n\n" + event.text)
-                        }
-                        is AgentEvent.Notice -> _live.update { it.copy(notice = event.text) }
                     }
                 }
                 _messages.update { it + result }
@@ -221,6 +232,15 @@ class WorkspaceViewModel(
 
     fun stopAgent() {
         agentJob?.cancel()
+    }
+
+    /** Pass null to make the chat follow the global default again. */
+    fun saveSystemPrompt(text: String?) {
+        val current = project.value ?: return
+        val clean = text?.trim()?.takeIf { it.isNotBlank() }
+        viewModelScope.launch(Dispatchers.IO) {
+            repo.update(current.copy(systemPrompt = clean), touch = false)
+        }
     }
 
     fun restoreLatestSnapshot() {
@@ -353,7 +373,8 @@ class WorkspaceViewModel(
         if (sql.isBlank() || _queryRunning.value) return
         _queryRunning.value = true
         viewModelScope.launch(Dispatchers.IO) {
-            val result = database.run(sql)
+            val result = runCatching { database.run(sql) }
+                .getOrElse { failure -> QueryResult(error = failure.message ?: "Query gagal dijalankan") }
             withContext(Dispatchers.Main) {
                 _queryResult.value = result
                 _queryRunning.value = false
@@ -400,23 +421,32 @@ class WorkspaceViewModel(
     }
 
     fun refreshSecrets() {
-        val entries = secrets.secrets()
-        _secretEntries.value = entries
-        _secretRequests.value = secrets.requests()
-        _exposedSecrets.value = entries.filter { it.exposeToPreview }.associate { it.key to it.value }
+        viewModelScope.launch(Dispatchers.IO) {
+            val entries = runCatching { secrets.secrets() }.getOrElse { emptyList() }
+            val requests = runCatching { secrets.requests() }.getOrElse { emptyList() }
+            withContext(Dispatchers.Main) {
+                _secretEntries.value = entries
+                _secretRequests.value = requests
+                _exposedSecrets.value = entries.filter { it.exposeToPreview }.associate { it.key to it.value }
+            }
+        }
     }
 
     fun saveSecret(key: String, value: String, note: String, expose: Boolean) {
         val clean = key.trim().uppercase().replace(Regex("[^A-Z0-9_]"), "_")
         if (clean.isBlank() || value.isBlank()) return
-        secrets.put(SecretEntry(clean, value, note.trim(), expose))
-        secrets.removeRequest(clean)
-        refreshSecrets()
+        viewModelScope.launch(Dispatchers.IO) {
+            secrets.put(SecretEntry(clean, value, note.trim(), expose))
+            secrets.removeRequest(clean)
+            refreshSecrets()
+        }
     }
 
     fun deleteSecret(key: String) {
-        secrets.remove(key)
-        refreshSecrets()
+        viewModelScope.launch(Dispatchers.IO) {
+            secrets.remove(key)
+            refreshSecrets()
+        }
     }
 
     fun addConsole(entry: ConsoleEntry) {
@@ -435,18 +465,23 @@ class WorkspaceViewModel(
             return
         }
         val port = settings.lanPort
-        val server = LanPreviewServer(files, port) { path, _ ->
-            _lan.update { it.copy(hits = it.hits + 1, lastPath = path) }
+        viewModelScope.launch(Dispatchers.IO) {
+            val server = LanPreviewServer(files, port) { path, _ ->
+                _lan.update { it.copy(hits = it.hits + 1, lastPath = path) }
+            }
+            val started = server.start()
+            withContext(Dispatchers.Main) {
+                started.fold(
+                    onSuccess = { url ->
+                        lanServer = server
+                        _lan.value = LanState(running = true, url = url)
+                    },
+                    onFailure = { error ->
+                        _lan.value = LanState(error = "Tidak bisa membuka port $port: ${error.message}")
+                    },
+                )
+            }
         }
-        server.start().fold(
-            onSuccess = { url ->
-                lanServer = server
-                _lan.value = LanState(running = true, url = url)
-            },
-            onFailure = { error ->
-                _lan.value = LanState(error = "Tidak bisa membuka port $port: ${error.message}")
-            },
-        )
     }
 
     fun dismissLanError() {

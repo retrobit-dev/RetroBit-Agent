@@ -18,8 +18,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -47,6 +45,8 @@ import dev.retrobit.agent.ui.components.GradientButton
 import dev.retrobit.agent.ui.components.Pill
 import dev.retrobit.agent.ui.theme.MonoFont
 import dev.retrobit.agent.ui.theme.Palette
+import dev.retrobit.agent.ui.theme.PixelFont
+import dev.retrobit.agent.ui.icons.PixelIcons
 
 private data class TokenTarget(val label: String, val value: String, val apply: (String) -> Unit)
 
@@ -100,12 +100,12 @@ fun DesignPane(vm: WorkspaceViewModel, modifier: Modifier = Modifier) {
                         Column(
                             Modifier
                                 .weight(1f)
-                                .clip(RoundedCornerShape(12.dp))
+                                .clip(RoundedCornerShape(4.dp))
                                 .background(if (selected) Palette.Primary.copy(alpha = 0.1f) else MaterialTheme.colorScheme.surface.copy(alpha = 0.5f))
                                 .border(
                                     1.dp,
                                     if (selected) Palette.Primary.copy(alpha = 0.6f) else MaterialTheme.colorScheme.outlineVariant,
-                                    RoundedCornerShape(12.dp),
+                                    RoundedCornerShape(4.dp),
                                 )
                                 .clickable { vm.applyPreset(preset) }
                                 .padding(10.dp)
@@ -140,9 +140,9 @@ fun DesignPane(vm: WorkspaceViewModel, modifier: Modifier = Modifier) {
         Column(
             Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(16.dp))
+                .clip(RoundedCornerShape(5.dp))
                 .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.55f))
-                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(16.dp))
+                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(5.dp))
         ) {
             val tokens = listOf(
                 TokenTarget("Primary", design.primary) { vm.updateDesign { d -> d.copy(primary = it) } },
@@ -165,7 +165,7 @@ fun DesignPane(vm: WorkspaceViewModel, modifier: Modifier = Modifier) {
                             .size(22.dp)
                             .clip(CircleShape)
                             .background(parseColor(token.value, Palette.Primary))
-                            .border(1.dp, Color.White.copy(alpha = 0.18f), CircleShape)
+                            .border(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.18f), CircleShape)
                     )
                     Spacer(Modifier.width(11.dp))
                     Text(token.label, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurface)
@@ -197,9 +197,9 @@ fun DesignPane(vm: WorkspaceViewModel, modifier: Modifier = Modifier) {
         Column(
             Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(16.dp))
+                .clip(RoundedCornerShape(5.dp))
                 .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.55f))
-                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(16.dp))
+                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(5.dp))
                 .padding(14.dp)
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -210,7 +210,7 @@ fun DesignPane(vm: WorkspaceViewModel, modifier: Modifier = Modifier) {
             Slider(
                 value = design.radius.toFloat(),
                 onValueChange = { vm.updateDesign { d -> d.copy(radius = it.toInt()) } },
-                valueRange = 0f..40f,
+                valueRange = 0f..12f,
                 colors = SliderDefaults.colors(
                     thumbColor = Palette.Accent,
                     activeTrackColor = Palette.Primary,
@@ -221,18 +221,18 @@ fun DesignPane(vm: WorkspaceViewModel, modifier: Modifier = Modifier) {
             Text("Font", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurface)
             Spacer(Modifier.height(8.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                listOf("Inter", "Manrope", "JetBrains Mono", "Georgia").forEach { font ->
+                listOf("Pixel Operator", "Pixel Operator Wide", "Mono", "Serif").forEach { font ->
                     val active = design.font == font
                     Box(
                         Modifier
-                            .clip(RoundedCornerShape(9.dp))
+                            .clip(RoundedCornerShape(3.dp))
                             .background(if (active) Palette.Primary.copy(alpha = 0.16f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f))
-                            .border(1.dp, if (active) Palette.Primary.copy(alpha = 0.6f) else Color.Transparent, RoundedCornerShape(9.dp))
+                            .border(1.dp, if (active) Palette.Primary.copy(alpha = 0.6f) else Color.Transparent, RoundedCornerShape(3.dp))
                             .clickable { vm.updateDesign { d -> d.copy(font = font) } }
                             .padding(horizontal = 10.dp, vertical = 7.dp)
                     ) {
                         Text(
-                            font.substringBefore(' '),
+                            font.removePrefix("Pixel Operator").trim().ifBlank { "Pixel" },
                             style = MaterialTheme.typography.labelSmall,
                             color = if (active) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
                             fontFamily = webFontFamily(font),
@@ -267,8 +267,8 @@ fun DesignPane(vm: WorkspaceViewModel, modifier: Modifier = Modifier) {
 
 @Composable
 private fun DesignPreview(design: DesignSystem) {
-    val bg = parseColor(design.background, Color(0xFF0B0B12))
-    val surface = parseColor(design.surface, Color(0xFF15151F))
+    val bg = parseColor(design.background, Palette.Bg)
+    val surface = parseColor(design.surface, Palette.Surface)
     val primary = parseColor(design.primary, Palette.Primary)
     val accent = parseColor(design.accent, Palette.Accent)
     val text = parseColor(design.textColor, Color.White)
@@ -279,9 +279,9 @@ private fun DesignPreview(design: DesignSystem) {
     Box(
         Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(18.dp))
+            .clip(RoundedCornerShape(5.dp))
             .background(bg)
-            .border(1.dp, Color.White.copy(alpha = 0.08f), RoundedCornerShape(18.dp))
+            .border(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f), RoundedCornerShape(5.dp))
             .padding(16.dp)
     ) {
         Column {
@@ -290,7 +290,7 @@ private fun DesignPreview(design: DesignSystem) {
                     Modifier
                         .size(22.dp)
                         .clip(RoundedCornerShape(7.dp))
-                        .background(Brush.linearGradient(listOf(primary, accent)))
+                        .background(Brush.linearGradient(listOf(primary.copy(alpha = 0.22f), accent.copy(alpha = 0.10f))))
                 )
                 Spacer(Modifier.width(7.dp))
                 Text("Aplikasi kamu", color = text, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, fontFamily = font)
@@ -323,10 +323,10 @@ private fun DesignPreview(design: DesignSystem) {
                 Box(
                     Modifier
                         .clip(RoundedCornerShape(radius * 0.55f))
-                        .background(Brush.horizontalGradient(listOf(primary, accent)))
+                        .background(Brush.horizontalGradient(listOf(primary.copy(alpha = 0.22f), accent.copy(alpha = 0.10f))))
                         .padding(horizontal = 14.dp, vertical = 8.dp)
                 ) {
-                    Text("Mulai", color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.SemiBold, fontFamily = font)
+                    Text("Mulai", color = Color.Black, fontSize = 11.sp, fontWeight = FontWeight.SemiBold, fontFamily = font)
                 }
                 Box(
                     Modifier
@@ -346,7 +346,7 @@ private fun DesignPreview(design: DesignSystem) {
                             .weight(1f)
                             .clip(RoundedCornerShape(radius * 0.5f))
                             .background(surface)
-                            .border(1.dp, Color.White.copy(alpha = 0.05f), RoundedCornerShape(radius * 0.5f))
+                            .border(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f), RoundedCornerShape(radius * 0.5f))
                             .padding(9.dp)
                     ) {
                         Box(
@@ -373,11 +373,12 @@ private fun ColorDialog(
     onPick: (String) -> Unit,
     onDismiss: () -> Unit,
 ) {
+    // Strict monochrome ramp: e-paper ink, paper and the greys between.
     val swatches = listOf(
-        "#7C5CFF", "#8B6CFF", "#5B3FE0", "#3DD6FF", "#22D3A5", "#4ADE80",
-        "#FF7A45", "#FFC53D", "#F472B6", "#FF6B6B", "#F5F5FA", "#8D8DA3",
-        "#0B0B12", "#15151F", "#F7F7FB", "#FFFFFF", "#111111", "#0C1F1B",
-        "#2B1B69", "#1F2430", "#3D2A1E", "#E8E2D9", "#B6FF3B", "#FF3B9A",
+        "#050505", "#0A0A0A", "#121212", "#1B1B1A", "#262625", "#31312F",
+        "#3F3F3C", "#4E4E4A", "#5F5F5A", "#70706A", "#82827B", "#94948C",
+        "#A6A69E", "#B8B8AF", "#C9C9C0", "#DADAD1", "#EAEAE2", "#F4F4EC",
+        "#FFFFFF", "#EDEDE7", "#DCDCD4", "#C4C4BB", "#9C9C93", "#6A6A63",
     )
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -405,7 +406,7 @@ private fun ColorDialog(
                                 contentAlignment = Alignment.Center,
                             ) {
                                 if (hex.equals(current, true)) {
-                                    Icon(Icons.Outlined.Check, null, tint = if (color.brightnessOf() > 0.6f) Color.Black else Color.White, modifier = Modifier.size(16.dp))
+                                    Icon(PixelIcons.Check, null, tint = if (color.brightnessOf() > 0.6f) Color.Black else Color.White, modifier = Modifier.size(16.dp))
                                 }
                             }
                         }
@@ -434,6 +435,6 @@ private fun Color.brightnessOf(): Float = 0.2126f * red + 0.7152f * green + 0.07
 
 private fun webFontFamily(name: String): FontFamily = when {
     name.contains("Mono", true) -> FontFamily.Monospace
-    name.contains("Georgia", true) || name.contains("Serif", true) -> FontFamily.Serif
-    else -> FontFamily.Default
+    name.contains("Serif", true) -> FontFamily.Serif
+    else -> PixelFont
 }

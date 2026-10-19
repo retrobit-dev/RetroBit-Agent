@@ -26,22 +26,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.ArrowBack
-import androidx.compose.material.icons.outlined.Code
-import androidx.compose.material.icons.outlined.ContentCopy
-import androidx.compose.material.icons.outlined.DeleteSweep
-import androidx.compose.material.icons.outlined.Download
-import androidx.compose.material.icons.outlined.Language
-import androidx.compose.material.icons.outlined.MoreVert
-import androidx.compose.material.icons.outlined.Palette
-import androidx.compose.material.icons.outlined.PhoneIphone
-import androidx.compose.material.icons.outlined.Refresh
-import androidx.compose.material.icons.outlined.Restore
-import androidx.compose.material.icons.outlined.Storage
-import androidx.compose.material.icons.outlined.Terminal
-import androidx.compose.material.icons.outlined.VpnKey
-import androidx.compose.material.icons.outlined.ChatBubbleOutline
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -80,20 +64,22 @@ import dev.retrobit.agent.ui.components.GhostButton
 import dev.retrobit.agent.ui.components.GradientButton
 import dev.retrobit.agent.ui.components.hexColor
 import dev.retrobit.agent.ui.components.Pill
+import dev.retrobit.agent.ui.components.SystemPromptDialog
 import dev.retrobit.agent.ui.theme.MonoFont
 import dev.retrobit.agent.ui.theme.Palette
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import dev.retrobit.agent.ui.icons.PixelIcons
 
 enum class WorkspaceTab(val label: String, val icon: ImageVector) {
-    CHAT("Chat", Icons.Outlined.ChatBubbleOutline),
-    PREVIEW("Preview", Icons.Outlined.PhoneIphone),
-    CODE("Kode", Icons.Outlined.Code),
-    DESIGN("Desain", Icons.Outlined.Palette),
-    DATA("Data", Icons.Outlined.Storage),
-    VAULT("Vault", Icons.Outlined.VpnKey),
+    CHAT("Chat", PixelIcons.Comment),
+    PREVIEW("Preview", PixelIcons.Smartphone),
+    CODE("Kode", PixelIcons.Code),
+    DESIGN("Desain", PixelIcons.Palette),
+    DATA("Data", PixelIcons.Database),
+    VAULT("Vault", PixelIcons.Key),
 }
 
 @Composable
@@ -113,6 +99,8 @@ fun WorkspaceScreen(vm: WorkspaceViewModel, onBack: () -> Unit) {
     var lanOpen by remember { mutableStateOf(false) }
     var clearOpen by remember { mutableStateOf(false) }
     var restoreOpen by remember { mutableStateOf(false) }
+    var promptOpen by remember { mutableStateOf(false) }
+    var promptDraft by remember { mutableStateOf("") }
     var exporting by remember { mutableStateOf(false) }
 
     val context = LocalContext.current
@@ -140,13 +128,13 @@ fun WorkspaceScreen(vm: WorkspaceViewModel, onBack: () -> Unit) {
             verticalAlignment = Alignment.CenterVertically,
         ) {
             IconButton(onClick = onBack, modifier = Modifier.size(38.dp)) {
-                Icon(Icons.Outlined.ArrowBack, "Kembali", tint = MaterialTheme.colorScheme.onSurface, modifier = Modifier.size(20.dp))
+                Icon(PixelIcons.ArrowLeft, "Kembali", tint = MaterialTheme.colorScheme.onSurface, modifier = Modifier.size(20.dp))
             }
             Box(
                 Modifier
                     .size(36.dp)
-                    .clip(RoundedCornerShape(11.dp))
-                    .background(Brush.linearGradient(listOf(hexColor(current.accent), Palette.Accent.copy(alpha = 0.8f)))),
+                    .clip(RoundedCornerShape(3.dp))
+                    .background(Brush.linearGradient(listOf(Palette.SurfaceHigh, Palette.Surface))),
                 contentAlignment = Alignment.Center,
             ) {
                 Text(current.emoji, fontSize = 17.sp)
@@ -183,27 +171,27 @@ fun WorkspaceScreen(vm: WorkspaceViewModel, onBack: () -> Unit) {
             }
             Box {
                 IconButton(onClick = { menuOpen = true }, modifier = Modifier.size(38.dp)) {
-                    Icon(Icons.Outlined.MoreVert, "Menu", tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(19.dp))
+                    Icon(PixelIcons.MoreVertical, "Menu", tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(19.dp))
                 }
                 DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
                     DropdownMenuItem(
                         text = { Text("Muat ulang preview") },
-                        leadingIcon = { Icon(Icons.Outlined.Refresh, null, modifier = Modifier.size(17.dp)) },
+                        leadingIcon = { Icon(PixelIcons.Reload, null, modifier = Modifier.size(17.dp)) },
                         onClick = { menuOpen = false; vm.reloadPreview(); tab = WorkspaceTab.PREVIEW },
                     )
                     DropdownMenuItem(
                         text = { Text("Console") },
-                        leadingIcon = { Icon(Icons.Outlined.Terminal, null, modifier = Modifier.size(17.dp)) },
+                        leadingIcon = { Icon(PixelIcons.Terminal, null, modifier = Modifier.size(17.dp)) },
                         onClick = { menuOpen = false; consoleOpen = true },
                     )
                     DropdownMenuItem(
                         text = { Text(if (lan.running) "Preview LAN aktif" else "Preview via LAN") },
-                        leadingIcon = { Icon(Icons.Outlined.Language, null, modifier = Modifier.size(17.dp)) },
+                        leadingIcon = { Icon(PixelIcons.Globe, null, modifier = Modifier.size(17.dp)) },
                         onClick = { menuOpen = false; lanOpen = true },
                     )
                     DropdownMenuItem(
                         text = { Text("Ekspor ZIP") },
-                        leadingIcon = { Icon(Icons.Outlined.Download, null, modifier = Modifier.size(17.dp)) },
+                        leadingIcon = { Icon(PixelIcons.Download, null, modifier = Modifier.size(17.dp)) },
                         onClick = {
                             menuOpen = false
                             if (!exporting) {
@@ -227,14 +215,23 @@ fun WorkspaceScreen(vm: WorkspaceViewModel, onBack: () -> Unit) {
                         },
                     )
                     DropdownMenuItem(
+                        text = { Text("System prompt obrolan") },
+                        leadingIcon = { Icon(PixelIcons.Terminal, null, modifier = Modifier.size(17.dp)) },
+                        onClick = {
+                            menuOpen = false
+                            promptDraft = current.systemPrompt?.takeIf { it.isNotBlank() } ?: vm.settingsPrompt()
+                            promptOpen = true
+                        },
+                    )
+                    DropdownMenuItem(
                         text = { Text("Pulihkan versi sebelumnya") },
-                        leadingIcon = { Icon(Icons.Outlined.Restore, null, modifier = Modifier.size(17.dp)) },
+                        leadingIcon = { Icon(PixelIcons.Undo, null, modifier = Modifier.size(17.dp)) },
                         enabled = hasSnapshot,
                         onClick = { menuOpen = false; restoreOpen = true },
                     )
                     DropdownMenuItem(
                         text = { Text("Bersihkan percakapan") },
-                        leadingIcon = { Icon(Icons.Outlined.DeleteSweep, null, modifier = Modifier.size(17.dp)) },
+                        leadingIcon = { Icon(PixelIcons.Trash, null, modifier = Modifier.size(17.dp)) },
                         onClick = { menuOpen = false; clearOpen = true },
                     )
                 }
@@ -252,12 +249,12 @@ fun WorkspaceScreen(vm: WorkspaceViewModel, onBack: () -> Unit) {
                 val selected = tab == item
                 Row(
                     Modifier
-                        .clip(RoundedCornerShape(11.dp))
+                        .clip(RoundedCornerShape(3.dp))
                         .background(if (selected) Palette.Primary.copy(alpha = 0.16f) else Color.Transparent)
                         .border(
                             1.dp,
                             if (selected) Palette.Primary.copy(alpha = 0.45f) else Color.Transparent,
-                            RoundedCornerShape(11.dp),
+                            RoundedCornerShape(3.dp),
                         )
                         .clickable { tab = item }
                         .padding(horizontal = 11.dp, vertical = 8.dp),
@@ -325,6 +322,25 @@ fun WorkspaceScreen(vm: WorkspaceViewModel, onBack: () -> Unit) {
         )
     }
 
+    if (promptOpen) {
+        SystemPromptDialog(
+            title = "System prompt obrolan",
+            description = "Hanya berlaku untuk ${current.name}. Chat lain menyimpan prompt masing-masing.",
+            value = promptDraft,
+            onValueChange = { promptDraft = it },
+            onSave = {
+                vm.saveSystemPrompt(promptDraft)
+                promptOpen = false
+            },
+            onDismiss = { promptOpen = false },
+            resetLabel = "Ikuti global",
+            onReset = {
+                vm.saveSystemPrompt(null)
+                promptOpen = false
+            },
+        )
+    }
+
     if (restoreOpen) {
         AlertDialog(
             onDismissRequest = { restoreOpen = false },
@@ -377,11 +393,11 @@ private fun ConsoleSheet(
                 Box(
                     Modifier
                         .size(30.dp)
-                        .clip(RoundedCornerShape(9.dp))
+                        .clip(RoundedCornerShape(3.dp))
                         .background(Palette.Accent.copy(alpha = 0.12f)),
                     contentAlignment = Alignment.Center,
                 ) {
-                    Icon(Icons.Outlined.Terminal, null, tint = Palette.Accent, modifier = Modifier.size(15.dp))
+                    Icon(PixelIcons.Terminal, null, tint = Palette.Accent, modifier = Modifier.size(15.dp))
                 }
                 Spacer(Modifier.width(9.dp))
                 Column(Modifier.weight(1f)) {
@@ -394,7 +410,7 @@ private fun ConsoleSheet(
                 }
                 if (entries.isNotEmpty()) {
                     IconButton(onClick = { onCopy(entries.joinToString("\n") { "[${it.level}] ${it.message}" }) }) {
-                        Icon(Icons.Outlined.ContentCopy, "Salin", tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(16.dp))
+                        Icon(PixelIcons.Copy, "Salin", tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(16.dp))
                     }
                     TextButton(onClick = onClear) {
                         Text("Bersihkan", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -404,7 +420,7 @@ private fun ConsoleSheet(
             Spacer(Modifier.height(12.dp))
             if (entries.isEmpty()) {
                 EmptyState(
-                    emoji = "🧾",
+                    icon = PixelIcons.FileText,
                     title = "Console bersih",
                     description = "Pesan console.log dan error dari halaman preview akan muncul di sini setelah preview dimuat.",
                 )
@@ -413,9 +429,9 @@ private fun ConsoleSheet(
                     Modifier
                         .fillMaxWidth()
                         .heightIn(max = 430.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(Color(0xFF08080E))
-                        .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp))
+                        .clip(RoundedCornerShape(4.dp))
+                        .background(MaterialTheme.colorScheme.background)
+                        .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(4.dp))
                         .padding(10.dp),
                     verticalArrangement = Arrangement.spacedBy(7.dp),
                 ) {
@@ -499,11 +515,11 @@ private fun LanSheet(
                 Box(
                     Modifier
                         .size(36.dp)
-                        .clip(RoundedCornerShape(11.dp))
+                        .clip(RoundedCornerShape(3.dp))
                         .background(Palette.Accent.copy(alpha = 0.12f)),
                     contentAlignment = Alignment.Center,
                 ) {
-                    Icon(Icons.Outlined.Language, null, tint = Palette.Accent, modifier = Modifier.size(18.dp))
+                    Icon(PixelIcons.Globe, null, tint = Palette.Accent, modifier = Modifier.size(18.dp))
                 }
                 Spacer(Modifier.width(10.dp))
                 Column(Modifier.weight(1f)) {
@@ -534,9 +550,9 @@ private fun LanSheet(
                 Row(
                     Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(13.dp))
-                        .background(Color(0xFF08080E))
-                        .border(1.dp, Palette.Accent.copy(alpha = 0.3f), RoundedCornerShape(13.dp))
+                        .clip(RoundedCornerShape(4.dp))
+                        .background(MaterialTheme.colorScheme.background)
+                        .border(1.dp, Palette.Accent.copy(alpha = 0.3f), RoundedCornerShape(4.dp))
                         .padding(14.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
@@ -558,7 +574,7 @@ private fun LanSheet(
                         )
                     }
                     IconButton(onClick = { onCopy(lan.url) }) {
-                        Icon(Icons.Outlined.ContentCopy, "Salin", tint = Palette.Accent, modifier = Modifier.size(17.dp))
+                        Icon(PixelIcons.Copy, "Salin", tint = Palette.Accent, modifier = Modifier.size(17.dp))
                     }
                 }
                 Spacer(Modifier.height(10.dp))
@@ -575,7 +591,7 @@ private fun LanSheet(
                 Box(
                     Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(13.dp))
+                        .clip(RoundedCornerShape(4.dp))
                         .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f))
                         .padding(14.dp)
                 ) {
@@ -592,9 +608,9 @@ private fun LanSheet(
                 Row(
                     Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(11.dp))
+                        .clip(RoundedCornerShape(3.dp))
                         .background(Palette.Danger.copy(alpha = 0.07f))
-                        .border(1.dp, Palette.Danger.copy(alpha = 0.25f), RoundedCornerShape(11.dp))
+                        .border(1.dp, Palette.Danger.copy(alpha = 0.25f), RoundedCornerShape(3.dp))
                         .padding(11.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {

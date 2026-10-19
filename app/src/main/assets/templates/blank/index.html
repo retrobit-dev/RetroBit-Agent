@@ -3,16 +3,23 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<meta name="theme-color" content="#0B0B12" />
+<meta name="theme-color" content="#0A0A0A" />
 <title>Aplikasi baru</title>
 <style id="rb-design">
 /*RB_DESIGN_START*/
 :root{
-  --rb-primary:#7C5CFF;--rb-accent:#39D0FF;--rb-bg:#0B0B12;--rb-surface:#15151F;
-  --rb-text:#F5F5FA;--rb-muted:#8C8CA1;--rb-radius:20px;
-  --rb-font:'Inter',system-ui,-apple-system,sans-serif;
+  --rb-primary:#DEDED5;
+  --rb-accent:#F4F4EC;
+  --rb-bg:#0A0A0A;
+  --rb-surface:#141413;
+  --rb-text:#EAEAE2;
+  --rb-muted:#8E8E86;
+  --rb-radius:4px;
+  --rb-font:'Pixel Operator',ui-monospace,'Courier New',monospace;
 }
 /*RB_DESIGN_END*/
+@font-face{font-family:'Pixel Operator';src:url('assets/fonts/PixelOperator.ttf') format('truetype');font-weight:400;font-display:swap}
+@font-face{font-family:'Pixel Operator';src:url('assets/fonts/PixelOperator-Bold.ttf') format('truetype');font-weight:700;font-display:swap}
 *{box-sizing:border-box}
 body{margin:0;min-height:100vh;background:var(--rb-bg);color:var(--rb-text);font-family:var(--rb-font);display:grid;place-items:center;padding:24px;overflow:hidden}
 body::before{content:"";position:fixed;width:520px;height:520px;border-radius:50%;background:var(--rb-primary);filter:blur(160px);opacity:.28;top:-160px;left:-120px}
@@ -26,6 +33,9 @@ p{font-size:13.5px;line-height:1.7;color:var(--rb-muted);margin:0 0 26px}
 .btn{width:100%;border:0;padding:15px;border-radius:calc(var(--rb-radius) * .7);background:linear-gradient(135deg,var(--rb-primary),var(--rb-accent));color:#fff;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;box-shadow:0 16px 36px -18px var(--rb-primary);transition:.2s transform}
 .btn:active{transform:scale(.98)}
 .hint{font-size:10.5px;color:var(--rb-muted);margin-top:18px;letter-spacing:.02em}
+
+/* retro cyberdeck: kill soft glows, snap radii to the token */
+.glow{display:none!important}
 </style>
 </head>
 <body>

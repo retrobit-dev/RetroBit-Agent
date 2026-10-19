@@ -14,10 +14,11 @@ Aplikasi Android native (Kotlin + Jetpack Compose) untuk membangun aplikasi web 
 | Area | Yang bisa dilakukan |
 | --- | --- |
 | **Preview aplikasi** | WebView lokal dengan chrome HP/tablet/desktop, reload otomatis saat file berubah, console log, dan preview LAN untuk dibuka dari browser lain di jaringan yang sama. |
-| **Design** | Design system berisi token warna, radius, dan font. Preset siap pakai (midnight, aurora, sunset, candy, mono, terminal) dan editor token manual. Perubahan langsung diterapkan ke preview tanpa reload. |
-| **AI Cloud** | Hubungkan OpenRouter, OpenAI, Anthropic, Gemini, Groq, DeepSeek, Mistral, Together AI, Ollama lokal, atau endpoint OpenAI-compatible sendiri. Ada uji koneksi, pemilih model, dan estimasi pemakaian token/biaya. |
+| **Design** | Design system monokrom bergaya e-paper: token warna, radius, dan font. Preset bawaan (midnight, aurora, sunset, candy, mono, terminal, paper) dan editor token manual. Perubahan langsung diterapkan ke preview tanpa reload. |
+| **AI Cloud** | Hubungkan OpenRouter, OpenAI, Anthropic, Gemini, Groq, DeepSeek, Mistral, Together AI, Ollama lokal, atau endpoint OpenAI-compatible sendiri. Ada uji koneksi, pemilih model, estimasi pemakaian token/biaya, dan **system prompt global** untuk semua chat baru. |
 | **Secret** | Vault terenkripsi (AES-GCM + Android Keystore) untuk API key. Secret hanya masuk ke preview bila kamu centang "expose", dan AI hanya tahu **nama** secret — bukan nilainya. |
 | **Database** | SQLite per proyek: buat tabel, tambah kolom, isi data contoh, jalankan query, lihat hasil. Kode di preview bisa mengaksesnya lewat `window.RetroBitDB`. |
+| **Dashboard** | Beranda bergaya rork/cyberdeck: drawer dengan recents, hero "What will you build, Retro?", composer satu baris, pemilih target iPhone/Android/Web, dan filter All/Saved. Tema monokrom e-paper dengan font Pixel Operator dan ikon pixelarticons. |
 | **Chat / Agent** | Agen dengan 11 tool (baca/tulis/edit/hapus file, rename, update design, tabel & SQL, minta secret). Setiap perintah AI otomatis membuat snapshot yang bisa dipulihkan. |
 | **Template** | 7 starter: SaaS (Nimbus), tugas (Flow), toko online (Lumen), kesehatan (Pulse), chat (Relay), portofolio (Atelier), dan kanvas kosong. |
 | **Ekspor** | Bagikan proyek sebagai ZIP lewat FileProvider (file `_meta` tidak ikut). |
@@ -80,14 +81,24 @@ Atau lewat terminal:
 Token disimpan di `DesignSystem` dan ditulis sebagai CSS variable:
 
 ```css
+@font-face{
+  font-family:'Pixel Operator';
+  src:url('assets/fonts/PixelOperator.ttf') format('truetype');
+}
 :root{
-  --rb-primary:#7C5CFF; --rb-accent:#39D0FF; --rb-bg:#0B0B12;
-  --rb-surface:#15151F; --rb-text:#F5F5FA; --rb-muted:#8C8CA1;
-  --rb-radius:20px;     --rb-font:'Inter', system-ui, sans-serif;
+  --rb-primary:#DEDED5; --rb-accent:#F4F4EC; --rb-bg:#0A0A0A;
+  --rb-surface:#141413; --rb-text:#EAEAE2; --rb-muted:#8E8E86;
+  --rb-radius:4px;      --rb-font:'Pixel Operator', ui-monospace, monospace;
 }
 ```
 
+Palet sengaja **grayscale** — semua warna di luar ramp abu-abu otomatis disnap ke monokrom saat proyek lama dimuat. Font Pixel Operator (CC0) disalin ke setiap proyek di `assets/fonts/` sehingga preview WebView dan ekspor ZIP memakai tipografi yang sama.
+
 Template menyimpan blok ini di antara `/*RB_DESIGN_START*/` dan `/*RB_DESIGN_END*/`. Saat design diubah, RetroBit menulis ulang blok tersebut **dan** menyuntikkan stylesheet langsung ke WebView, jadi preview berubah seketika tanpa reload. Halaman baru cukup memakai `var(--rb-primary)` dan seterusnya agar ikut bertema.
+
+## System prompt global
+
+`SettingsStore.DEFAULT_SYSTEM_PROMPT` berisi persona default yang dipakai untuk **setiap chat baru**. Saat proyek dibuat, isi prompt disalin ke `Project.systemPrompt`; mengubah pengaturan global tidak menimpa percakapan yang sudah berjalan. Prompt per chat bisa diubah dari menu workspace (**System prompt obrolan**) atau dikembalikan ke default global dengan **Ikuti global**. Teks persona dikirim sebagai bagian pertama system prompt agen, diikuti aturan produk dan protokol kerja.
 
 ## Runtime preview
 
@@ -130,10 +141,15 @@ app/src/main/java/dev/retrobit/agent/
 ├── agent/                     # AgentEngine, tool runner, DemoAgent
 ├── preview/                   # PreviewView (WebView), PreviewInjector, LanPreviewServer
 └── ui/
-    ├── RetroBitRoot.kt        # NavHost + bottom bar
-    ├── theme/, components/    # tema, markdown, komponen bersama
-    └── screens/               # Projects, Templates, Cloud, Workspace + 6 pane
+    ├── RetroBitRoot.kt        # NavHost + drawer dashboard + bottom bar
+    ├── DrawerController.kt    # CompositionLocal pembuka drawer
+    ├── icons/PixelIcons.kt    # 52 ikon pixelarticons (24x24 ImageVector)
+    ├── theme/, components/    # tema e-paper, markdown, komponen bersama
+    └── screens/               # Projects (dashboard), Templates, Cloud, Workspace + 6 pane
 app/src/main/assets/templates/ # saas, tasks, commerce, fitness, chat, portfolio, blank
+app/src/main/assets/fonts/     # PixelOperator.ttf + PixelOperator-Bold.ttf
+app/src/main/assets/licenses/  # NOTICE.txt (CC0 font, MIT icons)
+app/src/main/res/font/         # salinan font agar bisa dipakai Compose
 ```
 
 Penyimpanan di perangkat:
@@ -157,6 +173,12 @@ filesDir/
 - **LAN server bersifat read-only**, hanya menyajikan file proyek, menolak path `..`, dan tidak menyertakan secret atau database.
 - **Cleartext HTTP** diaktifkan agar Ollama/LAN bisa dipakai; untuk produksi, batasi atau matikan `usesCleartextTraffic`.
 - Semua data proyek berada di penyimpanan internal aplikasi.
+
+## Lisensi aset
+
+- **Pixel Operator** — Jayvee Enaguas (HarvettFox96), CC0 1.0. Dipakai untuk seluruh UI Compose dan aplikasi yang dibuat.
+- **pixelarticons** — Gerrit Halfmann, MIT. Path SVG dikonversi menjadi `ImageVector` di `PixelIcons.kt`.
+- Detail lengkap ada di `app/src/main/assets/licenses/NOTICE.txt`.
 
 ## Batasan yang diketahui
 

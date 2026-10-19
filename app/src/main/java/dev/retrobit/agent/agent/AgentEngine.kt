@@ -103,7 +103,9 @@ class AgentEngine(
         )
 
         val client = AiClientFactory.create(config, apiKey)
-        val system = buildSystemPrompt(project, files.treeText(), design, db, secrets, settings.agentLanguage)
+        val persona = project.systemPrompt?.takeIf { it.isNotBlank() }
+            ?: settings.systemPrompt.ifBlank { SettingsStore.DEFAULT_SYSTEM_PROMPT }
+        val system = buildSystemPrompt(persona, project, files.treeText(), design, db, secrets, settings.agentLanguage)
         val transcript = mutableListOf<WireTurn>()
         history.filter { it.role != Role.SYSTEM && it.content.isNotBlank() }.takeLast(10).forEach { message ->
             when (message.role) {
@@ -242,6 +244,7 @@ class AgentEngine(
     )
 
     private fun buildSystemPrompt(
+        persona: String,
         project: Project,
         tree: String,
         design: DesignSystem,
@@ -257,6 +260,9 @@ class AgentEngine(
             "Balas dalam Bahasa Indonesia yang santai dan jelas. Salinan UI mengikuti bahasa permintaan pengguna."
         }
         return """
+            $persona
+
+            ## PERAN PRODUK
             Kamu adalah RetroBit, AI product engineer yang bekerja di dalam aplikasi Android RetroBit Agent.
             Kamu membangun aplikasi web statis lengkap yang langsung tampil di preview WebView perangkat.
 

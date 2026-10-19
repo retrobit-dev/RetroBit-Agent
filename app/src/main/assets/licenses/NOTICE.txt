@@ -1,0 +1,16 @@
+RetroBit Agent — bundled third-party assets
+
+1) Pixel Operator font
+   Author: Jayvee Enaguas (HarvettFox96)
+   License: Creative Commons Zero (CC0 1.0)
+   https://creativecommons.org/licenses/zero/1.0/
+   Files: app/src/main/assets/fonts/PixelOperator.ttf,
+          app/src/main/assets/fonts/PixelOperator-Bold.ttf,
+          app/src/main/res/font/pixel_operator*.ttf
+
+2) pixelarticons
+   Author: Gerrit Halfmann
+   License: MIT
+   https://github.com/halfmage/pixelarticons
+   Used as 24x24 vector paths in
+   app/src/main/java/dev/retrobit/agent/ui/icons/PixelIcons.kt

@@ -17,14 +17,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Add
-import androidx.compose.material.icons.outlined.ContentCopy
-import androidx.compose.material.icons.outlined.DeleteOutline
-import androidx.compose.material.icons.outlined.Key
-import androidx.compose.material.icons.outlined.Lock
-import androidx.compose.material.icons.outlined.Visibility
-import androidx.compose.material.icons.outlined.VisibilityOff
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -61,6 +53,7 @@ import dev.retrobit.agent.ui.components.NeoCard
 import dev.retrobit.agent.ui.components.Pill
 import dev.retrobit.agent.ui.theme.MonoFont
 import dev.retrobit.agent.ui.theme.Palette
+import dev.retrobit.agent.ui.icons.PixelIcons
 
 @Composable
 fun VaultPane(vm: WorkspaceViewModel, modifier: Modifier = Modifier) {
@@ -86,11 +79,11 @@ fun VaultPane(vm: WorkspaceViewModel, modifier: Modifier = Modifier) {
             Box(
                 Modifier
                     .size(34.dp)
-                    .clip(RoundedCornerShape(10.dp))
+                    .clip(RoundedCornerShape(3.dp))
                     .background(Palette.Warning.copy(alpha = 0.12f)),
                 contentAlignment = Alignment.Center,
             ) {
-                Icon(Icons.Outlined.Lock, null, tint = Palette.Warning, modifier = Modifier.size(17.dp))
+                Icon(PixelIcons.Lock, null, tint = Palette.Warning, modifier = Modifier.size(17.dp))
             }
             Spacer(Modifier.width(10.dp))
             Column(Modifier.weight(1f)) {
@@ -103,13 +96,13 @@ fun VaultPane(vm: WorkspaceViewModel, modifier: Modifier = Modifier) {
             }
             Row(
                 Modifier
-                    .clip(RoundedCornerShape(10.dp))
+                    .clip(RoundedCornerShape(3.dp))
                     .background(Palette.Primary.copy(alpha = 0.12f))
                     .clickable { creating = true }
                     .padding(horizontal = 10.dp, vertical = 7.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Icon(Icons.Outlined.Add, null, tint = Palette.Primary, modifier = Modifier.size(14.dp))
+                Icon(PixelIcons.Plus, null, tint = Palette.Primary, modifier = Modifier.size(14.dp))
                 Spacer(Modifier.width(4.dp))
                 Text("Tambah", style = MaterialTheme.typography.labelSmall, color = Palette.Primary)
             }
@@ -131,14 +124,14 @@ fun VaultPane(vm: WorkspaceViewModel, modifier: Modifier = Modifier) {
                     Modifier
                         .fillMaxWidth()
                         .padding(bottom = 7.dp)
-                        .clip(RoundedCornerShape(13.dp))
+                        .clip(RoundedCornerShape(4.dp))
                         .background(Palette.Warning.copy(alpha = 0.05f))
-                        .border(1.dp, Palette.Warning.copy(alpha = 0.22f), RoundedCornerShape(13.dp))
+                        .border(1.dp, Palette.Warning.copy(alpha = 0.22f), RoundedCornerShape(4.dp))
                         .clickable { prefill = request }
                         .padding(12.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Icon(Icons.Outlined.Key, null, tint = Palette.Warning, modifier = Modifier.size(15.dp))
+                    Icon(PixelIcons.Key, null, tint = Palette.Warning, modifier = Modifier.size(15.dp))
                     Spacer(Modifier.width(9.dp))
                     Column(Modifier.weight(1f)) {
                         Text(request.key, style = MaterialTheme.typography.labelMedium, fontFamily = MonoFont, color = MaterialTheme.colorScheme.onSurface)
@@ -150,7 +143,7 @@ fun VaultPane(vm: WorkspaceViewModel, modifier: Modifier = Modifier) {
                             overflow = TextOverflow.Ellipsis,
                         )
                     }
-                    Text("Isi →", style = MaterialTheme.typography.labelSmall, color = Palette.Warning)
+                    Text("Isi ->", style = MaterialTheme.typography.labelSmall, color = Palette.Warning)
                 }
             }
             Spacer(Modifier.height(12.dp))
@@ -159,10 +152,10 @@ fun VaultPane(vm: WorkspaceViewModel, modifier: Modifier = Modifier) {
         if (entries.isEmpty()) {
             NeoCard(modifier = Modifier.fillMaxWidth()) {
                 EmptyState(
-                    emoji = "🔐",
+                    icon = PixelIcons.Key,
                     title = "Belum ada secret",
                     description = "Tambahkan kunci API untuk aplikasi buatanmu. Semuanya dienkripsi dengan Android Keystore.",
-                    action = { GradientButton("Tambah secret", icon = Icons.Outlined.Add, onClick = { creating = true }) },
+                    action = { GradientButton("Tambah secret", icon = PixelIcons.Plus, onClick = { creating = true }) },
                 )
             }
         } else {
@@ -172,20 +165,20 @@ fun VaultPane(vm: WorkspaceViewModel, modifier: Modifier = Modifier) {
                     Modifier
                         .fillMaxWidth()
                         .padding(bottom = 9.dp)
-                        .clip(RoundedCornerShape(14.dp))
+                        .clip(RoundedCornerShape(4.dp))
                         .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.6f))
-                        .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(14.dp))
+                        .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(4.dp))
                         .padding(13.dp)
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Box(
                             Modifier
                                 .size(26.dp)
-                                .clip(RoundedCornerShape(8.dp))
+                                .clip(RoundedCornerShape(3.dp))
                                 .background(Palette.Warning.copy(alpha = 0.1f)),
                             contentAlignment = Alignment.Center,
                         ) {
-                            Icon(Icons.Outlined.Key, null, tint = Palette.Warning, modifier = Modifier.size(13.dp))
+                            Icon(PixelIcons.Key, null, tint = Palette.Warning, modifier = Modifier.size(13.dp))
                         }
                         Spacer(Modifier.width(9.dp))
                         Text(
@@ -223,7 +216,7 @@ fun VaultPane(vm: WorkspaceViewModel, modifier: Modifier = Modifier) {
                             modifier = Modifier.size(30.dp),
                         ) {
                             Icon(
-                                if (isRevealed) Icons.Outlined.VisibilityOff else Icons.Outlined.Visibility,
+                                if (isRevealed) PixelIcons.EyeOff else PixelIcons.Eye,
                                 "Lihat",
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.size(15.dp),
@@ -233,13 +226,13 @@ fun VaultPane(vm: WorkspaceViewModel, modifier: Modifier = Modifier) {
                             onClick = { clipboard.setText(AnnotatedString(entry.value)) },
                             modifier = Modifier.size(30.dp),
                         ) {
-                            Icon(Icons.Outlined.ContentCopy, "Salin", tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(14.dp))
+                            Icon(PixelIcons.Copy, "Salin", tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(14.dp))
                         }
                         IconButton(
                             onClick = { deleteTarget = entry },
                             modifier = Modifier.size(30.dp),
                         ) {
-                            Icon(Icons.Outlined.DeleteOutline, "Hapus", tint = Palette.Muted, modifier = Modifier.size(15.dp))
+                            Icon(PixelIcons.Trash, "Hapus", tint = Palette.Muted, modifier = Modifier.size(15.dp))
                         }
                     }
                 }
@@ -250,12 +243,12 @@ fun VaultPane(vm: WorkspaceViewModel, modifier: Modifier = Modifier) {
         Row(
             Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(13.dp))
+                .clip(RoundedCornerShape(4.dp))
                 .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.4f))
                 .padding(13.dp),
             verticalAlignment = Alignment.Top,
         ) {
-            Icon(Icons.Outlined.Lock, null, tint = Palette.Muted, modifier = Modifier.size(14.dp))
+            Icon(PixelIcons.Lock, null, tint = Palette.Muted, modifier = Modifier.size(14.dp))
             Spacer(Modifier.width(9.dp))
             Column {
                 Text(
@@ -334,7 +327,7 @@ private fun SecretDialog(
                     placeholder = { Text("API_KEY", fontFamily = MonoFont) },
                     singleLine = true,
                     enabled = initial == null && prefillKey.isBlank(),
-                    shape = RoundedCornerShape(11.dp),
+                    shape = RoundedCornerShape(3.dp),
                     textStyle = MaterialTheme.typography.bodySmall.copy(fontFamily = MonoFont),
                     modifier = Modifier.fillMaxWidth(),
                 )
@@ -344,13 +337,13 @@ private fun SecretDialog(
                     onValueChange = { value = it.take(4000) },
                     label = { Text("Nilai", style = MaterialTheme.typography.labelSmall) },
                     singleLine = true,
-                    shape = RoundedCornerShape(11.dp),
+                    shape = RoundedCornerShape(3.dp),
                     visualTransformation = if (visible) androidx.compose.ui.text.input.VisualTransformation.None else PasswordVisualTransformation(),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                     trailingIcon = {
                         IconButton(onClick = { visible = !visible }) {
                             Icon(
-                                if (visible) Icons.Outlined.VisibilityOff else Icons.Outlined.Visibility,
+                                if (visible) PixelIcons.EyeOff else PixelIcons.Eye,
                                 null,
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.size(17.dp),
@@ -366,7 +359,7 @@ private fun SecretDialog(
                     onValueChange = { note = it.take(160) },
                     label = { Text("Catatan (opsional)", style = MaterialTheme.typography.labelSmall) },
                     singleLine = true,
-                    shape = RoundedCornerShape(11.dp),
+                    shape = RoundedCornerShape(3.dp),
                     textStyle = MaterialTheme.typography.bodySmall,
                     modifier = Modifier.fillMaxWidth(),
                 )
@@ -374,7 +367,7 @@ private fun SecretDialog(
                 Row(
                     Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(11.dp))
+                        .clip(RoundedCornerShape(3.dp))
                         .background(if (expose) Palette.Warning.copy(alpha = 0.07f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
                         .padding(11.dp),
                     verticalAlignment = Alignment.CenterVertically,

@@ -31,6 +31,19 @@ class ProjectsViewModel(private val container: AppContainer) : ViewModel() {
         }
     }
 
+    /** Dashboard composer: create a project from a one-line idea and open it. */
+    fun createFromPrompt(prompt: String, onCreated: (Project) -> Unit) {
+        val clean = prompt.trim()
+        if (clean.isEmpty()) return
+        val templateId = Templates.suggestId(clean)
+        val words = clean.split(Regex("\\s+")).take(3).joinToString(" ")
+        val name = words.replaceFirstChar { it.uppercase() }.take(26).ifBlank { Templates.byId(templateId).name }
+        viewModelScope.launch {
+            val project = repository.create(name, templateId, Templates.designFor(templateId))
+            onCreated(project)
+        }
+    }
+
     fun duplicate(projectId: String, onCreated: (Project) -> Unit) {
         viewModelScope.launch {
             repository.duplicate(projectId)?.let(onCreated)
@@ -45,8 +58,4 @@ class ProjectsViewModel(private val container: AppContainer) : ViewModel() {
         viewModelScope.launch { repository.update(project.copy(favorite = !project.favorite), touch = false) }
     }
 
-    fun hasKey(providerName: String): Boolean =
-        !container.secrets.get("ai.apiKey.$providerName").isNullOrBlank()
-
-    fun templateInfo(id: String) = Templates.byId(id)
 }

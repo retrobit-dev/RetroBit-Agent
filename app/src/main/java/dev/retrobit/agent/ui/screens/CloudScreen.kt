@@ -20,13 +20,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.CheckCircle
-import androidx.compose.material.icons.outlined.ErrorOutline
-import androidx.compose.material.icons.outlined.Key
-import androidx.compose.material.icons.outlined.Lock
-import androidx.compose.material.icons.outlined.Visibility
-import androidx.compose.material.icons.outlined.VisibilityOff
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -63,9 +56,11 @@ import dev.retrobit.agent.ui.components.GhostButton
 import dev.retrobit.agent.ui.components.GradientButton
 import dev.retrobit.agent.ui.components.NeoCard
 import dev.retrobit.agent.ui.components.Pill
+import dev.retrobit.agent.ui.components.SystemPromptDialog
 import dev.retrobit.agent.ui.theme.MonoFont
 import dev.retrobit.agent.ui.theme.Palette
 import java.util.Locale
+import dev.retrobit.agent.ui.icons.PixelIcons
 
 @Composable
 fun CloudScreen(
@@ -74,6 +69,7 @@ fun CloudScreen(
 ) {
     val usage by vm.usage.collectAsStateWithLifecycle()
     var showKey by remember { mutableStateOf(false) }
+    var showPrompt by remember { mutableStateOf(false) }
 
     Column(
         Modifier
@@ -83,7 +79,7 @@ fun CloudScreen(
             .padding(bottom = 28.dp + contentPadding.calculateBottomPadding())
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            BrandMark(38.dp, "☁")
+            BrandMark(38.dp, "C")
             Spacer(Modifier.width(11.dp))
             Column {
                 Text("AI Cloud", style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onBackground)
@@ -161,7 +157,7 @@ fun CloudScreen(
             NeoCard(modifier = Modifier.fillMaxWidth()) {
                 Column {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Outlined.Key, null, tint = Palette.Accent, modifier = Modifier.size(16.dp))
+                        Icon(PixelIcons.Key, null, tint = Palette.Accent, modifier = Modifier.size(16.dp))
                         Spacer(Modifier.width(8.dp))
                         Text("Kredensial", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurface)
                         Spacer(Modifier.weight(1f))
@@ -233,7 +229,7 @@ fun CloudScreen(
                         trailing = {
                             IconButton(onClick = { showKey = !showKey }) {
                                 Icon(
-                                    if (showKey) Icons.Outlined.VisibilityOff else Icons.Outlined.Visibility,
+                                    if (showKey) PixelIcons.EyeOff else PixelIcons.Eye,
                                     contentDescription = if (showKey) "Sembunyikan" else "Tampilkan",
                                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                     modifier = Modifier.size(18.dp),
@@ -244,7 +240,7 @@ fun CloudScreen(
                     if (vm.keyStored) {
                         Spacer(Modifier.height(6.dp))
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Outlined.Lock, null, tint = Palette.Success, modifier = Modifier.size(12.dp))
+                            Icon(PixelIcons.Lock, null, tint = Palette.Success, modifier = Modifier.size(12.dp))
                             Spacer(Modifier.width(5.dp))
                             Text(
                                 "Key tersimpan terenkripsi di perangkat",
@@ -359,13 +355,17 @@ fun CloudScreen(
             Column {
                 Text("Preferensi aplikasi", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurface)
                 Spacer(Modifier.height(14.dp))
-                PreferenceRow(
-                    title = "Tema",
-                    subtitle = "Tampilan aplikasi RetroBit",
-                    options = listOf("dark" to "Gelap", "light" to "Terang"),
-                    selected = vm.themeMode,
-                    onSelect = { vm.setTheme(it) },
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f)) {
+                        Text("Tema", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurface)
+                        Text(
+                            "Grayscale e-paper · ink & paper",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    Pill("TERKUNCI", color = Palette.Muted, background = Color.Transparent)
+                }
                 Spacer(Modifier.height(14.dp))
                 PreferenceRow(
                     title = "Bahasa agen",
@@ -396,16 +396,57 @@ fun CloudScreen(
             }
         }
 
+        Spacer(Modifier.height(18.dp))
+        NeoCard(modifier = Modifier.fillMaxWidth()) {
+            Column {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        "System prompt global",
+                        style = MaterialTheme.typography.titleSmall,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Pill("chat baru", color = Palette.Accent, background = Palette.Accent.copy(alpha = 0.08f))
+                }
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    vm.systemPrompt,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 3,
+                    overflow = TextOverflow.Ellipsis,
+                    lineHeight = 17.sp,
+                )
+                Spacer(Modifier.height(10.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    GhostButton("Edit prompt", icon = PixelIcons.Terminal, onClick = { showPrompt = true })
+                    Spacer(Modifier.weight(1f))
+                    Text(
+                        "${vm.systemPrompt.length} karakter",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    "Diterapkan otomatis ke setiap proyek baru. Percakapan yang sudah ada menyimpan salinannya sendiri dan tidak ikut berubah.",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    lineHeight = 15.sp,
+                )
+            }
+        }
+
         Spacer(Modifier.height(20.dp))
         Row(
             Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(14.dp))
+                .clip(RoundedCornerShape(4.dp))
                 .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.45f))
                 .padding(14.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Icon(Icons.Outlined.Lock, null, tint = Palette.Muted, modifier = Modifier.size(15.dp))
+            Icon(PixelIcons.Lock, null, tint = Palette.Muted, modifier = Modifier.size(15.dp))
             Spacer(Modifier.width(10.dp))
             Text(
                 "RetroBit tidak mengirim kode atau kunci ke server kami. Permintaan AI langsung menuju provider pilihanmu.",
@@ -422,6 +463,22 @@ fun CloudScreen(
             modifier = Modifier.align(Alignment.CenterHorizontally),
         )
     }
+
+    if (showPrompt) {
+        SystemPromptDialog(
+            title = "System prompt global",
+            description = "Dipakai untuk semua chat baru. Chat yang sudah ada tetap memakai prompt miliknya sendiri.",
+            value = vm.systemPrompt,
+            onValueChange = { vm.updateSystemPrompt(it) },
+            onSave = {
+                vm.saveSystemPrompt()
+                showPrompt = false
+            },
+            onDismiss = { showPrompt = false },
+            resetLabel = "Reset ke default",
+            onReset = { vm.resetSystemPrompt() },
+        )
+    }
 }
 
 @Composable
@@ -432,7 +489,7 @@ private fun ProviderTile(
     modifier: Modifier = Modifier,
     onClick: () -> Unit,
 ) {
-    val shape = RoundedCornerShape(13.dp)
+    val shape = RoundedCornerShape(4.dp)
     Row(
         modifier = modifier
             .clip(shape)
@@ -501,7 +558,7 @@ private fun CloudField(
         placeholder = { Text(placeholder, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)) },
         modifier = Modifier.fillMaxWidth(),
         singleLine = true,
-        shape = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(4.dp),
         textStyle = MaterialTheme.typography.bodySmall.copy(
             color = MaterialTheme.colorScheme.onSurface,
             fontFamily = if (mono) FontFamily.Monospace else FontFamily.Default,
@@ -519,14 +576,14 @@ private fun ResultBanner(ok: Boolean, message: String) {
     Row(
         Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(11.dp))
+            .clip(RoundedCornerShape(3.dp))
             .background(tint.copy(alpha = 0.08f))
-            .border(1.dp, tint.copy(alpha = 0.25f), RoundedCornerShape(11.dp))
+            .border(1.dp, tint.copy(alpha = 0.25f), RoundedCornerShape(3.dp))
             .padding(11.dp),
         verticalAlignment = Alignment.Top,
     ) {
         Icon(
-            if (ok) Icons.Outlined.CheckCircle else Icons.Outlined.ErrorOutline,
+            if (ok) PixelIcons.CheckDouble else PixelIcons.Warning,
             contentDescription = null,
             tint = tint,
             modifier = Modifier.size(15.dp),
@@ -540,13 +597,14 @@ private fun ResultBanner(ok: Boolean, message: String) {
 private fun UsageMetric(label: String, value: String, modifier: Modifier = Modifier) {
     Column(
         modifier
-            .clip(RoundedCornerShape(11.dp))
+            .clip(RoundedCornerShape(3.dp))
             .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f))
             .padding(11.dp)
     ) {
         Text(value, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface, fontFamily = MonoFont, maxLines = 1)
         Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
+
 }
 
 @Composable
@@ -564,7 +622,7 @@ private fun PreferenceRow(
         }
         Row(
             Modifier
-                .clip(RoundedCornerShape(9.dp))
+                .clip(RoundedCornerShape(3.dp))
                 .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
                 .padding(3.dp)
         ) {
@@ -594,4 +652,3 @@ private fun formatCompact(value: Long): String = when {
     value < 1_000_000 -> String.format(Locale.US, "%.1fk", value / 1000.0)
     else -> String.format(Locale.US, "%.1fM", value / 1_000_000.0)
 }
-

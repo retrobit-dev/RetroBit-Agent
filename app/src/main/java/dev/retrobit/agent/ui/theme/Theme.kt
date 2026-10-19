@@ -1,8 +1,8 @@
 package dev.retrobit.agent.ui.theme
 
 import android.app.Activity
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Shapes
 import androidx.compose.material3.Typography
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
@@ -11,45 +11,67 @@ import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.view.WindowCompat
+import dev.retrobit.agent.R
 
+/**
+ * Retro cyberdeck palette: grayscale "e-paper" ink & paper, no hue.
+ * Dark mode = black glass terminal, light mode = warm paper.
+ */
 object Palette {
-    val Bg = Color(0xFF07070C)
-    val BgSoft = Color(0xFF0B0B13)
-    val Surface = Color(0xFF101018)
-    val SurfaceHigh = Color(0xFF16161F)
-    val Stroke = Color(0xFF262633)
-    val StrokeSoft = Color(0xFF1C1C26)
-    val Primary = Color(0xFF8B6CFF)
-    val PrimaryDeep = Color(0xFF5B3FE0)
-    val Accent = Color(0xFF3DD6FF)
-    val Pink = Color(0xFFFF7AC6)
-    val Text = Color(0xFFF4F4FA)
-    val Muted = Color(0xFF8D8DA3)
-    val Success = Color(0xFF4ADE80)
-    val Warning = Color(0xFFFBBF24)
-    val Danger = Color(0xFFFF6B6B)
+    val Bg = Color(0xFF0A0A0A)
+    val BgSoft = Color(0xFF0E0E0D)
+    val Surface = Color(0xFF131312)
+    val SurfaceHigh = Color(0xFF1B1B1A)
+    val Stroke = Color(0xFF31312F)
+    val StrokeSoft = Color(0xFF232322)
 
-    val LightBg = Color(0xFFF5F5FA)
-    val LightSurface = Color(0xFFFFFFFF)
-    val LightSurfaceHigh = Color(0xFFEFEFF6)
-    val LightStroke = Color(0xFFE1E1EC)
-    val LightText = Color(0xFF14141F)
-    val LightMuted = Color(0xFF6A6A80)
-    val LightPrimary = Color(0xFF6246EA)
+    val Primary = Color(0xFFDEDED5)
+    val PrimaryDeep = Color(0xFFA9A9A1)
+    val Accent = Color(0xFFF4F4EC)
+    val Pink = Color(0xFFBDBDB4)
+
+    val Text = Color(0xFFEAEAE2)
+    val Muted = Color(0xFF8E8E86)
+
+    val Success = Color(0xFFCFCFC6)
+    val Warning = Color(0xFFEFEFE6)
+    val Danger = Color(0xFF9C9C94)
+
+    val LightBg = Color(0xFFEDEDE7)
+    val LightSurface = Color(0xFFF8F8F2)
+    val LightSurfaceHigh = Color(0xFFE3E3DB)
+    val LightStroke = Color(0xFFC9C9C0)
+    val LightText = Color(0xFF14140F)
+    val LightMuted = Color(0xFF5F5F57)
+    val LightPrimary = Color(0xFF1B1B16)
+
+    /** Faint paper grain / scanline tone used by backgrounds. */
+    val Ink = Color(0xFF000000)
+    val Paper = Color(0xFFF4F4EC)
 }
+
+/** Pixel Operator (CC0) bundled in res/font. */
+val PixelFont: FontFamily = FontFamily(
+    Font(R.font.pixel_operator, FontWeight.Normal),
+    Font(R.font.pixel_operator_bold, FontWeight.Bold),
+)
+
+/** Monospace role — Pixel Operator already sits on a pixel grid. */
+val MonoFont: FontFamily = PixelFont
 
 private val DarkColors = darkColorScheme(
     primary = Palette.Primary,
-    onPrimary = Color.White,
-    primaryContainer = Palette.PrimaryDeep,
-    onPrimaryContainer = Color.White,
+    onPrimary = Color(0xFF0A0A0A),
+    primaryContainer = Color(0xFF1E1E1C),
+    onPrimaryContainer = Palette.Text,
     secondary = Palette.Accent,
-    onSecondary = Color(0xFF03222B),
+    onSecondary = Color(0xFF0A0A0A),
     tertiary = Palette.Pink,
     background = Palette.Bg,
     onBackground = Palette.Text,
@@ -60,17 +82,17 @@ private val DarkColors = darkColorScheme(
     outline = Palette.Stroke,
     outlineVariant = Palette.StrokeSoft,
     error = Palette.Danger,
-    onError = Color.White,
+    onError = Color(0xFF0A0A0A),
 )
 
 private val LightColors = lightColorScheme(
     primary = Palette.LightPrimary,
-    onPrimary = Color.White,
-    primaryContainer = Color(0xFFE5DEFF),
-    onPrimaryContainer = Color(0xFF1D0B54),
-    secondary = Color(0xFF0E7490),
-    onSecondary = Color.White,
-    tertiary = Color(0xFFBE185D),
+    onPrimary = Color(0xFFF8F8F2),
+    primaryContainer = Color(0xFFDCDCD3),
+    onPrimaryContainer = Color(0xFF14140F),
+    secondary = Color(0xFF3A3A34),
+    onSecondary = Color(0xFFF8F8F2),
+    tertiary = Color(0xFF4A4A43),
     background = Palette.LightBg,
     onBackground = Palette.LightText,
     surface = Palette.LightSurface,
@@ -78,33 +100,31 @@ private val LightColors = lightColorScheme(
     surfaceVariant = Palette.LightSurfaceHigh,
     onSurfaceVariant = Palette.LightMuted,
     outline = Palette.LightStroke,
-    outlineVariant = Color(0xFFEDEDF4),
-    error = Color(0xFFDC2626),
-    onError = Color.White,
+    outlineVariant = Color(0xFFDCDCD4),
+    error = Color(0xFF3A3A34),
+    onError = Color(0xFFF8F8F2),
 )
 
 private val AppTypography = Typography(
-    displayLarge = TextStyle(fontFamily = FontFamily.Default, fontWeight = FontWeight.Bold, fontSize = 46.sp, lineHeight = 50.sp, letterSpacing = (-1.4).sp),
-    displayMedium = TextStyle(fontFamily = FontFamily.Default, fontWeight = FontWeight.Bold, fontSize = 36.sp, lineHeight = 40.sp, letterSpacing = (-1).sp),
-    headlineLarge = TextStyle(fontFamily = FontFamily.Default, fontWeight = FontWeight.Bold, fontSize = 30.sp, lineHeight = 34.sp, letterSpacing = (-0.8).sp),
-    headlineMedium = TextStyle(fontFamily = FontFamily.Default, fontWeight = FontWeight.SemiBold, fontSize = 24.sp, lineHeight = 29.sp, letterSpacing = (-0.5).sp),
-    headlineSmall = TextStyle(fontFamily = FontFamily.Default, fontWeight = FontWeight.SemiBold, fontSize = 20.sp, lineHeight = 25.sp, letterSpacing = (-0.3).sp),
-    titleLarge = TextStyle(fontFamily = FontFamily.Default, fontWeight = FontWeight.SemiBold, fontSize = 18.sp, lineHeight = 23.sp, letterSpacing = (-0.2).sp),
-    titleMedium = TextStyle(fontFamily = FontFamily.Default, fontWeight = FontWeight.SemiBold, fontSize = 15.sp, lineHeight = 20.sp, letterSpacing = 0.sp),
-    titleSmall = TextStyle(fontFamily = FontFamily.Default, fontWeight = FontWeight.Medium, fontSize = 13.sp, lineHeight = 18.sp, letterSpacing = 0.1.sp),
-    bodyLarge = TextStyle(fontFamily = FontFamily.Default, fontWeight = FontWeight.Normal, fontSize = 15.sp, lineHeight = 22.sp, letterSpacing = 0.1.sp),
-    bodyMedium = TextStyle(fontFamily = FontFamily.Default, fontWeight = FontWeight.Normal, fontSize = 13.5.sp, lineHeight = 20.sp, letterSpacing = 0.1.sp),
-    bodySmall = TextStyle(fontFamily = FontFamily.Default, fontWeight = FontWeight.Normal, fontSize = 12.sp, lineHeight = 17.sp, letterSpacing = 0.1.sp),
-    labelLarge = TextStyle(fontFamily = FontFamily.Default, fontWeight = FontWeight.SemiBold, fontSize = 13.5.sp, lineHeight = 18.sp, letterSpacing = 0.1.sp),
-    labelMedium = TextStyle(fontFamily = FontFamily.Default, fontWeight = FontWeight.Medium, fontSize = 12.sp, lineHeight = 16.sp, letterSpacing = 0.2.sp),
-    labelSmall = TextStyle(fontFamily = FontFamily.Default, fontWeight = FontWeight.Medium, fontSize = 10.5.sp, lineHeight = 14.sp, letterSpacing = 0.4.sp),
+    displayLarge = TextStyle(fontFamily = PixelFont, fontWeight = FontWeight.Bold, fontSize = 44.sp, lineHeight = 50.sp, letterSpacing = 0.sp),
+    displayMedium = TextStyle(fontFamily = PixelFont, fontWeight = FontWeight.Bold, fontSize = 34.sp, lineHeight = 40.sp, letterSpacing = 0.sp),
+    headlineLarge = TextStyle(fontFamily = PixelFont, fontWeight = FontWeight.Bold, fontSize = 28.sp, lineHeight = 36.sp, letterSpacing = 0.sp),
+    headlineMedium = TextStyle(fontFamily = PixelFont, fontWeight = FontWeight.Bold, fontSize = 22.sp, lineHeight = 29.sp, letterSpacing = 0.sp),
+    headlineSmall = TextStyle(fontFamily = PixelFont, fontWeight = FontWeight.Bold, fontSize = 19.sp, lineHeight = 26.sp, letterSpacing = 0.sp),
+    titleLarge = TextStyle(fontFamily = PixelFont, fontWeight = FontWeight.Bold, fontSize = 17.sp, lineHeight = 23.sp, letterSpacing = 0.sp),
+    titleMedium = TextStyle(fontFamily = PixelFont, fontWeight = FontWeight.Bold, fontSize = 14.sp, lineHeight = 20.sp, letterSpacing = 0.sp),
+    titleSmall = TextStyle(fontFamily = PixelFont, fontWeight = FontWeight.Normal, fontSize = 12.5.sp, lineHeight = 18.sp, letterSpacing = 0.sp),
+    bodyLarge = TextStyle(fontFamily = PixelFont, fontWeight = FontWeight.Normal, fontSize = 14.5.sp, lineHeight = 22.sp, letterSpacing = 0.sp),
+    bodyMedium = TextStyle(fontFamily = PixelFont, fontWeight = FontWeight.Normal, fontSize = 13.sp, lineHeight = 20.sp, letterSpacing = 0.sp),
+    bodySmall = TextStyle(fontFamily = PixelFont, fontWeight = FontWeight.Normal, fontSize = 11.5.sp, lineHeight = 17.sp, letterSpacing = 0.sp),
+    labelLarge = TextStyle(fontFamily = PixelFont, fontWeight = FontWeight.Bold, fontSize = 12.5.sp, lineHeight = 17.sp, letterSpacing = 0.4.sp),
+    labelMedium = TextStyle(fontFamily = PixelFont, fontWeight = FontWeight.Normal, fontSize = 11.5.sp, lineHeight = 16.sp, letterSpacing = 0.6.sp),
+    labelSmall = TextStyle(fontFamily = PixelFont, fontWeight = FontWeight.Normal, fontSize = 10.sp, lineHeight = 14.sp, letterSpacing = 0.8.sp),
 )
-
-val MonoFont = FontFamily.Monospace
 
 @Composable
 fun RetroBitTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
+    darkTheme: Boolean = true,
     content: @Composable () -> Unit,
 ) {
     val colors = if (darkTheme) DarkColors else LightColors
@@ -119,12 +139,12 @@ fun RetroBitTheme(
     MaterialTheme(
         colorScheme = colors,
         typography = AppTypography,
-        shapes = androidx.compose.material3.Shapes(
-            extraSmall = androidx.compose.foundation.shape.RoundedCornerShape(8.dp),
-            small = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
-            medium = androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
-            large = androidx.compose.foundation.shape.RoundedCornerShape(22.dp),
-            extraLarge = androidx.compose.foundation.shape.RoundedCornerShape(30.dp),
+        shapes = Shapes(
+            extraSmall = androidx.compose.foundation.shape.RoundedCornerShape(2.dp),
+            small = androidx.compose.foundation.shape.RoundedCornerShape(3.dp),
+            medium = androidx.compose.foundation.shape.RoundedCornerShape(4.dp),
+            large = androidx.compose.foundation.shape.RoundedCornerShape(6.dp),
+            extraLarge = androidx.compose.foundation.shape.RoundedCornerShape(6.dp),
         ),
         content = content,
     )

@@ -143,6 +143,9 @@ class LanPreviewServer(
         "gif" -> "image/gif"
         "ico" -> "image/x-icon"
         "woff2" -> "font/woff2"
+        "woff" -> "font/woff"
+        "ttf" -> "font/ttf"
+        "otf" -> "font/otf"
         "txt" -> "text/plain"
         else -> "application/octet-stream"
     }

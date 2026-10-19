@@ -166,7 +166,7 @@ class DatabaseManager(context: Context, private val projectId: String) {
                 append("\"").append(col.name).append("\" ").append(type)
                 if (col.primaryKey) append(" PRIMARY KEY")
                 if (col.notNull && !col.primaryKey) append(" NOT NULL")
-                col.defaultValue?.let { append(" DEFAULT ").append(it) }
+                col.default?.let { append(" DEFAULT ").append(it) }
             }
         }
         val sql = "CREATE TABLE IF NOT EXISTS \"$name\" (${columnDefs.joinToString(", ")})"

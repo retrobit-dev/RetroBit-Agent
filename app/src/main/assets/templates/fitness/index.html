@@ -3,16 +3,23 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
-<meta name="theme-color" content="#0B0B12" />
+<meta name="theme-color" content="#0A0A0A" />
 <title>Pulse — Kesehatan harian</title>
 <style id="rb-design">
 /*RB_DESIGN_START*/
 :root{
-  --rb-primary:#7C5CFF;--rb-accent:#39D0FF;--rb-bg:#0B0B12;--rb-surface:#15151F;
-  --rb-text:#F5F5FA;--rb-muted:#8C8CA1;--rb-radius:20px;
-  --rb-font:'Inter',system-ui,-apple-system,sans-serif;
+  --rb-primary:#DEDED5;
+  --rb-accent:#F4F4EC;
+  --rb-bg:#0A0A0A;
+  --rb-surface:#141413;
+  --rb-text:#EAEAE2;
+  --rb-muted:#8E8E86;
+  --rb-radius:4px;
+  --rb-font:'Pixel Operator',ui-monospace,'Courier New',monospace;
 }
 /*RB_DESIGN_END*/
+@font-face{font-family:'Pixel Operator';src:url('assets/fonts/PixelOperator.ttf') format('truetype');font-weight:400;font-display:swap}
+@font-face{font-family:'Pixel Operator';src:url('assets/fonts/PixelOperator-Bold.ttf') format('truetype');font-weight:700;font-display:swap}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 body{margin:0;background:var(--rb-bg);color:var(--rb-text);font-family:var(--rb-font);padding-bottom:110px}
 body::before{content:"";position:fixed;inset:0;background:radial-gradient(70% 40% at 90% 0%,color-mix(in srgb,var(--rb-accent) 16%,transparent),transparent 70%);pointer-events:none}
@@ -69,6 +76,9 @@ body::before{content:"";position:fixed;inset:0;background:radial-gradient(70% 40
 .toast{position:fixed;left:50%;top:18px;transform:translate(-50%,-80px);background:var(--rb-text);color:var(--rb-bg);padding:11px 18px;border-radius:11px;font-size:12.5px;font-weight:650;transition:.35s;z-index:30;white-space:nowrap}
 .toast.show{transform:translate(-50%,0)}
 @media (max-width:420px){.stats{grid-template-columns:1fr}.rings-card{grid-row:1}.sleep-card{grid-row:2}}
+
+/* retro cyberdeck: kill soft glows, snap radii to the token */
+.glow{display:none!important}
 </style>
 </head>
 <body>
@@ -87,14 +97,14 @@ body::before{content:"";position:fixed;inset:0;background:radial-gradient(70% 40
           <circle cx="59" cy="59" r="38" fill="none" stroke="rgba(255,255,255,.08)" stroke-width="9"/>
           <circle cx="59" cy="59" r="38" fill="none" stroke="var(--rb-accent)" stroke-width="9" stroke-linecap="round" stroke-dasharray="238.7" stroke-dashoffset="95"/>
           <circle cx="59" cy="59" r="26" fill="none" stroke="rgba(255,255,255,.08)" stroke-width="9"/>
-          <circle cx="59" cy="59" r="26" fill="none" stroke="#FF9B6B" stroke-width="9" stroke-linecap="round" stroke-dasharray="163.4" stroke-dashoffset="70"/>
+          <circle cx="59" cy="59" r="26" fill="none" stroke="#8C8C8C" stroke-width="9" stroke-linecap="round" stroke-dasharray="163.4" stroke-dashoffset="70"/>
         </svg>
         <div class="center"><div><b>74%</b><small>Harian</small></div></div>
       </div>
       <div class="legend">
         <div><i style="background:var(--rb-primary)"></i>Gerak <b>420 kkal</b></div>
         <div><i style="background:var(--rb-accent)"></i>Latihan <b>38 mnt</b></div>
-        <div><i style="background:#FF9B6B"></i>Berdiri <b>9 jam</b></div>
+        <div><i style="background:#8C8C8C"></i>Berdiri <b>9 jam</b></div>
       </div>
     </div>
     <div class="card sleep-card">

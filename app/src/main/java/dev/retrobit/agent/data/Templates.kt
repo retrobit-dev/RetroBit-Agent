@@ -32,12 +32,28 @@ object Templates {
 
     fun byId(id: String): TemplateInfo = ALL.firstOrNull { it.id == id } ?: ALL.first()
 
+    /** Cheap keyword router used by the dashboard composer before any AI call. */
+    fun suggestId(prompt: String): String {
+        val p = prompt.lowercase()
+        fun has(vararg keys: String) = keys.any { p.contains(it) }
+        return when {
+            has("toko", "jual", "ecommerce", "e-commerce", "katalog", "produk", "belanja", "restoran", "kafe", "makanan") -> "commerce"
+            has("tugas", "todo", "to-do", "task", "checklist", "produktivitas", "kebiasaan") -> "tasks"
+            has("chat", "obrolan", "pesan", "messaging", "percakapan", "forum") -> "chat"
+            has("sehat", "fitness", "olahraga", "workout", "kesehatan", "lari", "gym") -> "fitness"
+            has("portofolio", "portfolio", "karya", "desainer", "fotografer", "studio") -> "portfolio"
+            has("landing", "saas", "marketing", "startup", "bisnis", "promosi", "perusahaan") -> "saas"
+            has("kosong", "blank", "dari nol", "kanvas") -> "blank"
+            else -> "saas"
+        }
+    }
+
     fun designFor(templateId: String): DesignSystem {
         val presetId = when (templateId) {
             "commerce" -> "sunset"
-            "tasks" -> "aurora"
+            "tasks" -> "paper"
             "portfolio" -> "mono"
-            "blank" -> "candy"
+            "blank" -> "terminal"
             else -> "midnight"
         }
         return DesignSystem.PRESETS.firstOrNull { it.id == presetId }?.design ?: DesignSystem()
@@ -46,8 +62,26 @@ object Templates {
     fun apply(assets: AssetManager, files: ProjectFiles, templateId: String, design: DesignSystem) {
         val folder = "templates/" + byId(templateId).id
         copyAssetFolder(assets, folder, files)
+        installFonts(assets, files)
         files.ensureEntryPoint()
         applyDesign(files, design)
+    }
+
+    /** Copies the bundled Pixel Operator faces into the project so previews and exports share the font. */
+    fun installFonts(assets: AssetManager, files: ProjectFiles) {
+        for ((assetPath, targetPath) in listOf(
+            "fonts/PixelOperator.ttf" to "assets/fonts/PixelOperator.ttf",
+            "fonts/PixelOperator-Bold.ttf" to "assets/fonts/PixelOperator-Bold.ttf",
+        )) {
+            val target = files.resolve(targetPath)
+            if (target.exists() && target.length() > 0) continue
+            runCatching {
+                assets.open(assetPath).use { input ->
+                    target.parentFile?.mkdirs()
+                    target.outputStream().use { input.copyTo(it) }
+                }
+            }
+        }
     }
 
     private fun copyAssetFolder(assets: AssetManager, path: String, files: ProjectFiles, prefix: String = "") {

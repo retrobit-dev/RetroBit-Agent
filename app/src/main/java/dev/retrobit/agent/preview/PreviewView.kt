@@ -27,9 +27,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.OpenInNew
-import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -62,6 +59,7 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import java.io.File
+import dev.retrobit.agent.ui.icons.PixelIcons
 
 data class ConsoleEntry(
     val level: String,
@@ -141,7 +139,7 @@ fun PreviewPane(
         )
     }
 
-    Box(modifier = modifier.clip(RoundedCornerShape(18.dp)).background(Color(0xFF08080E))) {
+    Box(modifier = modifier.clip(RoundedCornerShape(5.dp)).background(Color(0xFF08080E))) {
         AndroidView(
             modifier = Modifier.fillMaxSize(),
             factory = { ctx ->
@@ -304,7 +302,7 @@ fun PreviewToolbar(
         Row(
             modifier = Modifier
                 .weight(1f)
-                .clip(RoundedCornerShape(10.dp))
+                .clip(RoundedCornerShape(3.dp))
                 .background(MaterialTheme.colorScheme.surface)
                 .padding(3.dp),
             horizontalArrangement = Arrangement.spacedBy(3.dp),
@@ -314,7 +312,7 @@ fun PreviewToolbar(
                 Box(
                     Modifier
                         .weight(1f)
-                        .clip(RoundedCornerShape(8.dp))
+                        .clip(RoundedCornerShape(3.dp))
                         .background(if (selected) MaterialTheme.colorScheme.surfaceVariant else Color.Transparent)
                         .clickable { onDeviceChange(preset) }
                         .padding(vertical = 6.dp),
@@ -338,13 +336,12 @@ fun PreviewToolbar(
             Text(">_", color = Palette.Accent, fontFamily = MonoFont, fontSize = 12.sp)
         }
         IconButton(onClick = onReload, modifier = Modifier.size(34.dp)) {
-            Icon(Icons.Outlined.Refresh, contentDescription = "Muat ulang", tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(18.dp))
+            Icon(PixelIcons.Reload, contentDescription = "Muat ulang", tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(18.dp))
         }
         if (onOpenExternal != null) {
             IconButton(onClick = onOpenExternal, modifier = Modifier.size(34.dp)) {
-                Icon(Icons.Outlined.OpenInNew, contentDescription = "Buka di browser", tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(18.dp))
+                Icon(PixelIcons.ExternalLink, contentDescription = "Buka di browser", tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(18.dp))
             }
         }
     }
 }
-

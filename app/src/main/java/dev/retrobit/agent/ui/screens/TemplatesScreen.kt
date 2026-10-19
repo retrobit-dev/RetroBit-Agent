@@ -18,8 +18,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.ArrowForward
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -43,6 +41,7 @@ import dev.retrobit.agent.data.Templates
 import dev.retrobit.agent.ui.components.BrandMark
 import dev.retrobit.agent.ui.components.Pill
 import dev.retrobit.agent.ui.theme.Palette
+import dev.retrobit.agent.ui.icons.PixelIcons
 
 @Composable
 fun TemplatesScreen(
@@ -64,7 +63,7 @@ fun TemplatesScreen(
     ) {
         item {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                BrandMark(38.dp, "◇")
+                BrandMark(38.dp, "T")
                 Spacer(Modifier.width(11.dp))
                 Column {
                     Text("Template", style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onBackground)
@@ -126,7 +125,7 @@ private fun TemplateShowcaseCard(
     val primary = parse(design.primary)
     val accent = parse(design.accent)
     val bg = parse(design.background)
-    val shape = RoundedCornerShape(20.dp)
+    val shape = RoundedCornerShape(6.dp)
 
     Column(
         modifier = Modifier
@@ -139,7 +138,7 @@ private fun TemplateShowcaseCard(
             Modifier
                 .fillMaxWidth()
                 .height(132.dp)
-                .background(Brush.linearGradient(listOf(primary.copy(alpha = 0.85f), accent.copy(alpha = 0.7f))))
+                .background(Brush.linearGradient(listOf(primary.copy(alpha = 0.22f), accent.copy(alpha = 0.10f))))
         ) {
             MockAppWindow(
                 design = design,
@@ -151,11 +150,11 @@ private fun TemplateShowcaseCard(
                 Modifier
                     .align(Alignment.TopStart)
                     .padding(12.dp)
-                    .clip(RoundedCornerShape(9.dp))
+                    .clip(RoundedCornerShape(3.dp))
                     .background(bg.copy(alpha = 0.72f))
                     .padding(horizontal = 8.dp, vertical = 5.dp)
             ) {
-                Text("${info.emoji}  ${info.category}", color = Color.White, style = MaterialTheme.typography.labelSmall)
+                Text("${info.emoji}  ${info.category}", color = MaterialTheme.colorScheme.onSurface, style = MaterialTheme.typography.labelSmall)
             }
         }
         Column(Modifier.padding(15.dp)) {
@@ -166,10 +165,10 @@ private fun TemplateShowcaseCard(
                 Spacer(Modifier.weight(1f))
                 Box(
                     Modifier
-                        .clip(RoundedCornerShape(10.dp))
+                        .clip(RoundedCornerShape(3.dp))
                         .then(
                             if (busy) Modifier.background(primary.copy(alpha = 0.3f))
-                            else Modifier.background(Brush.linearGradient(listOf(primary, accent)))
+                            else Modifier.background(Brush.linearGradient(listOf(primary.copy(alpha = 0.25f), accent.copy(alpha = 0.10f))))
                         )
                         .clickable(enabled = !busy, onClick = onUse)
                         .padding(horizontal = 12.dp, vertical = 8.dp)
@@ -177,12 +176,12 @@ private fun TemplateShowcaseCard(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
                             if (busy) "Membuat…" else "Pakai",
-                            color = Color.White,
+                            color = MaterialTheme.colorScheme.onSurface,
                             style = MaterialTheme.typography.labelMedium,
                             fontWeight = FontWeight.SemiBold,
                         )
                         Spacer(Modifier.width(4.dp))
-                        Icon(Icons.Outlined.ArrowForward, null, tint = Color.White, modifier = Modifier.size(14.dp))
+                        Icon(PixelIcons.ArrowRight, null, tint = MaterialTheme.colorScheme.onSurface, modifier = Modifier.size(14.dp))
                     }
                 }
             }
@@ -210,22 +209,22 @@ private fun MockAppWindow(design: DesignSystem, modifier: Modifier = Modifier) {
     val text = parse(design.textColor)
     Column(
         modifier = modifier
-            .clip(RoundedCornerShape(12.dp))
+            .clip(RoundedCornerShape(4.dp))
             .background(bg.copy(alpha = 0.9f))
-            .border(1.dp, Color.White.copy(alpha = 0.12f), RoundedCornerShape(12.dp))
+            .border(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f), RoundedCornerShape(4.dp))
             .padding(9.dp)
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(Modifier.size(4.dp).clip(RoundedCornerShape(2.dp)).background(Color.White.copy(alpha = 0.25f)))
+            Box(Modifier.size(4.dp).clip(RoundedCornerShape(2.dp)).background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.25f)))
             Spacer(Modifier.width(3.dp))
-            Box(Modifier.size(4.dp).clip(RoundedCornerShape(2.dp)).background(Color.White.copy(alpha = 0.25f)))
+            Box(Modifier.size(4.dp).clip(RoundedCornerShape(2.dp)).background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.25f)))
             Spacer(Modifier.width(8.dp))
             Box(
                 Modifier
                     .weight(1f)
                     .height(9.dp)
                     .clip(RoundedCornerShape(5.dp))
-                    .background(Color.White.copy(alpha = 0.08f))
+                    .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f))
             )
         }
         Spacer(Modifier.height(10.dp))
@@ -255,8 +254,8 @@ private fun MockAppWindow(design: DesignSystem, modifier: Modifier = Modifier) {
                     Modifier
                         .width(54.dp)
                         .height(16.dp)
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(Brush.horizontalGradient(listOf(primary, accent)))
+                        .clip(RoundedCornerShape(3.dp))
+                        .background(Brush.horizontalGradient(listOf(primary.copy(alpha = 0.22f), accent.copy(alpha = 0.10f))))
                 )
                 Spacer(Modifier.weight(1f))
                 Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -267,7 +266,7 @@ private fun MockAppWindow(design: DesignSystem, modifier: Modifier = Modifier) {
                                 .height(24.dp)
                                 .clip(RoundedCornerShape(6.dp))
                                 .background(surface.copy(alpha = 0.9f))
-                                .border(1.dp, Color.White.copy(alpha = 0.05f), RoundedCornerShape(6.dp))
+                                .border(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f), RoundedCornerShape(6.dp))
                         )
                     }
                 }
@@ -283,7 +282,7 @@ private fun MockAppWindow(design: DesignSystem, modifier: Modifier = Modifier) {
                     Modifier
                         .fillMaxWidth()
                         .weight(1f)
-                        .clip(RoundedCornerShape(8.dp))
+                        .clip(RoundedCornerShape(3.dp))
                         .background(Brush.verticalGradient(listOf(primary.copy(alpha = 0.55f), accent.copy(alpha = 0.2f))))
                 )
                 Box(

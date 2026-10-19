@@ -20,13 +20,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Add
-import androidx.compose.material.icons.outlined.ArrowBack
-import androidx.compose.material.icons.outlined.DeleteOutline
-import androidx.compose.material.icons.outlined.Description
-import androidx.compose.material.icons.outlined.Edit
-import androidx.compose.material.icons.outlined.Folder
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -60,6 +53,7 @@ import dev.retrobit.agent.ui.components.highlightCode
 import dev.retrobit.agent.ui.theme.MonoFont
 import dev.retrobit.agent.ui.theme.Palette
 import java.util.Locale
+import dev.retrobit.agent.ui.icons.PixelIcons
 
 @Composable
 fun CodePane(vm: WorkspaceViewModel, modifier: Modifier = Modifier) {
@@ -89,20 +83,20 @@ fun CodePane(vm: WorkspaceViewModel, modifier: Modifier = Modifier) {
                 }
                 Row(
                     Modifier
-                        .clip(RoundedCornerShape(10.dp))
+                        .clip(RoundedCornerShape(3.dp))
                         .background(Palette.Primary.copy(alpha = 0.12f))
                         .clickable { showCreate = true }
                         .padding(horizontal = 11.dp, vertical = 8.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Icon(Icons.Outlined.Add, null, tint = Palette.Primary, modifier = Modifier.size(15.dp))
+                    Icon(PixelIcons.Plus, null, tint = Palette.Primary, modifier = Modifier.size(15.dp))
                     Spacer(Modifier.width(4.dp))
                     Text("File baru", style = MaterialTheme.typography.labelSmall, color = Palette.Primary)
                 }
             }
             if (nodes.isEmpty()) {
                 EmptyState(
-                    emoji = "📁",
+                    icon = PixelIcons.Folder,
                     title = "Belum ada file",
                     description = "Minta AI membuat aplikasi, atau tambahkan file sendiri.",
                     action = { GradientButton("File baru", onClick = { showCreate = true }) },
@@ -136,7 +130,7 @@ fun CodePane(vm: WorkspaceViewModel, modifier: Modifier = Modifier) {
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 IconButton(onClick = { vm.closeFile() }, modifier = Modifier.size(36.dp)) {
-                    Icon(Icons.Outlined.ArrowBack, "Kembali", tint = MaterialTheme.colorScheme.onSurface, modifier = Modifier.size(19.dp))
+                    Icon(PixelIcons.ArrowLeft, "Kembali", tint = MaterialTheme.colorScheme.onSurface, modifier = Modifier.size(19.dp))
                 }
                 Column(Modifier.weight(1f)) {
                     Text(
@@ -155,11 +149,11 @@ fun CodePane(vm: WorkspaceViewModel, modifier: Modifier = Modifier) {
                 }
                 if (!file.isBinary) {
                     IconButton(onClick = { showEditor = true }, modifier = Modifier.size(34.dp)) {
-                        Icon(Icons.Outlined.Edit, "Edit", tint = Palette.Accent, modifier = Modifier.size(17.dp))
+                        Icon(PixelIcons.Pencil, "Edit", tint = Palette.Accent, modifier = Modifier.size(17.dp))
                     }
                 }
                 IconButton(onClick = { deleteTarget = nodes.firstOrNull { it.path == file.path } }, modifier = Modifier.size(34.dp)) {
-                    Icon(Icons.Outlined.DeleteOutline, "Hapus", tint = Palette.Muted, modifier = Modifier.size(17.dp))
+                    Icon(PixelIcons.Trash, "Hapus", tint = Palette.Muted, modifier = Modifier.size(17.dp))
                 }
             }
             CodeReader(file.content, Modifier.weight(1f))
@@ -225,13 +219,13 @@ private fun FileRow(node: FileNode, onClick: () -> Unit) {
     Row(
         Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(10.dp))
+            .clip(RoundedCornerShape(3.dp))
             .clickable(enabled = !node.isDirectory, onClick = onClick)
             .padding(start = (10 + node.depth * 16).dp, end = 10.dp, top = 9.dp, bottom = 9.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Icon(
-            if (node.isDirectory) Icons.Outlined.Folder else Icons.Outlined.Description,
+            if (node.isDirectory) PixelIcons.Folder else PixelIcons.FileText,
             contentDescription = null,
             tint = if (node.isDirectory) Palette.Muted else tint,
             modifier = Modifier.size(17.dp),
@@ -271,9 +265,9 @@ private fun CodeReader(content: String, modifier: Modifier = Modifier) {
             Modifier
                 .fillMaxWidth()
                 .weight(1f)
-                .clip(RoundedCornerShape(14.dp))
-                .background(Color(0xFF08080E))
-                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(14.dp))
+                .clip(RoundedCornerShape(4.dp))
+                .background(MaterialTheme.colorScheme.background)
+                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(4.dp))
         ) {
             Row(
                 Modifier
@@ -283,7 +277,7 @@ private fun CodeReader(content: String, modifier: Modifier = Modifier) {
                 Column(
                     Modifier
                         .width(gutterWidth)
-                        .background(Color.White.copy(alpha = 0.02f))
+                        .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.02f))
                         .padding(vertical = 12.dp)
                 ) {
                     lines.indices.forEach { index ->
@@ -351,7 +345,7 @@ fun SimpleInputDialog(
                 Row(
                     Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(10.dp))
+                        .clip(RoundedCornerShape(3.dp))
                         .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
                         .padding(horizontal = 10.dp, vertical = 10.dp)
                 ) {
@@ -400,9 +394,9 @@ private fun FileEditorDialog(
                 .fillMaxSize()
                 .imePadding()
                 .padding(10.dp)
-                .clip(RoundedCornerShape(20.dp))
+                .clip(RoundedCornerShape(6.dp))
                 .background(MaterialTheme.colorScheme.background)
-                .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(20.dp))
+                .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(6.dp))
                 .padding(14.dp)
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -425,9 +419,9 @@ private fun FileEditorDialog(
                 Modifier
                     .weight(1f)
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(Color(0xFF08080E))
-                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp))
+                    .clip(RoundedCornerShape(4.dp))
+                    .background(MaterialTheme.colorScheme.background)
+                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(4.dp))
                     .verticalScroll(rememberScrollState())
             ) {
                 BasicTextField(

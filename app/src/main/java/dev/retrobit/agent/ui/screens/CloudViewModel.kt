@@ -47,6 +47,9 @@ class CloudViewModel(private val container: AppContainer) : ViewModel() {
     var autoPreview by mutableStateOf(settings.autoOpenPreview)
         private set
 
+    var systemPrompt by mutableStateOf(settings.systemPrompt)
+        private set
+
     val demoMode: Boolean get() = provider == ProviderKind.DEMO
 
     init {
@@ -167,6 +170,22 @@ class CloudViewModel(private val container: AppContainer) : ViewModel() {
     fun setAutoPreview(value: Boolean) {
         autoPreview = value
         settings.autoOpenPreview = value
+    }
+
+    fun updateSystemPrompt(value: String) {
+        systemPrompt = value
+    }
+
+    fun saveSystemPrompt() {
+        settings.systemPrompt = systemPrompt
+        systemPrompt = settings.systemPrompt
+        savedMessage = "System prompt global disimpan. Chat baru memakai teks ini."
+    }
+
+    fun resetSystemPrompt() {
+        settings.resetSystemPrompt()
+        systemPrompt = settings.systemPrompt
+        savedMessage = "System prompt kembali ke default."
     }
 
     fun resetUsage() {

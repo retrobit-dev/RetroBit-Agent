@@ -21,12 +21,6 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.AutoAwesome
-import androidx.compose.material.icons.outlined.ExpandLess
-import androidx.compose.material.icons.outlined.ExpandMore
-import androidx.compose.material.icons.outlined.Send
-import androidx.compose.material.icons.outlined.Stop
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -61,6 +55,7 @@ import dev.retrobit.agent.ui.components.relativeTime
 import dev.retrobit.agent.ui.components.toolVisual
 import dev.retrobit.agent.ui.theme.MonoFont
 import dev.retrobit.agent.ui.theme.Palette
+import dev.retrobit.agent.ui.icons.PixelIcons
 
 private data class Suggestion(val emoji: String, val title: String, val prompt: String)
 
@@ -175,9 +170,9 @@ private fun ChatWelcome(project: Project, demoMode: Boolean, onSend: (String) ->
             Row(
                 Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(12.dp))
+                    .clip(RoundedCornerShape(4.dp))
                     .background(Palette.Warning.copy(alpha = 0.06f))
-                    .border(1.dp, Palette.Warning.copy(alpha = 0.2f), RoundedCornerShape(12.dp))
+                    .border(1.dp, Palette.Warning.copy(alpha = 0.2f), RoundedCornerShape(4.dp))
                     .padding(12.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
@@ -196,7 +191,7 @@ private fun ChatWelcome(project: Project, demoMode: Boolean, onSend: (String) ->
 
 @Composable
 private fun SuggestionCard(suggestion: Suggestion, modifier: Modifier = Modifier, onClick: () -> Unit) {
-    val shape = RoundedCornerShape(14.dp)
+    val shape = RoundedCornerShape(4.dp)
     Column(
         modifier = modifier
             .clip(shape)
@@ -223,14 +218,15 @@ private fun UserBubble(message: ChatMessage) {
         Box(
             Modifier
                 .widthIn(max = 320.dp)
-                .clip(RoundedCornerShape(18.dp, 18.dp, 5.dp, 18.dp))
-                .background(Brush.linearGradient(listOf(Palette.Primary.copy(alpha = 0.9f), Palette.PrimaryDeep.copy(alpha = 0.92f))))
+                .clip(RoundedCornerShape(4.dp, 4.dp, 1.dp, 4.dp))
+                .background(Palette.SurfaceHigh)
+                .border(1.dp, Palette.StrokeSoft, RoundedCornerShape(4.dp, 4.dp, 1.dp, 4.dp))
                 .padding(horizontal = 14.dp, vertical = 11.dp)
         ) {
             Text(
                 message.content,
                 style = MaterialTheme.typography.bodyMedium,
-                color = Color.White,
+                color = MaterialTheme.colorScheme.onSurface,
                 lineHeight = 21.sp,
             )
         }
@@ -249,7 +245,7 @@ private fun AssistantMessage(message: ChatMessage, project: Project) {
     var stepsOpen by remember(message.id) { mutableStateOf(message.steps.size <= 4) }
     Column(Modifier.fillMaxWidth()) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            BrandMark(24.dp, "✦")
+            BrandMark(24.dp, "R")
             Spacer(Modifier.width(8.dp))
             Text(
                 "RetroBit",
@@ -282,9 +278,9 @@ private fun AssistantMessage(message: ChatMessage, project: Project) {
             Box(
                 Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(13.dp))
+                    .clip(RoundedCornerShape(4.dp))
                     .background(Palette.Danger.copy(alpha = 0.07f))
-                    .border(1.dp, Palette.Danger.copy(alpha = 0.25f), RoundedCornerShape(13.dp))
+                    .border(1.dp, Palette.Danger.copy(alpha = 0.25f), RoundedCornerShape(4.dp))
                     .padding(13.dp)
             ) {
                 MarkdownText(
@@ -303,7 +299,7 @@ private fun AssistantMessage(message: ChatMessage, project: Project) {
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
                 if (message.filesChanged.isNotEmpty()) {
                     Pill(
-                        "✓ ${message.filesChanged.size} file",
+                        "${message.filesChanged.size} file berubah",
                         color = Palette.Success,
                         background = Palette.Success.copy(alpha = 0.1f),
                     )
@@ -321,7 +317,7 @@ private fun AssistantMessage(message: ChatMessage, project: Project) {
 private fun LiveAssistantCard(live: LiveAgentState) {
     Column(Modifier.fillMaxWidth()) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            BrandMark(24.dp, "✦")
+            BrandMark(24.dp, "R")
             Spacer(Modifier.width(8.dp))
             Text(
                 "RetroBit sedang bekerja",
@@ -365,7 +361,7 @@ fun StepsCard(
     running: Boolean,
     onToggle: () -> Unit,
 ) {
-    val shape = RoundedCornerShape(14.dp)
+    val shape = RoundedCornerShape(4.dp)
     Column(
         Modifier
             .fillMaxWidth()
@@ -380,7 +376,7 @@ fun StepsCard(
                 .padding(horizontal = 12.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Icon(Icons.Outlined.AutoAwesome, null, tint = Palette.Accent, modifier = Modifier.size(14.dp))
+            Icon(PixelIcons.Sparkles, null, tint = Palette.Accent, modifier = Modifier.size(14.dp))
             Spacer(Modifier.width(7.dp))
             Text(
                 if (running) "Aktivitas" else "Aktivitas agen",
@@ -391,7 +387,7 @@ fun StepsCard(
             Pill("${steps.size}", color = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(Modifier.weight(1f))
             Icon(
-                if (expanded) Icons.Outlined.ExpandLess else Icons.Outlined.ExpandMore,
+                if (expanded) PixelIcons.ChevronUp else PixelIcons.ChevronDown,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.size(16.dp),
@@ -494,7 +490,7 @@ private fun Composer(
             .background(MaterialTheme.colorScheme.background.copy(alpha = 0.92f))
             .padding(horizontal = 14.dp, vertical = 10.dp)
     ) {
-        val shape = RoundedCornerShape(22.dp)
+        val shape = RoundedCornerShape(6.dp)
         Row(
             Modifier
                 .fillMaxWidth()
@@ -526,7 +522,7 @@ private fun Composer(
             Box(
                 Modifier
                     .size(40.dp)
-                    .clip(CircleShape)
+                    .clip(RoundedCornerShape(3.dp))
                     .then(
                         if (running || draft.isBlank()) {
                             Modifier.background(
@@ -534,7 +530,7 @@ private fun Composer(
                                 else MaterialTheme.colorScheme.surfaceVariant
                             )
                         } else {
-                            Modifier.background(Brush.linearGradient(listOf(Palette.Primary, Palette.Accent)))
+                            Modifier.background(Palette.Primary)
                         }
                     )
                     .clickable {
@@ -543,12 +539,12 @@ private fun Composer(
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(
-                    if (running) Icons.Outlined.Stop else Icons.Outlined.Send,
+                    if (running) PixelIcons.Stop else PixelIcons.Send,
                     contentDescription = if (running) "Hentikan" else "Kirim",
                     tint = when {
                         running -> Palette.Danger
                         draft.isBlank() -> MaterialTheme.colorScheme.onSurfaceVariant
-                        else -> Color.White
+                        else -> MaterialTheme.colorScheme.onPrimary
                     },
                     modifier = Modifier.size(18.dp),
                 )

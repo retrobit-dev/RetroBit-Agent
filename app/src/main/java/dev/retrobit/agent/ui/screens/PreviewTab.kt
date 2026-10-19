@@ -19,8 +19,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -43,6 +41,7 @@ import dev.retrobit.agent.preview.PreviewToolbar
 import dev.retrobit.agent.ui.components.Pill
 import dev.retrobit.agent.ui.theme.MonoFont
 import dev.retrobit.agent.ui.theme.Palette
+import dev.retrobit.agent.ui.icons.PixelIcons
 
 @Composable
 fun PreviewTab(
@@ -101,14 +100,14 @@ fun PreviewTab(
                 Modifier
                     .width(frameWidth)
                     .fillMaxSize()
-                    .clip(RoundedCornerShape(20.dp))
-                    .background(Color(0xFF0D0D15))
-                    .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(20.dp))
+                    .clip(RoundedCornerShape(6.dp))
+                    .background(MaterialTheme.colorScheme.background)
+                    .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(6.dp))
             ) {
                 Row(
                     Modifier
                         .fillMaxWidth()
-                        .background(Color(0xFF12121B))
+                        .background(MaterialTheme.colorScheme.surface)
                         .padding(horizontal = 12.dp, vertical = 9.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
@@ -122,12 +121,12 @@ fun PreviewTab(
                         Modifier
                             .weight(1f)
                             .clip(RoundedCornerShape(7.dp))
-                            .background(Color.White.copy(alpha = 0.05f))
+                            .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f))
                             .padding(horizontal = 8.dp, vertical = 4.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         androidx.compose.material3.Icon(
-                            Icons.Outlined.Lock,
+                            PixelIcons.Lock,
                             contentDescription = null,
                             tint = Palette.Success.copy(alpha = 0.8f),
                             modifier = Modifier.size(9.dp),
@@ -197,7 +196,7 @@ fun PreviewTab(
                 style = MaterialTheme.typography.labelSmall,
                 color = if (lan.running) Palette.Accent else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                 modifier = Modifier
-                    .clip(RoundedCornerShape(8.dp))
+                    .clip(RoundedCornerShape(3.dp))
                     .clickable(onClick = onOpenLan)
                     .padding(4.dp),
             )

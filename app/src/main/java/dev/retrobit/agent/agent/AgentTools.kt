@@ -295,14 +295,14 @@ class AgentToolRunner(
                 schema(
                     buildJsonObject {
                         put("preset", prop("string", "Preset: midnight, aurora, sunset, candy, mono, terminal"))
-                        put("primary", prop("string", "Warna utama hex, mis. #7C5CFF"))
+                        put("primary", prop("string", "Warna utama hex grayscale, mis. #DEDED5"))
                         put("accent", prop("string", "Warna aksen hex"))
                         put("background", prop("string", "Warna latar hex"))
                         put("surface", prop("string", "Warna permukaan/kartu hex"))
                         put("text", prop("string", "Warna teks hex"))
                         put("muted", prop("string", "Warna teks sekunder hex"))
                         put("radius", prop("integer", "Radius sudut dalam px, 0-40"))
-                        put("font", prop("string", "Nama font, mis. Inter atau JetBrains Mono"))
+                        put("font", prop("string", "Nama font, pakai Pixel Operator (default) atau Mono"))
                         put("mode", prop("string", "dark atau light"))
                     },
                     emptyList()

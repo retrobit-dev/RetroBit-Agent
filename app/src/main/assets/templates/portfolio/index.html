@@ -3,16 +3,23 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<meta name="theme-color" content="#0B0B12" />
+<meta name="theme-color" content="#0A0A0A" />
 <title>Atelier — Karya pilihan</title>
 <style id="rb-design">
 /*RB_DESIGN_START*/
 :root{
-  --rb-primary:#7C5CFF;--rb-accent:#39D0FF;--rb-bg:#0B0B12;--rb-surface:#15151F;
-  --rb-text:#F5F5FA;--rb-muted:#8C8CA1;--rb-radius:20px;
-  --rb-font:'Inter',system-ui,-apple-system,sans-serif;
+  --rb-primary:#DEDED5;
+  --rb-accent:#F4F4EC;
+  --rb-bg:#0A0A0A;
+  --rb-surface:#141413;
+  --rb-text:#EAEAE2;
+  --rb-muted:#8E8E86;
+  --rb-radius:4px;
+  --rb-font:'Pixel Operator',ui-monospace,'Courier New',monospace;
 }
 /*RB_DESIGN_END*/
+@font-face{font-family:'Pixel Operator';src:url('assets/fonts/PixelOperator.ttf') format('truetype');font-weight:400;font-display:swap}
+@font-face{font-family:'Pixel Operator';src:url('assets/fonts/PixelOperator-Bold.ttf') format('truetype');font-weight:700;font-display:swap}
 *{box-sizing:border-box}
 html{scroll-behavior:smooth}
 body{margin:0;background:var(--rb-bg);color:var(--rb-text);font-family:var(--rb-font);-webkit-font-smoothing:antialiased}
@@ -42,10 +49,10 @@ h1 em{font-style:italic;font-weight:400;color:var(--rb-accent)}
 .project.narrow{grid-column:span 5}
 .project.full{grid-column:span 12;min-height:340px}
 .p-bg{position:absolute;inset:0;z-index:-1}
-.p1{background:linear-gradient(135deg,#2B1B69,#7C5CFF 60%,#39D0FF)}
-.p2{background:linear-gradient(135deg,#4A1D2E,#FF6B9D 60%,#FFB86B)}
-.p3{background:linear-gradient(135deg,#0C332B,#22D3A5 60%,#67E8F9)}
-.p4{background:linear-gradient(135deg,#1F2430,#64748B 60%,#CBD5E1)}
+.p1{background:linear-gradient(135deg,#222222,#5C5C5C 60%,#8C8C8C)}
+.p2{background:linear-gradient(135deg,#222222,#8C8C8C 60%,#8C8C8C)}
+.p3{background:linear-gradient(135deg,#222222,#8C8C8C 60%,#8C8C8C)}
+.p4{background:linear-gradient(135deg,#1F2430,#5C5C5C 60%,#BEBEBE)}
 .p-bg::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,transparent 30%,rgba(0,0,0,.65));opacity:.85}
 .p-tag{position:absolute;top:20px;left:20px;font-size:10px;letter-spacing:.14em;text-transform:uppercase;background:rgba(0,0,0,.3);backdrop-filter:blur(8px);padding:6px 11px;border-radius:999px;border:1px solid rgba(255,255,255,.2);color:#fff}
 .project h3{margin:0 0 8px;font-size:clamp(20px,3vw,30px);letter-spacing:-.03em;color:#fff;line-height:1.05}
@@ -74,6 +81,9 @@ footer{border-top:1px solid color-mix(in srgb,var(--rb-text) 12%,transparent);pa
   .about-grid{grid-template-columns:1fr;gap:22px}
   .hero-foot{flex-direction:column;align-items:flex-start;gap:22px}
 }
+
+/* retro cyberdeck: kill soft glows, snap radii to the token */
+.glow{display:none!important}
 </style>
 </head>
 <body>

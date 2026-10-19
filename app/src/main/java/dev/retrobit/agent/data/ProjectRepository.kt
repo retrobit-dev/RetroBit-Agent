@@ -18,7 +18,7 @@ import java.util.UUID
  * Owns project metadata, per-project files and conversation threads.
  * Metadata lives in filesDir/projects.json; files live in filesDir/projects/<id>/.
  */
-class ProjectRepository(private val context: Context) {
+class ProjectRepository(private val context: Context, private val settings: SettingsStore) {
 
     private val json = Json {
         ignoreUnknownKeys = true
@@ -40,9 +40,23 @@ class ProjectRepository(private val context: Context) {
         lock.withLock {
             val hadIndex = indexFile.exists()
             val loaded = runCatching {
-                if (hadIndex) json.decodeFromString<List<Project>>(indexFile.readText()) else emptyList()
+                if (hadIndex) {
+                    json.decodeFromString<List<Project>>(indexFile.readText())
+                } else {
+                    emptyList()
+                }
             }.getOrElse { emptyList() }
-            _projects.value = loaded.sortedByDescending { it.updatedAt }
+            // Older builds wrote coloured palettes; snap them onto the monochrome ramp.
+            val monochrome = loaded.map { project ->
+                if (project.design.isGrayscale()) project else project.copy(design = project.design.grayscaleFallback())
+            }
+            val backfilled = monochrome.map { project ->
+                if (project.systemPrompt == "") project.copy(systemPrompt = settings.systemPrompt) else project
+            }
+            _projects.value = backfilled.sortedByDescending { it.updatedAt }
+            if (backfilled != loaded) persist()
+            // Make sure older projects also ship the bundled pixel font.
+            backfilled.forEach { project -> Templates.installFonts(context.assets, filesFor(project.id)) }
             // Seed the sample project only on the very first launch, not after the
             // user deletes every project on purpose.
             if (!hadIndex) seedFirstProject()
@@ -56,6 +70,7 @@ class ProjectRepository(private val context: Context) {
             emoji = "☁️",
             templateId = "saas",
             design = DesignSystem.PRESETS.first().design,
+            systemPrompt = settings.systemPrompt,
         )
         val files = filesFor(demo.id)
         Templates.apply(context.assets, files, "saas", demo.design)
@@ -69,7 +84,7 @@ class ProjectRepository(private val context: Context) {
             val info = Templates.byId(templateId)
             val accent = runCatching {
                 0xFF000000L or (android.graphics.Color.parseColor(design.primary).toLong() and 0xFFFFFFL)
-            }.getOrDefault(0xFF7C5CFF)
+            }.getOrDefault(0xFFDEDED5)
             val project = Project(
                 name = name.ifBlank { "Aplikasi Baru" },
                 tagline = info.tagline,
@@ -77,6 +92,7 @@ class ProjectRepository(private val context: Context) {
                 accent = accent,
                 templateId = templateId,
                 design = design,
+                systemPrompt = settings.systemPrompt,
             )
             Templates.apply(context.assets, filesFor(project.id), templateId, design)
             lock.withLock {

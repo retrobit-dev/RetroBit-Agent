@@ -253,9 +253,9 @@ fun CodeBlock(code: String, language: String = "") {
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 4.dp)
-            .clip(RoundedCornerShape(12.dp))
-            .background(Color(0xFF0A0A10))
-            .border(1.dp, colors.outlineVariant, RoundedCornerShape(12.dp))
+            .clip(RoundedCornerShape(4.dp))
+            .background(MaterialTheme.colorScheme.background)
+            .border(1.dp, colors.outlineVariant, RoundedCornerShape(4.dp))
     ) {
         Row(
             Modifier
@@ -297,9 +297,9 @@ private val codeKeywordRegex = Regex(
 
 fun highlightCode(code: String, language: String): AnnotatedString = buildAnnotatedString {
     val commentColor = Palette.Muted.copy(alpha = 0.75f)
-    val stringColor = Color(0xFF9BE7A8)
-    val keywordColor = Palette.Pink
-    val numberColor = Color(0xFFFFC978)
+    val stringColor = Color(0xFFD6D6CC)
+    val keywordColor = Color(0xFFF7F7EF)
+    val numberColor = Color(0xFFB4B4AA)
     var last = 0
     codeKeywordRegex.findAll(code).forEach { match ->
         if (match.range.first > last) append(code.substring(last, match.range.first))

@@ -9,8 +9,8 @@ import dev.retrobit.agent.data.SettingsStore
 
 class AppContainer(context: Context) {
     val context: Context = context.applicationContext
-    val repository = ProjectRepository(this.context)
     val settings = SettingsStore(this.context)
+    val repository = ProjectRepository(this.context, settings)
     val secrets = SecretStore(this.context)
     val engine = AgentEngine(this.context, repository, settings, secrets)
 }

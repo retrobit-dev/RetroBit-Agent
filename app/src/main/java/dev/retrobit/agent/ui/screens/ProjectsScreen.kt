@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -22,16 +23,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Add
-import androidx.compose.material.icons.outlined.ArrowForward
-import androidx.compose.material.icons.outlined.ContentCopy
-import androidx.compose.material.icons.outlined.DeleteOutline
-import androidx.compose.material.icons.outlined.MoreVert
-import androidx.compose.material.icons.outlined.Search
-import androidx.compose.material.icons.outlined.Star
-import androidx.compose.material.icons.outlined.StarBorder
-import androidx.compose.material.icons.outlined.CloudQueue
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -46,6 +37,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -57,7 +49,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.retrobit.agent.data.Project
+import dev.retrobit.agent.ui.LocalDrawer
 import dev.retrobit.agent.data.TemplateInfo
 import dev.retrobit.agent.data.Templates
 import dev.retrobit.agent.ui.components.BrandMark
@@ -68,6 +62,8 @@ import dev.retrobit.agent.ui.components.NeoCard
 import dev.retrobit.agent.ui.components.Pill
 import dev.retrobit.agent.ui.components.relativeTime
 import dev.retrobit.agent.ui.theme.Palette
+import dev.retrobit.agent.ui.theme.PixelFont
+import dev.retrobit.agent.ui.icons.PixelIcons
 
 @Composable
 fun ProjectsScreen(
@@ -75,189 +71,205 @@ fun ProjectsScreen(
     onOpenProject: (String) -> Unit,
     onOpenCloud: () -> Unit,
     onBrowseTemplates: () -> Unit,
+    onCreateWithPrompt: (prompt: String, projectId: String) -> Unit,
     contentPadding: PaddingValues = PaddingValues(0.dp),
 ) {
     var showCreate by remember { mutableStateOf(false) }
     var search by remember { mutableStateOf("") }
+    var quickPrompt by rememberSaveable { mutableStateOf("") }
+    var filter by rememberSaveable { mutableStateOf("all") }
+    var platform by rememberSaveable { mutableStateOf("android") }
     var deleteTarget by remember { mutableStateOf<Project?>(null) }
-    val projects = vm.projects.value
-    val config = vm.config.value
-    val filtered = remember(projects, search) {
-        if (search.isBlank()) projects
-        else projects.filter {
-            it.name.contains(search, true) || it.tagline.contains(search, true)
-        }
+    val projects by vm.projects.collectAsStateWithLifecycle()
+    val config by vm.config.collectAsStateWithLifecycle()
+    val drawer = LocalDrawer.current
+
+    val filtered = remember(projects, search, filter) {
+        projects
+            .filter { if (filter == "saved") it.favorite else true }
+            .filter {
+                search.isBlank() ||
+                    it.name.contains(search, true) ||
+                    it.tagline.contains(search, true)
+            }
     }
 
-    Box(Modifier.fillMaxSize()) {
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(
-                start = 20.dp,
-                end = 20.dp,
-                top = 16.dp,
-                bottom = 96.dp + contentPadding.calculateBottomPadding(),
-            ),
-            verticalArrangement = Arrangement.spacedBy(14.dp),
-        ) {
-            item {
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(
+            start = 18.dp,
+            end = 18.dp,
+            top = 10.dp,
+            bottom = 28.dp + contentPadding.calculateBottomPadding(),
+        ),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
+        item {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                IconButton(onClick = { drawer?.open() }, modifier = Modifier.size(34.dp)) {
+                    Icon(PixelIcons.Menu, "Menu", tint = MaterialTheme.colorScheme.onBackground, modifier = Modifier.size(19.dp))
+                }
+                Spacer(Modifier.width(4.dp))
+                BrandMark(28.dp)
+                Spacer(Modifier.width(9.dp))
+                Column(Modifier.weight(1f)) {
+                    Text("RetroBit", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onBackground)
+                    Text(
+                        "cyberdeck studio",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        letterSpacing = 1.sp,
+                    )
+                }
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
+                    Modifier
+                        .clip(RoundedCornerShape(2.dp))
+                        .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(2.dp))
+                        .clickable(onClick = onOpenCloud)
+                        .padding(horizontal = 8.dp, vertical = 6.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    BrandMark(38.dp)
-                    Spacer(Modifier.width(11.dp))
-                    Column(Modifier.weight(1f)) {
-                        Text("RetroBit", style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onBackground)
-                        Text(
-                            "AI app studio",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            letterSpacing = 1.2.sp,
-                        )
-                    }
                     Box(
                         Modifier
-                            .clip(CircleShape)
-                            .border(1.dp, MaterialTheme.colorScheme.outline, CircleShape)
-                            .clickable(onClick = onOpenCloud)
-                            .padding(horizontal = 11.dp, vertical = 7.dp)
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Box(
-                                Modifier
-                                    .size(6.dp)
-                                    .clip(CircleShape)
-                                    .background(if (config.isDemo) Palette.Warning else Palette.Success)
-                            )
-                            Spacer(Modifier.width(6.dp))
-                            Text(
-                                if (config.isDemo) "Demo" else "Cloud",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurface,
-                            )
-                        }
-                    }
-                }
-            }
-
-            item {
-                Spacer(Modifier.height(4.dp))
-                Text(
-                    "Bangun aplikasi\nlewat percakapan.",
-                    style = MaterialTheme.typography.displayMedium.copy(
-                        brush = Brush.linearGradient(
-                            listOf(MaterialTheme.colorScheme.onBackground, Palette.Primary, Palette.Accent)
-                        )
-                    ),
-                )
-                Spacer(Modifier.height(10.dp))
-                Text(
-                    "Jelaskan idemu — agen menulis kode, mengatur desain, dan menyiapkan database. Lihat hasilnya langsung di preview.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    lineHeight = 21.sp,
-                )
-            }
-
-            item {
-                CloudStatusCard(
-                    connected = !config.isDemo,
-                    model = config.displayModel,
-                    onOpenCloud = onOpenCloud,
-                )
-            }
-
-            item {
-                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 6.dp)) {
+                            .size(6.dp)
+                            .background(if (config.isDemo) Palette.Muted else Palette.Accent)
+                    )
+                    Spacer(Modifier.width(6.dp))
                     Text(
-                        "Proyek kamu",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.onBackground,
-                    )
-                    Spacer(Modifier.width(8.dp))
-                    Pill("${projects.size}", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Spacer(Modifier.weight(1f))
-                    Text(
-                        "Template →",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = Palette.Accent,
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(8.dp))
-                            .clickable(onClick = onBrowseTemplates)
-                            .padding(4.dp),
+                        if (config.isDemo) "DEMO" else "CLOUD",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurface,
                     )
                 }
-            }
-
-            item {
-                SearchField(value = search, onValueChange = { search = it })
-            }
-
-            if (filtered.isEmpty()) {
-                item {
-                    NeoCard(modifier = Modifier.fillMaxWidth()) {
-                        EmptyState(
-                            emoji = if (projects.isEmpty()) "🌱" else "🔍",
-                            title = if (projects.isEmpty()) "Belum ada proyek" else "Tidak ditemukan",
-                            description = if (projects.isEmpty()) "Mulai dari template atau kanvas kosong, lalu ceritakan aplikasi yang ingin kamu buat."
-                            else "Coba kata kunci lain atau buat proyek baru.",
-                            action = {
-                                GradientButton("Buat proyek", icon = Icons.Outlined.Add, onClick = { showCreate = true })
-                            },
-                        )
-                    }
-                }
-            } else {
-                items(filtered, key = { it.id }) { project ->
-                    ProjectCard(
-                        project = project,
-                        onOpen = { onOpenProject(project.id) },
-                        onFavorite = { vm.toggleFavorite(project) },
-                        onDuplicate = { vm.duplicate(project.id) { onOpenProject(it.id) } },
-                        onDelete = { deleteTarget = project },
-                    )
-                }
-            }
-
-            item {
-                Box(
-                    Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(18.dp))
-                        .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.7f), RoundedCornerShape(18.dp))
-                        .clickable { showCreate = true }
-                        .padding(20.dp),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text("＋", color = Palette.Accent, fontSize = 22.sp)
-                        Spacer(Modifier.height(4.dp))
-                        Text("Proyek baru", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurface)
-                        Text(
-                            "Mulai dari template atau kanvas kosong",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
+                Spacer(Modifier.width(4.dp))
+                IconButton(onClick = { showCreate = true }, modifier = Modifier.size(34.dp)) {
+                    Icon(PixelIcons.Plus, "Proyek baru", tint = MaterialTheme.colorScheme.onBackground, modifier = Modifier.size(18.dp))
                 }
             }
         }
 
-        Box(
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(end = 20.dp, bottom = 18.dp + contentPadding.calculateBottomPadding())
-                .clip(RoundedCornerShape(18.dp))
-                .background(Brush.linearGradient(listOf(Palette.Primary, Palette.Accent)))
-                .clickable { showCreate = true }
-                .padding(horizontal = 18.dp, vertical = 14.dp)
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Outlined.Add, contentDescription = null, tint = Color.White, modifier = Modifier.size(19.dp))
-                Spacer(Modifier.width(7.dp))
-                Text("Baru", color = Color.White, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
+        item {
+            Text(
+                "What will you build,\nRetro?",
+                style = MaterialTheme.typography.displayLarge.copy(
+                    brush = Brush.linearGradient(
+                        listOf(
+                            MaterialTheme.colorScheme.onBackground,
+                            MaterialTheme.colorScheme.onBackground.copy(alpha = 0.72f),
+                            Palette.Muted,
+                        )
+                    ),
+                ),
+            )
+            Spacer(Modifier.height(10.dp))
+            Text(
+                "Tulis satu kalimat. RetroBit menyusun file, design system, dan database-nya — lalu menampilkannya di preview.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                lineHeight = 21.sp,
+            )
+        }
+
+        item {
+            ComposerCard(
+                value = quickPrompt,
+                onValueChange = { quickPrompt = it },
+                modelLabel = if (config.isDemo) "Demo lokal" else config.displayModel,
+                onOpenCloud = onOpenCloud,
+                onOpenCreate = { showCreate = true },
+                onSend = {
+                    val prompt = quickPrompt.trim()
+                    if (prompt.isNotEmpty()) {
+                        quickPrompt = ""
+                        vm.createFromPrompt(prompt) { project ->
+                            onCreateWithPrompt(prompt.take(600), project.id)
+                        }
+                    }
+                },
+            )
+        }
+
+        item {
+            Column {
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    PlatformChip("iPhone", PixelIcons.Apple, platform == "iphone") { platform = "iphone" }
+                    PlatformChip("Android", PixelIcons.Android, platform == "android") { platform = "android" }
+                    PlatformChip("Web", PixelIcons.Globe, platform == "web") { platform = "web" }
+                }
+                Spacer(Modifier.height(7.dp))
+                Text(
+                    if (platform == "android") "Preview berjalan di WebView perangkat ini."
+                    else "Preview di aplikasi memakai WebView; ekspor ZIP untuk membuka target ${platform.ifBlank { "lain" }}.",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
+        }
+
+        item {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("Recents", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onBackground)
+                Spacer(Modifier.width(7.dp))
+                Pill("${filtered.size}", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Spacer(Modifier.weight(1f))
+                Text(
+                    "Templates ->",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(2.dp))
+                        .clickable(onClick = onBrowseTemplates)
+                        .padding(horizontal = 6.dp, vertical = 4.dp),
+                )
+            }
+        }
+
+        item {
+            Column {
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    FilterChip("All", filter == "all") { filter = "all" }
+                    FilterChip("Saved", filter == "saved") { filter = "saved" }
+                }
+                Spacer(Modifier.height(10.dp))
+                SearchField(value = search, onValueChange = { search = it })
+            }
+        }
+
+        if (filtered.isEmpty()) {
+            item {
+                NeoCard(modifier = Modifier.fillMaxWidth()) {
+                    EmptyState(
+                        emoji = if (projects.isEmpty()) "[]" else "?",
+                        title = if (projects.isEmpty()) "Belum ada proyek" else "Tidak ditemukan",
+                        description = if (projects.isEmpty()) "Tulis ide di atas atau mulai dari template. Semua file dibuat di perangkat."
+                        else "Coba kata kunci lain, atau simpan proyek sebagai favorit.",
+                        action = {
+                            GradientButton("Buat proyek", icon = PixelIcons.Plus, onClick = { showCreate = true })
+                        },
+                    )
+                }
+            }
+        } else {
+            items(filtered, key = { it.id }) { project ->
+                ProjectCard(
+                    project = project,
+                    onOpen = { onOpenProject(project.id) },
+                    onFavorite = { vm.toggleFavorite(project) },
+                    onDuplicate = { vm.duplicate(project.id) { onOpenProject(it.id) } },
+                    onDelete = { deleteTarget = project },
+                )
+            }
+        }
+
+        item {
+            CloudStatusCard(
+                connected = !config.isDemo,
+                model = config.displayModel,
+                onOpenCloud = onOpenCloud,
+            )
         }
     }
 
@@ -291,8 +303,138 @@ fun ProjectsScreen(
 }
 
 @Composable
+private fun ComposerCard(
+    value: String,
+    onValueChange: (String) -> Unit,
+    modelLabel: String,
+    onOpenCloud: () -> Unit,
+    onOpenCreate: () -> Unit,
+    onSend: () -> Unit,
+) {
+    val shape = RoundedCornerShape(5.dp)
+    val colors = MaterialTheme.colorScheme
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .clip(shape)
+            .background(colors.surface.copy(alpha = 0.85f))
+            .border(1.dp, colors.outline, shape)
+            .padding(12.dp),
+    ) {
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .heightIn(min = 52.dp),
+        ) {
+            if (value.isEmpty()) {
+                Text(
+                    "An app that…",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = colors.onSurfaceVariant.copy(alpha = 0.8f),
+                    modifier = Modifier.padding(top = 4.dp),
+                )
+            }
+            BasicTextField(
+                value = value,
+                onValueChange = { if (it.length <= 1200) onValueChange(it) },
+                textStyle = MaterialTheme.typography.bodyLarge.copy(color = colors.onSurface),
+                cursorBrush = androidx.compose.ui.graphics.SolidColor(Palette.Accent),
+                maxLines = 5,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
+        Spacer(Modifier.height(8.dp))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                Modifier
+                    .size(34.dp)
+                    .clip(RoundedCornerShape(2.dp))
+                    .border(1.dp, colors.outlineVariant, RoundedCornerShape(2.dp))
+                    .clickable(onClick = onOpenCreate),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(PixelIcons.Plus, "Template", tint = colors.onSurfaceVariant, modifier = Modifier.size(15.dp))
+            }
+            Spacer(Modifier.weight(1f))
+            Row(
+                Modifier
+                    .clip(RoundedCornerShape(2.dp))
+                    .clickable(onClick = onOpenCloud)
+                    .padding(horizontal = 7.dp, vertical = 5.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    modelLabel.ifBlank { "Model" },
+                    style = MaterialTheme.typography.labelSmall,
+                    color = colors.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Spacer(Modifier.width(4.dp))
+                Icon(PixelIcons.ChevronDown, null, tint = colors.onSurfaceVariant, modifier = Modifier.size(13.dp))
+            }
+            Spacer(Modifier.width(8.dp))
+            Box(
+                Modifier
+                    .size(38.dp)
+                    .clip(RoundedCornerShape(3.dp))
+                    .background(if (value.isBlank()) colors.surfaceVariant else colors.primary)
+                    .border(1.dp, colors.outline, RoundedCornerShape(3.dp))
+                    .clickable(enabled = value.isNotBlank(), onClick = onSend),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    PixelIcons.Send,
+                    "Kirim",
+                    tint = if (value.isBlank()) colors.onSurfaceVariant else colors.onPrimary,
+                    modifier = Modifier.size(17.dp),
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun PlatformChip(label: String, icon: androidx.compose.ui.graphics.vector.ImageVector, active: Boolean, onClick: () -> Unit) {
+    val colors = MaterialTheme.colorScheme
+    Row(
+        Modifier
+            .clip(RoundedCornerShape(2.dp))
+            .background(if (active) colors.primary else colors.surface.copy(alpha = 0.5f))
+            .border(1.dp, if (active) colors.primary else colors.outlineVariant, RoundedCornerShape(2.dp))
+            .clickable(onClick = onClick)
+            .padding(horizontal = 10.dp, vertical = 7.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(icon, null, tint = if (active) colors.onPrimary else colors.onSurfaceVariant, modifier = Modifier.size(13.dp))
+        Spacer(Modifier.width(6.dp))
+        Text(
+            label,
+            style = MaterialTheme.typography.labelSmall,
+            color = if (active) colors.onPrimary else colors.onSurfaceVariant,
+        )
+    }
+}
+
+@Composable
+private fun FilterChip(label: String, active: Boolean, onClick: () -> Unit) {
+    val colors = MaterialTheme.colorScheme
+    Text(
+        label.uppercase(),
+        style = MaterialTheme.typography.labelSmall,
+        color = if (active) colors.onPrimary else colors.onSurfaceVariant,
+        modifier = Modifier
+            .clip(RoundedCornerShape(2.dp))
+            .background(if (active) colors.primary else Color.Transparent)
+            .border(1.dp, if (active) colors.primary else colors.outlineVariant, RoundedCornerShape(2.dp))
+            .clickable(onClick = onClick)
+            .padding(horizontal = 11.dp, vertical = 6.dp),
+    )
+}
+
+@Composable
 private fun CloudStatusCard(connected: Boolean, model: String, onOpenCloud: () -> Unit) {
-    val shape = RoundedCornerShape(16.dp)
+    val shape = RoundedCornerShape(5.dp)
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -309,12 +451,12 @@ private fun CloudStatusCard(connected: Boolean, model: String, onOpenCloud: () -
         Box(
             Modifier
                 .size(34.dp)
-                .clip(RoundedCornerShape(10.dp))
+                .clip(RoundedCornerShape(3.dp))
                 .background(if (connected) Palette.Success.copy(alpha = 0.14f) else Palette.Warning.copy(alpha = 0.14f)),
             contentAlignment = Alignment.Center,
         ) {
             Icon(
-                Icons.Outlined.CloudQueue,
+                PixelIcons.Cloud,
                 contentDescription = null,
                 tint = if (connected) Palette.Success else Palette.Warning,
                 modifier = Modifier.size(18.dp),
@@ -335,7 +477,7 @@ private fun CloudStatusCard(connected: Boolean, model: String, onOpenCloud: () -
                 overflow = TextOverflow.Ellipsis,
             )
         }
-        Icon(Icons.Outlined.ArrowForward, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(17.dp))
+        Icon(PixelIcons.ArrowRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(17.dp))
     }
 }
 
@@ -344,13 +486,13 @@ private fun SearchField(value: String, onValueChange: (String) -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(14.dp))
+            .clip(RoundedCornerShape(4.dp))
             .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.7f))
-            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(14.dp))
+            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(4.dp))
             .padding(horizontal = 14.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Icon(Icons.Outlined.Search, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(18.dp))
+        Icon(PixelIcons.Search, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(18.dp))
         Spacer(Modifier.width(10.dp))
         Box(Modifier.weight(1f)) {
             if (value.isEmpty()) {
@@ -378,7 +520,7 @@ private fun ProjectCard(
 ) {
     var menuOpen by remember { mutableStateOf(false) }
     val accent = hexColor(project.accent)
-    val shape = RoundedCornerShape(20.dp)
+    val shape = RoundedCornerShape(6.dp)
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -392,16 +534,22 @@ private fun ProjectCard(
         Box(
             Modifier
                 .size(64.dp)
-                .clip(RoundedCornerShape(16.dp))
-                .background(Brush.linearGradient(listOf(accent, accent.copy(alpha = 0.55f), Palette.Accent.copy(alpha = 0.85f)))),
+                .clip(RoundedCornerShape(5.dp))
+                .background(Brush.linearGradient(listOf(Palette.SurfaceHigh, Palette.Surface, Palette.StrokeSoft))),
             contentAlignment = Alignment.Center,
         ) {
             Box(
                 Modifier
                     .size(64.dp)
-                    .background(Brush.radialGradient(listOf(Color.White.copy(alpha = 0.28f), Color.Transparent)))
+                    .background(Brush.radialGradient(listOf(Color.White.copy(alpha = 0.05f), Color.Transparent)))
             )
-            Text(project.emoji, fontSize = 27.sp)
+            Text(
+                project.name.take(1).uppercase(),
+                fontFamily = PixelFont,
+                fontWeight = FontWeight.Bold,
+                fontSize = 24.sp,
+                color = Color.White.copy(alpha = 0.9f),
+            )
         }
         Spacer(Modifier.width(13.dp))
         Column(Modifier.weight(1f)) {
@@ -416,7 +564,7 @@ private fun ProjectCard(
                 )
                 if (project.favorite) {
                     Spacer(Modifier.width(5.dp))
-                    Icon(Icons.Outlined.Star, contentDescription = null, tint = Palette.Warning, modifier = Modifier.size(13.dp))
+                    Icon(PixelIcons.Star, contentDescription = null, tint = Palette.Warning, modifier = Modifier.size(13.dp))
                 }
             }
             Spacer(Modifier.height(2.dp))
@@ -445,22 +593,22 @@ private fun ProjectCard(
         }
         Box {
             IconButton(onClick = { menuOpen = true }, modifier = Modifier.size(32.dp)) {
-                Icon(Icons.Outlined.MoreVert, contentDescription = "Opsi", tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(18.dp))
+                Icon(PixelIcons.MoreVertical, contentDescription = "Opsi", tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(18.dp))
             }
             DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
                 DropdownMenuItem(
                     text = { Text(if (project.favorite) "Hapus dari favorit" else "Tandai favorit") },
-                    leadingIcon = { Icon(Icons.Outlined.StarBorder, null, modifier = Modifier.size(17.dp)) },
+                    leadingIcon = { Icon(PixelIcons.Star, null, modifier = Modifier.size(17.dp)) },
                     onClick = { menuOpen = false; onFavorite() },
                 )
                 DropdownMenuItem(
                     text = { Text("Duplikat") },
-                    leadingIcon = { Icon(Icons.Outlined.ContentCopy, null, modifier = Modifier.size(17.dp)) },
+                    leadingIcon = { Icon(PixelIcons.Copy, null, modifier = Modifier.size(17.dp)) },
                     onClick = { menuOpen = false; onDuplicate() },
                 )
                 DropdownMenuItem(
                     text = { Text("Hapus", color = Palette.Danger) },
-                    leadingIcon = { Icon(Icons.Outlined.DeleteOutline, null, tint = Palette.Danger, modifier = Modifier.size(17.dp)) },
+                    leadingIcon = { Icon(PixelIcons.Trash, null, tint = Palette.Danger, modifier = Modifier.size(17.dp)) },
                     onClick = { menuOpen = false; onDelete() },
                 )
             }
@@ -517,9 +665,9 @@ fun NewProjectSheet(
                     Box(
                         Modifier
                             .fillMaxWidth()
-                            .clip(RoundedCornerShape(13.dp))
+                            .clip(RoundedCornerShape(4.dp))
                             .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f))
-                            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(13.dp))
+                            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(4.dp))
                             .padding(horizontal = 14.dp, vertical = 14.dp)
                     ) {
                         if (name.isEmpty()) {
@@ -555,7 +703,7 @@ fun NewProjectSheet(
             GradientButton(
                 text = if (name.isBlank()) "Buat proyek" else "Buat “$name”",
                 modifier = Modifier.fillMaxWidth(),
-                icon = Icons.Outlined.Add,
+                icon = PixelIcons.Plus,
                 onClick = {
                     val chosen = Templates.byId(template)
                     onCreate(name.ifBlank { chosen.name }, template)
@@ -584,12 +732,12 @@ fun TemplateTile(
     val accent = hexColor(design.accent)
     Column(
         modifier = modifier
-            .clip(RoundedCornerShape(13.dp))
+            .clip(RoundedCornerShape(4.dp))
             .background(if (selected) primary.copy(alpha = 0.12f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f))
             .border(
                 1.dp,
                 if (selected) primary.copy(alpha = 0.75f) else MaterialTheme.colorScheme.outlineVariant,
-                RoundedCornerShape(13.dp),
+                RoundedCornerShape(4.dp),
             )
             .clickable(onClick = onClick)
             .padding(11.dp)
@@ -598,8 +746,8 @@ fun TemplateTile(
             Box(
                 Modifier
                     .size(26.dp)
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(Brush.linearGradient(listOf(primary, accent))),
+                    .clip(RoundedCornerShape(3.dp))
+                    .background(Brush.horizontalGradient(listOf(primary.copy(alpha = 0.9f), accent.copy(alpha = 0.95f)))),
                 contentAlignment = Alignment.Center,
             ) {
                 Text(info.emoji, fontSize = 13.sp)

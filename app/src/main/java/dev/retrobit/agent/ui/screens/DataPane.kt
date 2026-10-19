@@ -21,12 +21,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Add
-import androidx.compose.material.icons.outlined.DeleteOutline
-import androidx.compose.material.icons.outlined.PlayArrow
-import androidx.compose.material.icons.outlined.Refresh
-import androidx.compose.material.icons.outlined.Storage
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -56,6 +50,7 @@ import dev.retrobit.agent.ui.components.NeoCard
 import dev.retrobit.agent.ui.components.Pill
 import dev.retrobit.agent.ui.theme.MonoFont
 import dev.retrobit.agent.ui.theme.Palette
+import dev.retrobit.agent.ui.icons.PixelIcons
 
 @Composable
 fun DataPane(vm: WorkspaceViewModel, modifier: Modifier = Modifier) {
@@ -83,11 +78,11 @@ fun DataPane(vm: WorkspaceViewModel, modifier: Modifier = Modifier) {
             Box(
                 Modifier
                     .size(34.dp)
-                    .clip(RoundedCornerShape(10.dp))
+                    .clip(RoundedCornerShape(3.dp))
                     .background(Palette.Accent.copy(alpha = 0.12f)),
                 contentAlignment = Alignment.Center,
             ) {
-                Icon(Icons.Outlined.Storage, null, tint = Palette.Accent, modifier = Modifier.size(17.dp))
+                Icon(PixelIcons.Database, null, tint = Palette.Accent, modifier = Modifier.size(17.dp))
             }
             Spacer(Modifier.width(10.dp))
             Column(Modifier.weight(1f)) {
@@ -99,17 +94,17 @@ fun DataPane(vm: WorkspaceViewModel, modifier: Modifier = Modifier) {
                 )
             }
             IconButton(onClick = { vm.refreshDb() }, modifier = Modifier.size(34.dp)) {
-                Icon(Icons.Outlined.Refresh, "Muat ulang", tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(17.dp))
+                Icon(PixelIcons.Reload, "Muat ulang", tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(17.dp))
             }
             Row(
                 Modifier
-                    .clip(RoundedCornerShape(10.dp))
+                    .clip(RoundedCornerShape(3.dp))
                     .background(Palette.Primary.copy(alpha = 0.12f))
                     .clickable { showCreate = true }
                     .padding(horizontal = 10.dp, vertical = 7.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Icon(Icons.Outlined.Add, null, tint = Palette.Primary, modifier = Modifier.size(14.dp))
+                Icon(PixelIcons.Plus, null, tint = Palette.Primary, modifier = Modifier.size(14.dp))
                 Spacer(Modifier.width(4.dp))
                 Text("Tabel", style = MaterialTheme.typography.labelSmall, color = Palette.Primary)
             }
@@ -119,7 +114,7 @@ fun DataPane(vm: WorkspaceViewModel, modifier: Modifier = Modifier) {
             NeoCard(modifier = Modifier.fillMaxWidth()) {
                 Column {
                     EmptyState(
-                        emoji = "🗄️",
+                        icon = PixelIcons.Database,
                         title = "Database masih kosong",
                         description = "Buat tabel pertama, atau isi dengan data contoh untuk dicoba di preview.",
                     )
@@ -144,12 +139,12 @@ fun DataPane(vm: WorkspaceViewModel, modifier: Modifier = Modifier) {
                     val active = selected == table.name
                     Column(
                         Modifier
-                            .clip(RoundedCornerShape(12.dp))
+                            .clip(RoundedCornerShape(4.dp))
                             .background(if (active) Palette.Primary.copy(alpha = 0.14f) else MaterialTheme.colorScheme.surface.copy(alpha = 0.6f))
                             .border(
                                 1.dp,
                                 if (active) Palette.Primary.copy(alpha = 0.55f) else MaterialTheme.colorScheme.outlineVariant,
-                                RoundedCornerShape(12.dp)
+                                RoundedCornerShape(4.dp)
                             )
                             .clickable { vm.selectTable(table.name) }
                             .padding(horizontal = 13.dp, vertical = 9.dp)
@@ -221,14 +216,14 @@ fun DataPane(vm: WorkspaceViewModel, modifier: Modifier = Modifier) {
         Column(
             Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(14.dp))
-                .background(Color(0xFF08080E))
-                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(14.dp))
+                .clip(RoundedCornerShape(4.dp))
+                .background(MaterialTheme.colorScheme.background)
+                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(4.dp))
         ) {
             Row(
                 Modifier
                     .fillMaxWidth()
-                    .background(Color.White.copy(alpha = 0.03f))
+                    .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.03f))
                     .padding(horizontal = 12.dp, vertical = 7.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
@@ -284,7 +279,7 @@ fun DataPane(vm: WorkspaceViewModel, modifier: Modifier = Modifier) {
             Row(
                 Modifier
                     .fillMaxWidth()
-                    .background(Color.White.copy(alpha = 0.02f))
+                    .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.02f))
                     .padding(horizontal = 10.dp, vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
@@ -296,7 +291,7 @@ fun DataPane(vm: WorkspaceViewModel, modifier: Modifier = Modifier) {
                 Spacer(Modifier.weight(1f))
                 Row(
                     Modifier
-                        .clip(RoundedCornerShape(9.dp))
+                        .clip(RoundedCornerShape(3.dp))
                         .background(if (sql.isBlank() || running) Color.White.copy(alpha = 0.06f) else Palette.Accent.copy(alpha = 0.16f))
                         .clickable(enabled = sql.isNotBlank() && !running) { vm.runQuery(sql) }
                         .padding(horizontal = 12.dp, vertical = 7.dp),
@@ -306,7 +301,7 @@ fun DataPane(vm: WorkspaceViewModel, modifier: Modifier = Modifier) {
                         CircularProgressIndicator(Modifier.size(12.dp), color = Palette.Accent, strokeWidth = 1.5.dp)
                     } else {
                         Icon(
-                            Icons.Outlined.PlayArrow,
+                            PixelIcons.Play,
                             null,
                             tint = if (sql.isBlank()) Palette.Muted else Palette.Accent,
                             modifier = Modifier.size(15.dp),
@@ -348,7 +343,7 @@ fun DataPane(vm: WorkspaceViewModel, modifier: Modifier = Modifier) {
                     background = Palette.Success.copy(alpha = 0.05f),
                 ) {
                     Text(
-                        "✓ ${query.message} (${query.elapsedMs}ms)",
+                        "${query.message} (${query.elapsedMs}ms)",
                         style = MaterialTheme.typography.labelMedium,
                         color = Palette.Success,
                     )
@@ -361,12 +356,12 @@ fun DataPane(vm: WorkspaceViewModel, modifier: Modifier = Modifier) {
             Row(
                 Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(12.dp))
+                    .clip(RoundedCornerShape(4.dp))
                     .clickable { showClear = true }
                     .padding(12.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Icon(Icons.Outlined.DeleteOutline, null, tint = Palette.Danger.copy(alpha = 0.8f), modifier = Modifier.size(15.dp))
+                Icon(PixelIcons.Trash, null, tint = Palette.Danger.copy(alpha = 0.8f), modifier = Modifier.size(15.dp))
                 Spacer(Modifier.width(8.dp))
                 Text(
                     "Kosongkan database proyek",
@@ -454,7 +449,7 @@ private fun DataTableCard(title: String, result: QueryResult) {
                         .horizontalScroll(rememberScrollState())
                 ) {
                     Column(Modifier.verticalScroll(rememberScrollState())) {
-                        Row(Modifier.background(Color.White.copy(alpha = 0.04f))) {
+                        Row(Modifier.background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.04f))) {
                             result.columns.forEach { column ->
                                 Text(
                                     column,
@@ -509,9 +504,9 @@ private fun DataTableCard(title: String, result: QueryResult) {
 private fun PresetButton(label: String, modifier: Modifier = Modifier, onClick: () -> Unit) {
     Box(
         modifier
-            .clip(RoundedCornerShape(10.dp))
+            .clip(RoundedCornerShape(3.dp))
             .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f))
-            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(10.dp))
+            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(3.dp))
             .clickable(onClick = onClick)
             .padding(vertical = 10.dp),
         contentAlignment = Alignment.Center,
