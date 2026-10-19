@@ -9,6 +9,10 @@ Aplikasi Android native (Kotlin + Jetpack Compose) untuk membangun aplikasi web 
   <img alt="License" src="https://img.shields.io/badge/license-belum%20ditentukan-lightgrey" />
 </p>
 
+<p align="left">
+  <a href="https://github.com/retrobit-dev/RetroBit-Agent/actions/workflows/android.yml"><img alt="Android CI" src="https://github.com/retrobit-dev/RetroBit-Agent/actions/workflows/android.yml/badge.svg?branch=arena%2F98eaa796-retrobit-agent" /></a>
+</p>
+
 ## Fitur
 
 | Area | Yang bisa dilakukan |
@@ -47,6 +51,23 @@ Atau lewat terminal:
 ```
 
 > Build pertama membutuhkan internet untuk mengunduh Gradle dan dependensi Maven.
+
+## Build di GitHub Actions
+
+Repo ini punya workflow `.github/workflows/android.yml` yang membangun APK debug di runner Ubuntu GitHub — tidak perlu memasang JDK/Android SDK di komputer.
+
+- Jalan otomatis pada setiap `push` ke `main` / `arena/**`, setiap pull request, dan bisa dipicu manual dari tab **Actions → Android CI → Run workflow**.
+- Hasil build diunggah sebagai artifact **`retrobit-debug-apk`** (30 hari).
+- Mendorong tag `v*` juga menerbitkan GitHub Release berisi `app-debug.apk`:
+
+```bash
+git tag -a v0.1.0 -m "RetroBit 0.1.0"
+git push origin v0.1.0
+```
+
+Rilis terbaru: <https://github.com/retrobit-dev/RetroBit-Agent/releases>. Unduh `app-debug.apk`, lalu pasang lewat `adb install -r app-debug.apk` atau buka file-nya di HP (izinkan "install unknown apps").
+
+Workflow memakai JDK 17 (Temurin), Gradle wrapper 8.9, `gradle/actions/setup-gradle` untuk cache, dan SDK Platform 35 yang sudah tersedia di runner. Kalau kompilasi gagal, error Kotlin dicatat sebagai *check annotation* sehingga langsung terlihat di ringkasan run tanpa perlu membuka log.
 
 ## Alur pertama kali
 
