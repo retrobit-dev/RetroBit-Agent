@@ -67,6 +67,7 @@ import dev.retrobit.agent.ui.components.Pill
 import dev.retrobit.agent.ui.components.SystemPromptDialog
 import dev.retrobit.agent.ui.theme.MonoFont
 import dev.retrobit.agent.ui.theme.Palette
+import dev.retrobit.agent.ui.theme.PixelFont
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -137,7 +138,13 @@ fun WorkspaceScreen(vm: WorkspaceViewModel, onBack: () -> Unit) {
                     .background(Brush.linearGradient(listOf(Palette.SurfaceHigh, Palette.Surface))),
                 contentAlignment = Alignment.Center,
             ) {
-                Text(current.emoji, fontSize = 17.sp)
+                Text(
+                    current.name.take(1).uppercase(),
+                    fontFamily = PixelFont,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 16.sp,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
             }
             Spacer(Modifier.width(9.dp))
             Column(Modifier.weight(1f)) {

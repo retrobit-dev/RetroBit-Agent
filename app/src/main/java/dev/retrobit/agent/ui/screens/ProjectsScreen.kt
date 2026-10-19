@@ -750,7 +750,13 @@ fun TemplateTile(
                     .background(Brush.horizontalGradient(listOf(primary.copy(alpha = 0.9f), accent.copy(alpha = 0.95f)))),
                 contentAlignment = Alignment.Center,
             ) {
-                Text(info.emoji, fontSize = 13.sp)
+                Text(
+                    info.name.take(1).uppercase(),
+                    fontFamily = PixelFont,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 12.sp,
+                    color = Color.White.copy(alpha = 0.9f),
+                )
             }
             Spacer(Modifier.width(7.dp))
             Text(

@@ -200,7 +200,7 @@ private fun SuggestionCard(suggestion: Suggestion, modifier: Modifier = Modifier
             .clickable(onClick = onClick)
             .padding(12.dp)
     ) {
-        Text(suggestion.emoji, fontSize = 17.sp)
+        Icon(PixelIcons.Sparkles, null, tint = Palette.Accent, modifier = Modifier.size(15.dp))
         Spacer(Modifier.height(8.dp))
         Text(
             suggestion.title,

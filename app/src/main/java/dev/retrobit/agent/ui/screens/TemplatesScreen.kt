@@ -154,7 +154,7 @@ private fun TemplateShowcaseCard(
                     .background(bg.copy(alpha = 0.72f))
                     .padding(horizontal = 8.dp, vertical = 5.dp)
             ) {
-                Text("${info.emoji}  ${info.category}", color = MaterialTheme.colorScheme.onSurface, style = MaterialTheme.typography.labelSmall)
+                Text(info.category, color = MaterialTheme.colorScheme.onSurface, style = MaterialTheme.typography.labelSmall)
             }
         }
         Column(Modifier.padding(15.dp)) {
