@@ -52,70 +52,30 @@ jobs:
           arch: x86_64
           profile: pixel_2
           disable-animations: true
+          emulator-boot-timeout: 900
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
-          script: |
-            LOG=/tmp/smoke.log
-            : > "$LOG"
-            mkdir -p artifacts
-            adb devices >> "$LOG" 2>&1 || true
-            adb wait-for-device >> "$LOG" 2>&1 || true
-            adb shell getprop sys.boot_completed >> "$LOG" 2>&1 || true
-            adb install -r app/build/outputs/apk/release/app-release.apk >> "$LOG" 2>&1
-            echo "install_exit=$?" >> "$LOG"
-            adb shell pm list packages > /tmp/packages.txt 2>&1 || true
-            grep dev.retrobit.agent /tmp/packages.txt >> "$LOG" 2>&1
-            echo "package_exit=$?" >> "$LOG"
-            adb logcat -c >> "$LOG" 2>&1 || true
-            adb shell am start -W -n dev.retrobit.agent/.MainActivity >> "$LOG" 2>&1
-            echo "launch_exit=$?" >> "$LOG"
-            sleep 15
-            adb shell dumpsys activity activities > /tmp/activities.txt 2>&1 || true
-            grep -E "mResumedActivity|topResumedActivity" /tmp/activities.txt >> "$LOG" 2>&1 || true
-            adb exec-out screencap -p > artifacts/dashboard.png 2>> "$LOG" || true
-            adb shell input swipe 160 500 160 200 >> "$LOG" 2>&1 || true
-            sleep 2
-            adb exec-out screencap -p > artifacts/dashboard-2.png 2>> "$LOG" || true
-            adb logcat -d -b crash > artifacts/crash.log 2>&1 || true
-            cp "$LOG" artifacts/smoke.log
-            tail -60 "$LOG"
-            exit 0
+          script: bash scripts/smoke.sh
 
       - name: Report smoke diagnostics
         if: always()
         run: |
           python3 - <<'PY'
-          import pathlib, re, sys, urllib.parse
+          import pathlib, sys
 
           log = pathlib.Path("artifacts/smoke.log")
-          text = log.read_text(errors="replace") if log.exists() else "(smoke.log tidak ada)"
-
-          def annotate(level, title, body):
-              escaped = body[-2500:].replace("%", "%25").replace("\r", "")
-              escaped = escaped.replace("\n", "%0A")
-              print(f"::{level} title={title}::{escaped}")
-
-          install_ok = re.search(r"install_exit=0", text) is not None
-          launch_ok = re.search(r"launch_exit=0", text) is not None
-          crashed = "FATAL EXCEPTION" in text
-          resumed = "dev.retrobit.agent/" in text and "mResumedActivity" in text
-
-          print(f"install={install_ok} launch={launch_ok} crash={crashed} resumed={resumed}")
-          print(text[-4000:])
-
-          problems = []
-          if not install_ok:
-              problems.append("adb install gagal")
-          if crashed:
-              problems.append("FATAL EXCEPTION di logcat")
-          if not launch_ok:
-              problems.append("am start gagal")
-          if not resumed:
-              problems.append("MainActivity tidak jadi activity terdepan")
-
-          if problems:
-              annotate("error", "Smoke gagal", " | ".join(problems) + "\n\n" + text[-2500:])
+          if not log.exists():
+              print("::error title=Smoke::Tidak ada artifacts/smoke.log — script perangkat tidak sempat jalan.")
               sys.exit(1)
-          annotate("notice", "Smoke OK", "APK terpasang dan MainActivity berjalan tanpa crash.")
+
+          text = log.read_text(errors="replace")
+          summary = [line for line in text.splitlines() if line.startswith(("install=", "boot_completed=", "event="))]
+          detail = text[-1800:].replace("%", "%25").replace("\r", "").replace("\n", "%0A")
+          print("\n".join(summary))
+          if "== result: OK ==" in text:
+              print(f"::notice title=Smoke OK::{detail}")
+              sys.exit(0)
+          print(f"::error title=Smoke gagal::{detail}")
+          sys.exit(1)
           PY
 
       - name: Upload screenshots
