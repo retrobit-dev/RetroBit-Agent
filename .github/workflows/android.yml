@@ -16,7 +16,7 @@ permissions:
 
 jobs:
   build:
-    name: Build debug APK
+    name: Build signed APK
     runs-on: ubuntu-latest
     timeout-minutes: 35
 
@@ -42,11 +42,11 @@ jobs:
           fi
           echo "ANDROID_HOME=$ANDROID_HOME"
 
-      - name: Build debug APK
+      - name: Build release APK (signed)
         run: |
           set -o pipefail
           chmod +x ./gradlew
-          ./gradlew --no-daemon --console=plain --stacktrace assembleDebug 2>&1 | tee build.log
+          ./gradlew --no-daemon --console=plain --stacktrace assembleRelease assembleDebug 2>&1 | tee build.log
 
       - name: Annotate Kotlin and Gradle errors
         if: failure()
@@ -71,29 +71,35 @@ jobs:
                   break
           PY
 
-      - name: Publish release APK
+      - name: Verify signatures
+        if: success()
+        run: |
+          APKSIGNER=$(ls "$ANDROID_HOME"/build-tools/*/apksigner | sort -V | tail -1)
+          "$APKSIGNER" verify --verbose app/build/outputs/apk/release/app-release.apk
+          "$APKSIGNER" verify --verbose app/build/outputs/apk/debug/app-debug.apk
+          ls -l app/build/outputs/apk/release/ app/build/outputs/apk/debug/
+          du -h app/build/outputs/apk/release/*.apk app/build/outputs/apk/debug/*.apk
+
+      - name: Publish GitHub Release
         if: startsWith(github.ref, 'refs/tags/v')
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release create "$GITHUB_REF_NAME" \
+            app/build/outputs/apk/release/app-release.apk \
             app/build/outputs/apk/debug/app-debug.apk \
             --title "RetroBit $GITHUB_REF_NAME" \
             --target "$GITHUB_SHA" \
-            --notes "Debug APK built from \`$GITHUB_SHA\` by GitHub Actions. Install with \`adb install -r app-debug.apk\`."
-
-      - name: Collect APK info
-        if: success()
-        run: |
-          ls -l app/build/outputs/apk/debug/
-          du -h app/build/outputs/apk/debug/*.apk
+            --notes "APK bertanda tangan dari commit $GITHUB_SHA. Pasang dengan adb install -r app-release.apk atau buka filenya langsung di HP (izinkan install unknown apps)."
 
       - name: Upload APK
         if: success()
         uses: actions/upload-artifact@v7
         with:
-          name: retrobit-debug-apk
-          path: app/build/outputs/apk/debug/*.apk
+          name: retrobit-apk
+          path: |
+            app/build/outputs/apk/release/app-release.apk
+            app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 30
 

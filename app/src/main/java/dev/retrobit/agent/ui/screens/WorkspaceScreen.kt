@@ -120,7 +120,7 @@ fun WorkspaceScreen(vm: WorkspaceViewModel, onBack: () -> Unit) {
         return
     }
 
-    Column(Modifier.fillMaxSize().imePadding()) {
+    Column(Modifier.fillMaxSize()) {
         Row(
             Modifier
                 .fillMaxWidth()
@@ -288,6 +288,7 @@ fun WorkspaceScreen(vm: WorkspaceViewModel, onBack: () -> Unit) {
             Modifier
                 .weight(1f)
                 .fillMaxWidth()
+                .imePadding()
                 .navigationBarsPadding()
         ) {
             when (tab) {
@@ -296,8 +297,8 @@ fun WorkspaceScreen(vm: WorkspaceViewModel, onBack: () -> Unit) {
                     messages = messages,
                     live = live,
                     demoMode = config.isDemo,
-                    onSend = { vm.send(it); },
-                    onStop = { vm.stopAgent() },
+                    onSend = vm::send,
+                    onStop = vm::stopAgent,
                 )
                 WorkspaceTab.PREVIEW -> PreviewTab(
                     vm = vm,

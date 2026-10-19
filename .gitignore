@@ -1,3 +1,5 @@
+# demo keystore secret material (keys themselves are intentionally committed)
+.keys/
 *.iml
 .gradle
 /local.properties

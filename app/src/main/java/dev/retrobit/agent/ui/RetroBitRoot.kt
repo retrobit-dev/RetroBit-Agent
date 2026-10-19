@@ -33,7 +33,6 @@ import dev.retrobit.agent.ui.components.BrandMark
 import dev.retrobit.agent.ui.components.Pill
 import dev.retrobit.agent.ui.components.relativeTime
 import kotlinx.coroutines.launch
-import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -384,7 +383,6 @@ private fun MainShell(
     content: @Composable () -> Unit,
 ) {
     Scaffold(
-        modifier = Modifier.imePadding(),
         containerColor = Color.Transparent,
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         bottomBar = {

@@ -132,7 +132,11 @@ fun CodePane(vm: WorkspaceViewModel, modifier: Modifier = Modifier) {
                 IconButton(onClick = { vm.closeFile() }, modifier = Modifier.size(36.dp)) {
                     Icon(PixelIcons.ArrowLeft, "Kembali", tint = MaterialTheme.colorScheme.onSurface, modifier = Modifier.size(19.dp))
                 }
-                Column(Modifier.weight(1f)) {
+                Column(
+                    Modifier
+                        .weight(1f)
+                        .padding(horizontal = 4.dp),
+                ) {
                     Text(
                         file.path,
                         style = MaterialTheme.typography.labelLarge,
@@ -147,7 +151,7 @@ fun CodePane(vm: WorkspaceViewModel, modifier: Modifier = Modifier) {
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
-                if (!file.isBinary) {
+                if (!file.isBinary && file.content.length < 120_000) {
                     IconButton(onClick = { showEditor = true }, modifier = Modifier.size(34.dp)) {
                         Icon(PixelIcons.Pencil, "Edit", tint = Palette.Accent, modifier = Modifier.size(17.dp))
                     }
@@ -177,13 +181,14 @@ fun CodePane(vm: WorkspaceViewModel, modifier: Modifier = Modifier) {
         )
     }
 
-    if (showEditor && openFile != null) {
+    val editing = openFile
+    if (showEditor && editing != null) {
         FileEditorDialog(
-            path = openFile!!.path,
-            initial = openFile!!.content,
+            path = editing.path,
+            initial = editing.content,
             onDismiss = { showEditor = false },
             onSave = { content ->
-                vm.saveFile(openFile!!.path, content)
+                vm.saveFile(editing.path, content)
                 showEditor = false
             },
         )

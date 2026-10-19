@@ -183,8 +183,9 @@ class AgentEngine(
             if (stepIndex >= MAX_STEPS) {
                 textParts.add("Batas ${MAX_STEPS} langkah tercapai. Minta saya melanjutkan jika masih ada yang kurang.")
             }
-            if (lastError != null && textParts.isEmpty() && finishedSteps.isEmpty()) {
-                return errorMessage(lastError!!, finishedSteps, changedFiles.toList(), config)
+            val failure = lastError
+            if (failure != null && textParts.isEmpty() && finishedSteps.isEmpty()) {
+                return errorMessage(failure, finishedSteps, changedFiles.toList(), config)
             }
 
             val cost = estimateCost(config, usage)

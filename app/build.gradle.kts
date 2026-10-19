@@ -1,9 +1,46 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.plugin.compose")
     id("org.jetbrains.kotlin.plugin.serialization")
 }
+
+/**
+ * Signing configuration.
+ *
+ * CI provides the keystore as base64 env vars; locally we fall back to the demo
+ * key in `signing/keystore.properties` so `./gradlew assembleRelease` works out
+ * of the box. If neither exists the release build stays unsigned instead of
+ * failing the whole build.
+ */
+private fun loadSigningConfig(): Properties? {
+    val props = Properties()
+    val local = rootProject.file("signing/keystore.properties")
+    if (local.exists()) {
+        local.inputStream().use { props.load(it) }
+    }
+    val b64 = System.getenv("RELEASE_KEYSTORE_BASE64")
+    if (!b64.isNullOrBlank()) {
+        val decoded = java.io.File(
+            System.getenv("RUNNER_TEMP") ?: System.getProperty("java.io.tmpdir"),
+            "retrobit-release.jks",
+        )
+        decoded.writeBytes(java.util.Base64.getDecoder().decode(b64))
+        props.setProperty("storeFile", decoded.absolutePath)
+        System.getenv("RELEASE_KEYSTORE_PASSWORD")?.let { props.setProperty("storePassword", it) }
+        System.getenv("RELEASE_KEY_ALIAS")?.let { props.setProperty("keyAlias", it) }
+        System.getenv("RELEASE_KEY_PASSWORD")?.let { props.setProperty("keyPassword", it) }
+    }
+    val storePath = props.getProperty("storeFile")?.ifBlank { null } ?: return null
+    val store = rootProject.file(storePath)
+    if (!store.exists()) return null
+    props.setProperty("storeFile", store.absolutePath)
+    return props
+}
+
+val signingProps = loadSigningConfig()
 
 android {
     namespace = "dev.retrobit.agent"
@@ -19,13 +56,34 @@ android {
         vectorDrawables { useSupportLibrary = true }
     }
 
+    signingConfigs {
+        if (signingProps != null) {
+            create("release") {
+                storeFile = file(signingProps.getProperty("storeFile"))
+                storePassword = signingProps.getProperty("storePassword")
+                keyAlias = signingProps.getProperty("keyAlias")
+                keyPassword = signingProps.getProperty("keyPassword")
+                enableV1Signing = true
+                enableV2Signing = true
+            }
+        }
+    }
+
     buildTypes {
+        debug {
+            // Same key as release so `adb install -r` (and Android's updater) accepts
+            // swapping a debug build for a release build of the same version.
+            signingConfig = signingConfigs.findByName("release")
+            applicationIdSuffix = ""
+        }
         release {
             isMinifyEnabled = false
+            isShrinkResources = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            signingConfig = signingConfigs.findByName("release")
         }
     }
 
