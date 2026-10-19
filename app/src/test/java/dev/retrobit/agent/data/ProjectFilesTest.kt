@@ -155,8 +155,9 @@ class ProjectFilesTest {
     fun `list sorts directories before files`() {
         files.write("b.txt", "x")
         files.write("a/z.txt", "y")
-        val names = files.list().map { it.name }
-        assertEquals(listOf("a", "a/z.txt", "b.txt"), names)
+        // `name` is the leaf, `path` is relative to the project root.
+        assertEquals(listOf("a", "z.txt", "b.txt"), files.list().map { it.name })
+        assertEquals(listOf("a", "a/z.txt", "b.txt"), files.list().map { it.path })
     }
 
     @Test
