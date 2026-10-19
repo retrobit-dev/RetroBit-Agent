@@ -105,7 +105,7 @@ class PreviewBridge(
     fun isPreview(): Boolean = true
 }
 
-@SuppressLint("SetJavaScriptEnabled")
+@SuppressLint("SetJavaScriptEnabled", "JavascriptInterface")
 @Composable
 fun PreviewPane(
     filesRoot: File,
@@ -140,7 +140,7 @@ fun PreviewPane(
         )
     }
 
-    Box(modifier = modifier.clip(RoundedCornerShape(5.dp)).background(Color(0xFF08080E))) {
+    Box(modifier = modifier.clip(RoundedCornerShape(5.dp)).background(Palette.Bg)) {
         AndroidView(
             modifier = Modifier.fillMaxSize(),
             factory = { ctx ->
