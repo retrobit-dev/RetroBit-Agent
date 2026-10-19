@@ -10,7 +10,9 @@ Aplikasi Android native (Kotlin + Jetpack Compose) untuk membangun aplikasi web 
 </p>
 
 <p align="center">
-  <img src="docs/screenshots/dashboard.png" alt="Dashboard RetroBit" width="300" />
+  <img src="docs/screenshots/dashboard.png" alt="Dashboard RetroBit" width="240" />
+  <img src="docs/screenshots/preview.png" alt="Preview aplikasi" width="240" />
+  <img src="docs/screenshots/agent.png" alt="Agen demo menulis file" width="240" />
 </p>
 
 <p align="left">
