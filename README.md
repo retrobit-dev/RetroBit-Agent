@@ -71,6 +71,8 @@ Rilis resmi: **<https://github.com/retrobit-dev/RetroBit-Agent/releases>**
 
 APK rilis ditandatangani (v1 + v2) dengan kunci demo di `signing/`, jadi versi berikutnya bisa dipasang sebagai *update*.
 
+Build rilis melewati **R8 + resource shrinking**: dari 7,7 MB (v0.2.6) menjadi **1,9 MB** (v0.2.7). Smoke test di emulator memasang APK rilis hasil minify — bukan build debug — jadi kalau ada aturan keep yang kurang, CI yang gagal, bukan pengguna.
+
 > **Penting kalau kamu pernah memasang build lama (≤ v0.1.0):** build itu memakai kunci debug Android, berbeda dengan kunci rilis sekarang. Uninstall dulu aplikasinya sekali (`adb uninstall dev.retrobit.agent` atau tekan lama ikon → Uninstall), baru pasang `app-release.apk`. Setelah itu update berikutnya cukup ditimpa.
 
 ## Build di GitHub Actions
@@ -79,14 +81,14 @@ Repo ini punya workflow `.github/workflows/android.yml` yang membangun APK debug
 
 - Jalan otomatis pada setiap `push` ke `main` / `arena/**`, setiap pull request, dan bisa dipicu manual dari tab **Actions → Android CI → Run workflow**.
 - Hasil build diunggah sebagai artifact **`retrobit-debug-apk`** (30 hari).
-- Mendorong tag `v*` juga menerbitkan GitHub Release berisi `app-debug.apk`:
+- Mendorong tag `v*` juga menerbitkan GitHub Release berisi `app-release.apk` dan `app-debug.apk`:
 
 ```bash
 git tag -a v0.1.0 -m "RetroBit 0.1.0"
 git push origin v0.1.0
 ```
 
-Rilis terbaru: <https://github.com/retrobit-dev/RetroBit-Agent/releases>. Unduh `app-debug.apk`, lalu pasang lewat `adb install -r app-debug.apk` atau buka file-nya di HP (izinkan "install unknown apps").
+Rilis terbaru: <https://github.com/retrobit-dev/RetroBit-Agent/releases>. Unduh `app-release.apk`, lalu pasang lewat `adb install -r app-release.apk` atau buka file-nya di HP (izinkan "install unknown apps"). `app-debug.apk` disediakan untuk investigasi (tidak di-minify, 11 MB).
 
 Workflow memakai JDK 17 (Temurin), Gradle wrapper 8.9, `gradle/actions/setup-gradle` untuk cache, dan SDK Platform 35 yang sudah tersedia di runner. Kalau kompilasi gagal, error Kotlin dicatat sebagai *check annotation* sehingga langsung terlihat di ringkasan run tanpa perlu membuka log.
 
@@ -255,6 +257,7 @@ Seluruh teks yang tampil di aplikasi berada di `app/src/main/res/values/strings.
 - Belum ada sistem plugin/ekstensi; tool agen didefinisikan di `AgentToolRunner`.
 - Snapshot hanya memulihkan file sumber, bukan database atau design metadata.
 - Preview LAN menyajikan file statis tanpa runtime `RetroBitDB`/`__RETROBIT_ENV__`.
+- R8 menghapus kode yang tidak terpakai, jadi stack trace build rilis memakai nama kelas yang diobfuskasi. `mapping.txt` untuk membacanya diunggah sebagai artifact **`retrobit-mapping`** di setiap build CI.
 - Unit test mencakup tiga area: token design (`DesignSystemTest`), katalog provider/error AI (`AiConfigTest`), dan filesystem proyek (`ProjectFilesTest`: traversal, zip-slip, snapshot). Alur UI dan database masih diverifikasi lewat smoke test emulator, belum lewat test otomatis.
 
 ## Troubleshooting

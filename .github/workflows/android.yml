@@ -127,6 +127,15 @@ jobs:
           ls -l app/build/outputs/apk/release/ app/build/outputs/apk/debug/
           du -h app/build/outputs/apk/release/*.apk app/build/outputs/apk/debug/*.apk
 
+      - name: Upload R8 mapping
+        if: success()
+        uses: actions/upload-artifact@v7
+        with:
+          name: retrobit-mapping
+          path: app/build/outputs/mapping/release/mapping.txt
+          if-no-files-found: warn
+          retention-days: 30
+
       - name: Publish GitHub Release
         if: startsWith(github.ref, 'refs/tags/v')
         env:
