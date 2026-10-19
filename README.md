@@ -238,6 +238,11 @@ filesDir/
 - **Ikon RetroBit** — digambar sendiri di grid 12×12, ditulis sebagai `ImageVector` oleh `tools/pixel_icons.py`. Tidak ada aset ikon pihak ketiga yang tersisa.
 - Detail lengkap ada di `app/src/main/assets/licenses/NOTICE.txt`.
 
+## Aksesibilitas
+
+- Semua tombol di dashboard punya area sentuh **48 dp** walaupun tampilannya lebih kecil; ikon dan labelnya digabung jadi satu node semantik, jadi TalkBack membacanya sebagai "Template", "Demo lokal", atau "Kirim" — bukan tombol tanpa nama.
+- Smoke test mengukur ini di emulator: `scripts/ui-walk.sh` membaca pohon semantik dan mencatat `event=touch-targets ... small=N` untuk setiap node yang clickable namun di bawah 48 dp.
+
 ## Batasan yang diketahui
 
 - Belum ada streaming token: jawaban muncul setelah satu putaran selesai (dengan indikator langkah berjalan).

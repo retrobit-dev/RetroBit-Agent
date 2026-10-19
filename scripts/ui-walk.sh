@@ -118,7 +118,11 @@ for node in root.iter("node"):
     if y2 >= screen_h - 2 or x2 >= screen_w - 2:
         continue
     w, h = x2 - x1, y2 - y1
-    if w <= 0 or h <= 0 or (w >= minimum and h >= minimum):
+    # Anything thinner than 8 dp is the visible sliver of a card that is half
+    # scrolled off the fold, not a control somebody has to hit.
+    if w < minimum // 6 or h < minimum // 6:
+        continue
+    if w >= minimum and h >= minimum:
         continue
     label = (node.get("content-desc") or node.get("text") or node.get("resource-id") or "?").strip()
     dp = lambda px: round(px * 160 / density)
