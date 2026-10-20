@@ -210,7 +210,9 @@ class PlainChatEngineTest {
         connect()
         server.enqueue(sse("""data: {"choices":[{"delta":{}}]}""", "data: [DONE]"))
 
-        val reply = ask()
+        // The streaming path: a well-formed stream that never carries text.
+        val (chunks, reply) = stream()
+        assertTrue(chunks.isEmpty())
 
         assertTrue(reply.isError)
         assertTrue(reply.content, reply.content.contains("kosong"))
