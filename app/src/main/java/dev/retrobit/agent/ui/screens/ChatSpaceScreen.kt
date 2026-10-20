@@ -232,6 +232,13 @@ private fun ChatThread(
         }
     }
 
+    // Follow the growing answer, but never fight the user's own scrolling.
+    LaunchedEffect(vm.streamingText.length) {
+        if (vm.streamingText.isNotEmpty() && !listState.isScrollInProgress) {
+            listState.scrollToItem(maxOf(0, listState.layoutInfo.totalItemsCount - 1))
+        }
+    }
+
     Column(Modifier.fillMaxSize()) {
         Row(
             Modifier
@@ -281,16 +288,38 @@ private fun ChatThread(
                 }
                 if (vm.sending) {
                     item(key = "typing") {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            BrandMark(22.dp, "R")
-                            Spacer(Modifier.width(9.dp))
-                            Text(
-                                vm.notice.ifBlank { "Menunggu jawaban…" },
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                            Spacer(Modifier.width(10.dp))
-                            LoadingDots()
+                        if (vm.streamingText.isBlank()) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                BrandMark(22.dp, "R")
+                                Spacer(Modifier.width(9.dp))
+                                Text(
+                                    vm.notice.ifBlank { "Menunggu jawaban…" },
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                                Spacer(Modifier.width(10.dp))
+                                LoadingDots()
+                            }
+                        } else {
+                            Column(Modifier.fillMaxWidth()) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    BrandMark(22.dp, "R")
+                                    Spacer(Modifier.width(8.dp))
+                                    Text(
+                                        "RetroBit",
+                                        style = MaterialTheme.typography.labelMedium,
+                                        color = MaterialTheme.colorScheme.onSurface,
+                                        fontWeight = FontWeight.SemiBold,
+                                    )
+                                    Spacer(Modifier.width(8.dp))
+                                    LoadingDots()
+                                }
+                                Spacer(Modifier.height(8.dp))
+                                MarkdownText(
+                                    text = vm.streamingText,
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                )
+                            }
                         }
                     }
                 }

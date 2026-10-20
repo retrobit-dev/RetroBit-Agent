@@ -1,9 +1,11 @@
 package dev.retrobit.agent.agent
 
+import dev.retrobit.agent.ai.AiClient
 import dev.retrobit.agent.ai.AiClientFactory
 import dev.retrobit.agent.ai.AiConfig
 import dev.retrobit.agent.ai.AiException
 import dev.retrobit.agent.ai.AutoRouter
+import dev.retrobit.agent.ai.ProviderKind
 import dev.retrobit.agent.ai.TokenUsage
 import dev.retrobit.agent.ai.WireTurn
 import dev.retrobit.agent.data.ChatConversation
@@ -57,10 +59,31 @@ class PlainChatEngine(
         }
     }
 
+    /** Full answer, no partial updates. */
     suspend fun reply(
         conversation: ChatConversation,
         persona: String,
         onNotice: (String) -> Unit,
+    ): ChatMessage = run(conversation, persona, onNotice, onDelta = null)
+
+    /**
+     * Same as [reply], but [onDelta] receives each text fragment as the provider
+     * emits it. Called from a background dispatcher — callers must marshal to the
+     * UI thread themselves. A provider that cannot stream still works: the default
+     * implementation in [AiClient] hands over the finished text in one chunk.
+     */
+    suspend fun replyStream(
+        conversation: ChatConversation,
+        persona: String,
+        onNotice: (String) -> Unit,
+        onDelta: suspend (String) -> Unit,
+    ): ChatMessage = run(conversation, persona, onNotice, onDelta)
+
+    private suspend fun run(
+        conversation: ChatConversation,
+        persona: String,
+        onNotice: (String) -> Unit,
+        onDelta: (suspend (String) -> Unit)?,
     ): ChatMessage {
         val config = settings.config.value
         if (config.isDemo) {
@@ -68,17 +91,16 @@ class PlainChatEngine(
                 "Mode demo tidak memanggil model, jadi obrolan belum bisa dijawab.\n\n" +
                     "Buka **AI Cloud**, simpan satu key gratis (Gemini, Groq, atau OpenRouter), " +
                     "lalu pilih provider itu atau **Auto**.",
-                "",
             )
         }
 
         val system = systemPrompt(conversation, persona)
         val turns = transcript(conversation.messages)
         if (turns.isEmpty()) {
-            return failure("Tidak ada pesan untuk dijawab.", "")
+            return failure("Tidak ada pesan untuk dijawab.")
         }
 
-        val candidates = if (config.provider == dev.retrobit.agent.ai.ProviderKind.AUTO) {
+        val candidates = if (config.provider == ProviderKind.AUTO) {
             AutoRouter.candidates(secrets, config)
         } else {
             listOf(config)
@@ -87,12 +109,10 @@ class PlainChatEngine(
             return failure(
                 "Mode Auto belum menemukan provider. Simpan minimal satu API key di AI Cloud — " +
                     "Gemini dan Groq punya kuota gratis — atau pilih provider tertentu.",
-                "",
             )
         }
 
         var lastError = ""
-        var usage = TokenUsage()
         var cost = 0.0
         for (candidate in candidates) {
             currentCoroutineContext().ensureActive()
@@ -100,14 +120,25 @@ class PlainChatEngine(
             onNotice("Menghubungi ${candidate.provider.label} · ${candidate.displayModel}")
             try {
                 val client = AiClientFactory.create(candidate, key)
-                val response = client.chat(
-                    system = system,
-                    turns = turns,
-                    tools = emptyList(),
-                    temperature = candidate.temperature,
-                    maxTokens = candidate.maxTokens.coerceIn(256, MAX_OUTPUT_TOKENS),
-                )
-                usage = response.usage
+                val response = if (onDelta == null) {
+                    client.chat(
+                        system = system,
+                        turns = turns,
+                        tools = emptyList(),
+                        temperature = candidate.temperature,
+                        maxTokens = candidate.maxTokens.coerceIn(256, MAX_OUTPUT_TOKENS),
+                    )
+                } else {
+                    client.chatStream(
+                        system = system,
+                        turns = turns,
+                        tools = emptyList(),
+                        temperature = candidate.temperature,
+                        maxTokens = candidate.maxTokens.coerceIn(256, MAX_OUTPUT_TOKENS),
+                        onDelta = onDelta,
+                    )
+                }
+                val usage = response.usage
                 val (inputPrice, outputPrice) = AiConfig.estimatedPricePerMillion(candidate.displayModel)
                 cost = usage.prompt / 1_000_000.0 * inputPrice + usage.completion / 1_000_000.0 * outputPrice
                 if (response.text.isBlank()) {
@@ -132,7 +163,7 @@ class PlainChatEngine(
             }
         }
 
-        return failure(lastError.ifBlank { "Provider tidak mengembalikan jawaban." }, "")
+        return failure(lastError.ifBlank { "Provider tidak mengembalikan jawaban." })
     }
 
     private fun record(usage: TokenUsage, cost: Double) {
@@ -141,10 +172,10 @@ class PlainChatEngine(
         }
     }
 
-    private fun failure(message: String, model: String) = ChatMessage(
+    private fun failure(message: String) = ChatMessage(
         role = Role.ASSISTANT,
         content = message,
         isError = true,
-        modelLabel = model,
+        modelLabel = "",
     )
 }

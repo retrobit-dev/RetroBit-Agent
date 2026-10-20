@@ -1,6 +1,8 @@
 package dev.retrobit.agent.ai
 
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
@@ -14,6 +16,7 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 import okhttp3.Call
+import okhttp3.ResponseBody
 import okhttp3.Callback
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
@@ -21,6 +24,7 @@ import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Response
 import java.io.IOException
+import java.io.InterruptedIOException
 import java.util.UUID
 import java.util.concurrent.TimeUnit
 import kotlin.coroutines.resume
@@ -60,6 +64,22 @@ interface AiClient {
         temperature: Double,
         maxTokens: Int,
     ): AiResponse
+
+    /**
+     * Same contract as [chat], but reports text as it arrives so the UI can paint
+     * a partial answer. The default keeps every client usable: it waits for the
+     * full response and emits it in one chunk.
+     */
+    suspend fun chatStream(
+        system: String,
+        turns: List<WireTurn>,
+        tools: List<AiToolDef>,
+        temperature: Double,
+        maxTokens: Int,
+        onDelta: suspend (String) -> Unit,
+    ): AiResponse = chat(system, turns, tools, temperature, maxTokens).also { response ->
+        if (response.text.isNotBlank()) onDelta(response.text)
+    }
 }
 
 object AiClientFactory {
@@ -110,6 +130,28 @@ internal suspend fun OkHttpClient.executeAsync(request: Request): Response =
         })
     }
 
+/**
+ * Walks a server-sent-events body and hands every `data:` payload to [onEvent].
+ * Providers frame events slightly differently but all of them end a stream with
+ * either `[DONE]` or a closed socket, so both are treated as the end.
+ */
+internal fun ResponseBody.readSse(onEvent: (String) -> Unit) {
+    val source = source()
+    while (true) {
+        val line = try {
+            source.readUtf8Line()
+        } catch (e: InterruptedIOException) {
+            null
+        }
+        if (line == null) break
+        if (line.isBlank() || line.startsWith(":")) continue
+        if (!line.startsWith("data:")) continue
+        val payload = line.removePrefix("data:").trim()
+        if (payload == "[DONE]") break
+        if (payload.isNotEmpty()) onEvent(payload)
+    }
+}
+
 internal fun errorFor(status: Int, body: String, provider: String): AiException {
     val snippet = body.take(400).replace("\n", " ")
     val friendly = when (status) {
@@ -141,57 +183,60 @@ internal class OpenAiCompatibleClient(
     private val provider: ProviderKind,
 ) : AiClient {
 
-    override suspend fun chat(
+    private fun messagesJson(turns: List<WireTurn>, system: String): JsonArray = buildJsonArray {
+        add(buildJsonObject {
+            put("role", "system")
+            put("content", system)
+        })
+        turns.forEach { turn ->
+            when (turn) {
+                is WireTurn.User -> add(buildJsonObject {
+                    put("role", "user")
+                    put("content", turn.text)
+                })
+                is WireTurn.Assistant -> add(buildJsonObject {
+                    put("role", "assistant")
+                    put("content", turn.text.ifBlank { "" })
+                    if (turn.toolCalls.isNotEmpty()) {
+                        put("tool_calls", buildJsonArray {
+                            turn.toolCalls.forEach { call ->
+                                add(buildJsonObject {
+                                    put("id", call.id)
+                                    put("type", "function")
+                                    put("function", buildJsonObject {
+                                        put("name", call.name)
+                                        put("arguments", call.argumentsJson.ifBlank { "{}" })
+                                    })
+                                })
+                            }
+                        })
+                    }
+                })
+                is WireTurn.ToolResult -> add(buildJsonObject {
+                    put("role", "tool")
+                    put("tool_call_id", turn.callId)
+                    put("name", turn.name)
+                    put("content", turn.content)
+                })
+            }
+        }
+    }
+
+    private fun isReasoningModel(): Boolean = provider == ProviderKind.OPENAI &&
+        (model.startsWith("o1") || model.startsWith("o3") || model.startsWith("o4") || model.startsWith("gpt-5"))
+
+    private fun payloadJson(
         system: String,
         turns: List<WireTurn>,
         tools: List<AiToolDef>,
         temperature: Double,
         maxTokens: Int,
-    ): AiResponse {
-        val messages = buildJsonArray {
-            add(buildJsonObject {
-                put("role", "system")
-                put("content", system)
-            })
-            turns.forEach { turn ->
-                when (turn) {
-                    is WireTurn.User -> add(buildJsonObject {
-                        put("role", "user")
-                        put("content", turn.text)
-                    })
-                    is WireTurn.Assistant -> add(buildJsonObject {
-                        put("role", "assistant")
-                        put("content", turn.text.ifBlank { "" })
-                        if (turn.toolCalls.isNotEmpty()) {
-                            put("tool_calls", buildJsonArray {
-                                turn.toolCalls.forEach { call ->
-                                    add(buildJsonObject {
-                                        put("id", call.id)
-                                        put("type", "function")
-                                        put("function", buildJsonObject {
-                                            put("name", call.name)
-                                            put("arguments", call.argumentsJson.ifBlank { "{}" })
-                                        })
-                                    })
-                                }
-                            })
-                        }
-                    })
-                    is WireTurn.ToolResult -> add(buildJsonObject {
-                        put("role", "tool")
-                        put("tool_call_id", turn.callId)
-                        put("name", turn.name)
-                        put("content", turn.content)
-                    })
-                }
-            }
-        }
-
-        val isOpenAiReasoning = provider == ProviderKind.OPENAI &&
-            (model.startsWith("o1") || model.startsWith("o3") || model.startsWith("o4") || model.startsWith("gpt-5"))
-        val body = buildJsonObject {
+        stream: Boolean,
+    ): JsonObject {
+        val isOpenAiReasoning = isReasoningModel()
+        return buildJsonObject {
             put("model", model)
-            put("messages", messages)
+            put("messages", messagesJson(turns, system))
             if (!isOpenAiReasoning) put("temperature", temperature)
             put(if (isOpenAiReasoning) "max_completion_tokens" else "max_tokens", maxTokens)
             if (tools.isNotEmpty()) {
@@ -209,8 +254,17 @@ internal class OpenAiCompatibleClient(
                 })
                 put("tool_choice", "auto")
             }
+            if (stream) {
+                put("stream", true)
+                // Only OpenAI documents this flag; other compatible endpoints reject it.
+                if (provider == ProviderKind.OPENAI) {
+                    put("stream_options", buildJsonObject { put("include_usage", true) })
+                }
+            }
         }
+    }
 
+    private fun request(body: JsonObject): Request {
         val url = baseUrl.trimEnd('/') + "/chat/completions"
         val builder = Request.Builder()
             .url(url)
@@ -221,8 +275,27 @@ internal class OpenAiCompatibleClient(
             builder.header("HTTP-Referer", "https://retrobit.dev")
             builder.header("X-Title", "RetroBit Agent")
         }
+        return builder.build()
+    }
 
-        http.executeAsync(builder.build()).use { response ->
+    private fun usageOf(root: JsonObject): TokenUsage = root["usage"]?.let { u ->
+        runCatching {
+            TokenUsage(
+                prompt = u.jsonObject["prompt_tokens"]?.jsonPrimitive?.content?.toIntOrNull() ?: 0,
+                completion = u.jsonObject["completion_tokens"]?.jsonPrimitive?.content?.toIntOrNull() ?: 0,
+            )
+        }.getOrDefault(TokenUsage())
+    } ?: TokenUsage()
+
+    override suspend fun chat(
+        system: String,
+        turns: List<WireTurn>,
+        tools: List<AiToolDef>,
+        temperature: Double,
+        maxTokens: Int,
+    ): AiResponse {
+        val body = payloadJson(system, turns, tools, temperature, maxTokens, stream = false)
+        http.executeAsync(request(body)).use { response ->
             val text = response.body?.string().orEmpty()
             if (!response.isSuccessful) {
                 val detail = extractError(text) ?: text
@@ -247,15 +320,48 @@ internal class OpenAiCompatibleClient(
                     argumentsJson = fn?.get("arguments")?.jsonPrimitive?.content ?: "{}",
                 )
             }?.filter { it.name.isNotBlank() } ?: emptyList()
-            val usage = root["usage"]?.let { u ->
-                runCatching {
-                    TokenUsage(
-                        prompt = u.jsonObject["prompt_tokens"]?.jsonPrimitive?.content?.toIntOrNull() ?: 0,
-                        completion = u.jsonObject["completion_tokens"]?.jsonPrimitive?.content?.toIntOrNull() ?: 0,
-                    )
-                }.getOrDefault(TokenUsage())
-            } ?: TokenUsage()
-            return AiResponse(content, calls, usage)
+            return AiResponse(content, calls, usageOf(root))
+        }
+    }
+
+    override suspend fun chatStream(
+        system: String,
+        turns: List<WireTurn>,
+        tools: List<AiToolDef>,
+        temperature: Double,
+        maxTokens: Int,
+        onDelta: suspend (String) -> Unit,
+    ): AiResponse {
+        val body = payloadJson(system, turns, tools, temperature, maxTokens, stream = true)
+        return withContext(Dispatchers.IO) {
+            http.executeAsync(request(body)).use { response ->
+                if (!response.isSuccessful) {
+                    val text = response.body?.string().orEmpty()
+                    throw errorFor(response.code, extractError(text) ?: text, provider.label)
+                }
+                val payload = response.body ?: throw AiException("Respons kosong dari ${provider.label}")
+                val builder = StringBuilder()
+                var usage = TokenUsage()
+                payload.readSse { data ->
+                    val root = runCatching { sharedJson.parseToJsonElement(data).jsonObject }.getOrNull()
+                        ?: return@readSse
+                    usageOf(root).takeIf { it.total > 0 }?.let { usage = it }
+                    val delta = root["choices"]?.jsonArray?.firstOrNull()?.jsonObject?.get("delta")?.jsonObject
+                    val piece = when (val c = delta?.get("content")) {
+                        is JsonPrimitive -> if (c is JsonNull) "" else c.content
+                        is JsonArray -> c.joinToString("") { part ->
+                            runCatching { part.jsonObject["text"]?.jsonPrimitive?.content.orEmpty() }.getOrDefault("")
+                        }
+                        else -> ""
+                    }
+                    if (piece.isNotEmpty()) {
+                        builder.append(piece)
+                        // Called on the IO dispatcher; callers marshal to the UI.
+                        onDelta(piece)
+                    }
+                }
+                AiResponse(builder.toString(), emptyList(), usage)
+            }
         }
     }
 }
@@ -267,13 +373,14 @@ internal class AnthropicClient(
     private val model: String,
 ) : AiClient {
 
-    override suspend fun chat(
+    private fun payloadJson(
         system: String,
         turns: List<WireTurn>,
         tools: List<AiToolDef>,
         temperature: Double,
         maxTokens: Int,
-    ): AiResponse {
+        stream: Boolean,
+    ): JsonObject {
         // Anthropic requires alternating roles: merge consecutive blocks of the same role.
         val merged = mutableListOf<Pair<String, MutableList<JsonElement>>>()
         fun push(role: String, block: JsonObject) {
@@ -317,12 +424,13 @@ internal class AnthropicClient(
                 })
             }
         }
-        val body = buildJsonObject {
+        return buildJsonObject {
             put("model", model)
             put("system", system)
             put("max_tokens", maxTokens)
             put("temperature", temperature)
             put("messages", messages)
+            if (stream) put("stream", true)
             if (tools.isNotEmpty()) {
                 put("tools", buildJsonArray {
                     tools.forEach { tool ->
@@ -335,14 +443,25 @@ internal class AnthropicClient(
                 })
             }
         }
-        val request = Request.Builder()
-            .url(baseUrl.trimEnd('/') + "/v1/messages")
-            .post(body.toString().toRequestBody(jsonMedia))
-            .header("x-api-key", apiKey)
-            .header("anthropic-version", "2023-06-01")
-            .header("Content-Type", "application/json")
-            .build()
-        http.executeAsync(request).use { response ->
+    }
+
+    private fun request(body: JsonObject): Request = Request.Builder()
+        .url(baseUrl.trimEnd('/') + "/v1/messages")
+        .post(body.toString().toRequestBody(jsonMedia))
+        .header("x-api-key", apiKey)
+        .header("anthropic-version", "2023-06-01")
+        .header("Content-Type", "application/json")
+        .build()
+
+    override suspend fun chat(
+        system: String,
+        turns: List<WireTurn>,
+        tools: List<AiToolDef>,
+        temperature: Double,
+        maxTokens: Int,
+    ): AiResponse {
+        val body = payloadJson(system, turns, tools, temperature, maxTokens, stream = false)
+        http.executeAsync(request(body)).use { response ->
             val text = response.body?.string().orEmpty()
             if (!response.isSuccessful) throw errorFor(response.code, extractError(text) ?: text, "Anthropic")
             val root = sharedJson.parseToJsonElement(text).jsonObject
@@ -373,6 +492,52 @@ internal class AnthropicClient(
             return AiResponse(textOut.toString(), calls.filter { it.name.isNotBlank() }, usage)
         }
     }
+
+    override suspend fun chatStream(
+        system: String,
+        turns: List<WireTurn>,
+        tools: List<AiToolDef>,
+        temperature: Double,
+        maxTokens: Int,
+        onDelta: suspend (String) -> Unit,
+    ): AiResponse {
+        val body = payloadJson(system, turns, tools, temperature, maxTokens, stream = true)
+        return withContext(Dispatchers.IO) {
+            http.executeAsync(request(body)).use { response ->
+                if (!response.isSuccessful) {
+                    val text = response.body?.string().orEmpty()
+                    throw errorFor(response.code, extractError(text) ?: text, "Anthropic")
+                }
+                val payload = response.body ?: throw AiException("Respons kosong dari Anthropic")
+                val builder = StringBuilder()
+                var usage = TokenUsage()
+                payload.readSse { data ->
+                    val root = runCatching { sharedJson.parseToJsonElement(data).jsonObject }.getOrNull()
+                        ?: return@readSse
+                    when (root["type"]?.jsonPrimitive?.content) {
+                        "content_block_delta" -> {
+                            val piece = root["delta"]?.jsonObject?.get("text")?.jsonPrimitive?.content.orEmpty()
+                            if (piece.isNotEmpty()) {
+                                builder.append(piece)
+                                onDelta(piece)
+                            }
+                        }
+                        "message_start" -> {
+                            val start = root["message"]?.jsonObject?.get("usage")?.jsonObject
+                            usage = usage.copy(
+                                prompt = start?.get("input_tokens")?.jsonPrimitive?.content?.toIntOrNull() ?: usage.prompt,
+                            )
+                        }
+                        "message_delta" -> {
+                            val out = root["usage"]?.jsonObject?.get("output_tokens")?.jsonPrimitive?.content?.toIntOrNull()
+                            if (out != null) usage = usage.copy(completion = out)
+                        }
+                    }
+                }
+                AiResponse(builder.toString(), emptyList(), usage)
+            }
+        }
+    }
 }
 
 internal class GeminiClient(
@@ -382,13 +547,13 @@ internal class GeminiClient(
     private val model: String,
 ) : AiClient {
 
-    override suspend fun chat(
+    private fun payloadJson(
         system: String,
         turns: List<WireTurn>,
         tools: List<AiToolDef>,
         temperature: Double,
         maxTokens: Int,
-    ): AiResponse {
+    ): JsonObject {
         val contents = mutableListOf<JsonObject>()
         // Group consecutive tool results into a single user turn.
         var pendingToolParts: MutableList<JsonElement>? = null
@@ -439,7 +604,7 @@ internal class GeminiClient(
         }
         flushTools()
 
-        val body = buildJsonObject {
+        return buildJsonObject {
             put("systemInstruction", buildJsonObject {
                 put("parts", buildJsonArray { add(buildJsonObject { put("text", system) }) })
             })
@@ -464,14 +629,37 @@ internal class GeminiClient(
                 })
             }
         }
-        val url = "${baseUrl.trimEnd('/')}/v1beta/models/$model:generateContent"
-        val request = Request.Builder()
+    }
+
+    private fun request(body: JsonObject, stream: Boolean): Request {
+        val suffix = if (stream) "streamGenerateContent?alt=sse" else "generateContent"
+        val url = "${baseUrl.trimEnd('/')}/v1beta/models/$model:$suffix"
+        return Request.Builder()
             .url(url)
             .post(body.toString().toRequestBody(jsonMedia))
             .header("x-goog-api-key", apiKey)
             .header("Content-Type", "application/json")
             .build()
-        http.executeAsync(request).use { response ->
+    }
+
+    private fun usageOf(root: JsonObject): TokenUsage = root["usageMetadata"]?.let {
+        runCatching {
+            TokenUsage(
+                prompt = it.jsonObject["promptTokenCount"]?.jsonPrimitive?.content?.toIntOrNull() ?: 0,
+                completion = it.jsonObject["candidatesTokenCount"]?.jsonPrimitive?.content?.toIntOrNull() ?: 0,
+            )
+        }.getOrDefault(TokenUsage())
+    } ?: TokenUsage()
+
+    override suspend fun chat(
+        system: String,
+        turns: List<WireTurn>,
+        tools: List<AiToolDef>,
+        temperature: Double,
+        maxTokens: Int,
+    ): AiResponse {
+        val body = payloadJson(system, turns, tools, temperature, maxTokens)
+        http.executeAsync(request(body, stream = false)).use { response ->
             val text = response.body?.string().orEmpty()
             if (!response.isSuccessful) throw errorFor(response.code, extractError(text) ?: text, "Gemini")
             val root = sharedJson.parseToJsonElement(text).jsonObject
@@ -493,15 +681,45 @@ internal class GeminiClient(
                     )
                 }
             }
-            val usage = root["usageMetadata"]?.let {
-                runCatching {
-                    TokenUsage(
-                        prompt = it.jsonObject["promptTokenCount"]?.jsonPrimitive?.content?.toIntOrNull() ?: 0,
-                        completion = it.jsonObject["candidatesTokenCount"]?.jsonPrimitive?.content?.toIntOrNull() ?: 0,
-                    )
-                }.getOrDefault(TokenUsage())
-            } ?: TokenUsage()
-            return AiResponse(textOut.toString(), calls.filter { it.name.isNotBlank() }, usage)
+            return AiResponse(textOut.toString(), calls.filter { it.name.isNotBlank() }, usageOf(root))
+        }
+    }
+
+    override suspend fun chatStream(
+        system: String,
+        turns: List<WireTurn>,
+        tools: List<AiToolDef>,
+        temperature: Double,
+        maxTokens: Int,
+        onDelta: suspend (String) -> Unit,
+    ): AiResponse {
+        val body = payloadJson(system, turns, tools, temperature, maxTokens)
+        return withContext(Dispatchers.IO) {
+            http.executeAsync(request(body, stream = true)).use { response ->
+                if (!response.isSuccessful) {
+                    val text = response.body?.string().orEmpty()
+                    throw errorFor(response.code, extractError(text) ?: text, "Gemini")
+                }
+                val payload = response.body ?: throw AiException("Respons kosong dari Gemini")
+                val builder = StringBuilder()
+                var usage = TokenUsage()
+                payload.readSse { data ->
+                    val root = runCatching { sharedJson.parseToJsonElement(data).jsonObject }.getOrNull()
+                        ?: return@readSse
+                    usageOf(root).takeIf { it.total > 0 }?.let { usage = it }
+                    val parts = root["candidates"]?.jsonArray?.firstOrNull()?.jsonObject
+                        ?.get("content")?.jsonObject?.get("parts")?.jsonArray ?: return@readSse
+                    parts.forEach { el ->
+                        val piece = runCatching { el.jsonObject["text"]?.jsonPrimitive?.content.orEmpty() }
+                            .getOrDefault("")
+                        if (piece.isNotEmpty()) {
+                            builder.append(piece)
+                            onDelta(piece)
+                        }
+                    }
+                }
+                AiResponse(builder.toString(), emptyList(), usage)
+            }
         }
     }
 }

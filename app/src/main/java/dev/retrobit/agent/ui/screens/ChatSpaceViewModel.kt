@@ -13,6 +13,7 @@ import dev.retrobit.agent.data.ChatConversation
 import dev.retrobit.agent.data.ChatMessage
 import dev.retrobit.agent.data.Role
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.launch
 
 class ChatSpaceViewModel(private val container: AppContainer) : ViewModel() {
@@ -31,6 +32,10 @@ class ChatSpaceViewModel(private val container: AppContainer) : ViewModel() {
     var sending by mutableStateOf(false)
         private set
     var notice by mutableStateOf("")
+        private set
+
+    /** Text of the answer currently arriving, empty when nothing is streaming. */
+    var streamingText by mutableStateOf("")
         private set
 
     private var job: Job? = null
@@ -103,18 +108,49 @@ class ChatSpaceViewModel(private val container: AppContainer) : ViewModel() {
         draft = ""
         sending = true
         notice = ""
+        streamingText = ""
         job = viewModelScope.launch {
+            // Deltas arrive on an IO thread; a channel hands them to this
+            // Main-dispatched coroutine so Compose state stays single-threaded.
+            val chunks = Channel<String>(Channel.UNLIMITED)
+            val painter = launch { paintStream(chunks) }
             try {
                 val user = ChatMessage(role = Role.USER, content = text)
                 store.append(conversation.id, listOf(user))
                 val current = store.conversations.value.firstOrNull { it.id == conversation.id }
                 if (current == null) return@launch
-                val reply = engine.reply(current, settings.systemPrompt) { line -> notice = line }
+                val reply = engine.replyStream(
+                    conversation = current,
+                    persona = settings.systemPrompt,
+                    onNotice = { line -> notice = line },
+                    onDelta = { piece -> chunks.send(piece) },
+                )
                 store.append(conversation.id, listOf(reply))
             } finally {
+                chunks.close()
+                painter.join()
+                streamingText = ""
                 sending = false
             }
         }
+    }
+
+    /**
+     * Coalesces deltas into ~60 ms repaints. Updating Compose state on every
+     * token would re-parse the whole markdown document dozens of times a second.
+     */
+    private suspend fun paintStream(chunks: Channel<String>) {
+        val buffer = StringBuilder()
+        var lastPaint = 0L
+        for (chunk in chunks) {
+            buffer.append(chunk)
+            val now = System.currentTimeMillis()
+            if (now - lastPaint >= 60) {
+                streamingText = buffer.toString()
+                lastPaint = now
+            }
+        }
+        if (buffer.isNotEmpty()) streamingText = buffer.toString()
     }
 
     fun stop() {

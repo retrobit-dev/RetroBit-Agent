@@ -140,6 +140,12 @@ Model bertanda `:free` otomatis dihitung **$0** pada estimasi biaya dan diberi b
 
 Batas di atas adalah angka publik per 2026-10 dan bisa berubah; angka final selalu ada di konsol masing-masing provider.
 
+### Streaming
+
+Jawaban chat muncul kata per kata. Ketiga dialek provider didukung: OpenAI-compatible (`data:` + `delta.content`), Anthropic (`content_block_delta`), dan Gemini (`streamGenerateContent?alt=sse`). Kalau sebuah endpoint menolak `stream`, klien tetap punya jalur non-streaming dan permintaan akan gagal dengan pesan provider — bukan jawaban kosong.
+
+Repaint dibatasi ~60 ms supaya markdown tidak diurai ulang puluhan kali per detik. Agen pembangun aplikasi sengaja masih non-streaming: tool call harus utuh sebelum dieksekusi, jadi potongan teks di tengah putaran hanya akan menyesatkan.
+
 ### Mode Chat
 
 Tab **Chat** di bilah bawah (atau drawer) adalah obrolan biasa:
