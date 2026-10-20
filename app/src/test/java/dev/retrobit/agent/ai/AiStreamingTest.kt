@@ -236,7 +236,7 @@ class AiStreamingTest {
         """.trimIndent().toResponseBody("text/event-stream".toMediaType())
 
         val payloads = mutableListOf<String>()
-        body.readSse { payloads.add(it) }
+        runBlocking { body.readSse { payloads.add(it) } }
 
         assertEquals(listOf("""{"a":1}"""), payloads)
     }
@@ -244,7 +244,8 @@ class AiStreamingTest {
     @Test
     fun `sse reader tolerates an empty body`() {
         val payloads = mutableListOf<String>()
-        "".toResponseBody("text/event-stream".toMediaType()).readSse { payloads.add(it) }
+        val empty = "".toResponseBody("text/event-stream".toMediaType())
+        runBlocking { empty.readSse { payloads.add(it) } }
         assertTrue(payloads.isEmpty())
     }
 }

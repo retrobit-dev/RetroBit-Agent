@@ -135,7 +135,7 @@ internal suspend fun OkHttpClient.executeAsync(request: Request): Response =
  * Providers frame events slightly differently but all of them end a stream with
  * either `[DONE]` or a closed socket, so both are treated as the end.
  */
-internal fun ResponseBody.readSse(onEvent: (String) -> Unit) {
+internal suspend fun ResponseBody.readSse(onEvent: suspend (String) -> Unit) {
     val source = source()
     while (true) {
         val line = try {
