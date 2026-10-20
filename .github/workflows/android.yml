@@ -48,6 +48,32 @@ jobs:
           chmod +x ./gradlew
           ./gradlew --no-daemon --console=plain testDebugUnitTest 2>&1 | tee test.log
 
+      - name: Report unit test summary
+        if: success()
+        run: |
+          python3 - <<'PY'
+          import pathlib, xml.etree.ElementTree as ET
+
+          reports = sorted(pathlib.Path("app/build/test-results/testDebugUnitTest").glob("*.xml"))
+          total = failures = skipped = 0
+          lines = []
+          for report in reports:
+              try:
+                  root = ET.parse(report).getroot()
+              except Exception:
+                  continue
+              name = report.stem
+              count = len(list(root.iter("testcase")))
+              bad = sum(1 for c in root.iter("testcase") if c.find("failure") is not None or c.find("error") is not None)
+              total += count
+              failures += bad
+              skipped += len(list(root.iter("skipped")))
+              lines.append(f"{name}: {count} tests, {bad} failed")
+          summary = f"{total} tests, {failures} failed, {skipped} skipped"
+          print("\n".join(lines))
+          print(summary)
+          print(f"::notice title=Tests::{summary}")
+
       - name: Annotate failing unit tests
         if: failure()
         run: |
