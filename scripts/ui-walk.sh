@@ -251,6 +251,15 @@ if tap_text "Menu"; then
     sleep 3
     shot 12-cloud
     crash_check cloud || FAILED=1
+    # The unlimited/keys section sits below the provider grid, so the walk has
+    # to scroll for it — the top screenshot alone would never prove it renders.
+    $ADB shell input swipe 540 1500 540 700 300 >>"$LOG" 2>&1
+    sleep 1
+    $ADB shell input swipe 540 1500 540 700 300 >>"$LOG" 2>&1
+    sleep 2
+    shot 12b-cloud-unlimited
+    touch_target_check cloud-scrolled
+    crash_check cloud-scrolled || FAILED=1
   else
     UI_ISSUES=$((UI_ISSUES + 1))
   fi
