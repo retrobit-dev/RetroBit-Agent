@@ -167,12 +167,19 @@ class SecretStoreTest {
         assertTrue(store.requests().isEmpty())
     }
 
+    // Robolectric ships no AndroidKeyStore, so this exercises the documented
+    // fallback. The point of the test is that the store never hides the
+    // degradation: the payload is marked, the flag is false, and values still
+    // round-trip instead of being lost.
     @Test
-    fun `values are never stored in plain text`() {
-        store.put(SecretEntry("RAHASIA", "jangan-terbaca"))
+    fun `without a keystore values are stored with the plain marker`() {
+        store.put(SecretEntry("RAHASIA", "isi-rahasia"))
         val raw = context.getSharedPreferences("retrobit_secrets", 0)
             .getString("entries_v1", "").orEmpty()
-        assertFalse(raw.contains("jangan-terbaca"))
+
+        assertFalse("keystore should be unavailable under Robolectric", store.keystoreAvailable)
+        assertTrue("payload should be marked as plaintext: $raw", raw.contains("plain:isi-rahasia"))
+        assertEquals("isi-rahasia", SecretStore(context).get("RAHASIA"))
     }
 
     @Test
