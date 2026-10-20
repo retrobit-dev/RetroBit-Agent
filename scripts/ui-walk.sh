@@ -32,14 +32,23 @@ try:
     root = ET.parse("/tmp/ui.xml").getroot()
 except Exception:
     sys.exit(1)
+exact, loose = [], []
 for node in root.iter("node"):
     label = ((node.get("text") or "") + " " + (node.get("content-desc") or "")).strip()
-    if needle in label.lower():
+    low = label.lower()
+    if needle in low:
         m = re.match(r"\[(\d+),(\d+)\]\[(\d+),(\d+)\]", node.get("bounds", ""))
-        if m:
-            x1, y1, x2, y2 = map(int, m.groups())
-            print((x1 + x2) // 2, (y1 + y2) // 2)
-            sys.exit(0)
+        if not m:
+            continue
+        x1, y1, x2, y2 = map(int, m.groups())
+        point = ((x1 + x2) // 2, (y1 + y2) // 2)
+        # An exact label wins over a substring: "Chat" must be the tab, not the
+        # "chat baru" pill that a scrolled page happens to show.
+        (exact if low == needle else loose).append(point)
+if exact:
+    print(*exact[0]); sys.exit(0)
+if loose:
+    print(*loose[0]); sys.exit(0)
 sys.exit(1)
 PY
 }
