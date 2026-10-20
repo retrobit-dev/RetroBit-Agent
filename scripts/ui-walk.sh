@@ -116,6 +116,30 @@ try:
     root = ET.parse("/tmp/ui.xml").getroot()
 except Exception:
     sys.exit(0)
+# Top of the app's bottom tab bar: the clickable item that wraps a tab label.
+# Anything below that line is covered by the bar, and uiautomator only reports
+# the uncovered slice — which made a 48 dp chip look like 26 dp.
+density_px = density / 160.0
+bar_top = screen_h - int(200 * density_px)
+label = None
+for node in root.iter("node"):
+    if (node.get("text") or "").strip() in ("Beranda", "Chat", "Template", "Cloud"):
+        m = re.match(r"\[(\d+),(\d+)\]\[(\d+),(\d+)\]", node.get("bounds", ""))
+        if m:
+            x1, y1, x2, y2 = map(int, m.groups())
+            label = ((x1 + x2) // 2, (y1 + y2) // 2)
+            break
+if label is not None:
+    for node in root.iter("node"):
+        if node.get("clickable") != "true":
+            continue
+        m = re.match(r"\[(\d+),(\d+)\]\[(\d+),(\d+)\]", node.get("bounds", ""))
+        if not m:
+            continue
+        x1, y1, x2, y2 = map(int, m.groups())
+        if x1 <= label[0] <= x2 and y1 <= label[1] <= y2:
+            bar_top = y1
+            break
 small = []
 for node in root.iter("node"):
     if node.get("clickable") != "true":
@@ -126,6 +150,11 @@ for node in root.iter("node"):
     x1, y1, x2, y2 = map(int, m.groups())
     # A node clipped by the screen edge is not a small target, just half visible.
     if y2 >= screen_h - 2 or x2 >= screen_w - 2:
+        continue
+    # Nor is one that the bottom tab bar covers: uiautomator reports the clipped
+    # height, which made a 48 dp chip look like 26 dp whenever a fling happened
+    # to stop with the row half under the bar.
+    if y2 > bar_top:
         continue
     w, h = x2 - x1, y2 - y1
     # Anything thinner than 8 dp is the visible sliver of a card that is half
@@ -274,10 +303,21 @@ if tap_text "Menu"; then
     crash_check cloud || FAILED=1
     # The unlimited/keys section sits below the provider grid, so the walk has
     # to scroll for it — the top screenshot alone would never prove it renders.
-    $ADB shell input swipe 540 1500 540 700 300 >>"$LOG" 2>&1
+    # Slow swipes instead of flings: a fling stops wherever momentum takes it,
+    # and a row that lands half under the tab bar is unmeasurable.
+    SECTION_Y=""
+    for _ in 1 2 3 4 5; do
+      dump_ui || true
+      SECTION=$(find_xy "Tanpa batas" || true)
+      if [ -n "$SECTION" ]; then
+        SECTION_Y=${SECTION#* }
+        if [ "$SECTION_Y" -gt 200 ] && [ "$SECTION_Y" -lt 900 ]; then break; fi
+      fi
+      $ADB shell input swipe 540 1300 540 900 1200 >>"$LOG" 2>&1
+      sleep 1
+    done
+    log "event=scrolled-to cloud-unlimited y=${SECTION_Y:-unknown}"
     sleep 1
-    $ADB shell input swipe 540 1500 540 700 300 >>"$LOG" 2>&1
-    sleep 2
     shot 12b-cloud-unlimited
     touch_target_check cloud-scrolled
     crash_check cloud-scrolled || FAILED=1
