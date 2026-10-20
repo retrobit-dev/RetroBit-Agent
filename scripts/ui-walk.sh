@@ -154,7 +154,9 @@ for node in root.iter("node"):
     # Nor is one that the bottom tab bar covers: uiautomator reports the clipped
     # height, which made a 48 dp chip look like 26 dp whenever a fling happened
     # to stop with the row half under the bar.
-    if y2 > bar_top:
+    # 16 dp of tolerance: the bar's top edge and a clipped node's bottom edge
+    # land within a few pixels of each other, and an 8 dp overlap is invisible.
+    if y2 > bar_top - int(16 * density / 160.0):
         continue
     w, h = x2 - x1, y2 - y1
     # Anything thinner than 8 dp is the visible sliver of a card that is half
