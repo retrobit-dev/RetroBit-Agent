@@ -212,7 +212,7 @@ class DatabaseManagerTest {
 
         assertEquals("title", payload.getValue("columns").jsonArray[0].jsonPrimitive.content)
         assertEquals("lewat preview", payload.getValue("rows").jsonArray[0].jsonArray[0].jsonPrimitive.content)
-        assertNull(payload.getValue("error").jsonPrimitive.contentOrNull())
+        assertNull(payload.getValue("error").jsonPrimitive.contentOrNull)
     }
 
     @Test
@@ -241,7 +241,7 @@ class DatabaseManagerTest {
         val payload = Json.parseToJsonElement(
             manager.queryAsJsonForBridge("SELECT COUNT(*) FROM tasks", "{not json")
         ).jsonObject
-        assertNull(payload.getValue("error").jsonPrimitive.contentOrNull())
+        assertNull(payload.getValue("error").jsonPrimitive.contentOrNull)
     }
 
     // --- lifecycle ------------------------------------------------------------
