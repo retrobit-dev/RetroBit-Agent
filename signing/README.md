@@ -26,6 +26,66 @@ di-commit.
 > publik, tapi semua APK lama jadi tidak bisa di-update. Jadi kunci lama
 > dibiarkan sampai secret benar-benar bisa dipasang.
 
+## Cara rotasi tanpa akses `gh` (lewat browser)
+
+Kalau `gh secret set` ditolak 403, unggah manual — hasilnya sama, karena secret
+repository hanya bisa ditulis oleh pemilik repo, bukan oleh token aplikasi.
+
+**1. Buat kunci (di komputer sendiri, butuh JDK 17).**
+
+```bash
+git clone https://github.com/retrobit-dev/RetroBit-Agent.git
+cd RetroBit-Agent
+bash scripts/rotate-keystore.sh
+```
+
+Script mencetak lima hal dan berhenti: path keystore, path `keystore.b64`,
+password keystore, password kunci, dan alias. Simpan password di tempat aman —
+tanpa itu APK berikutnya tidak bisa memperbarui yang sudah terpasang.
+
+**2. Unggah empat secret.**
+
+Buka `Settings → Secrets and variables → Actions → New repository secret` di
+repo, lalu buat satu per satu dengan nama **persis** seperti ini:
+
+| Nama secret | Nilainya |
+| --- | --- |
+| `RELEASE_KEYSTORE_BASE64` | seluruh isi `~/retrobit-signing/keystore.b64` (satu baris panjang) |
+| `RELEASE_KEYSTORE_PASSWORD` | password keystore dari script |
+| `RELEASE_KEY_ALIAS` | `retrobit` |
+| `RELEASE_KEY_PASSWORD` | password kunci dari script |
+
+Untuk menyalin base64: `pbcopy < ~/retrobit-signing/keystore.b64` (macOS),
+`xclip -sel clip < ~/retrobit-signing/keystore.b64` (Linux), atau
+`type %USERPROFILE%\retrobit-signing\keystore.b64` (Windows).
+
+**3. Picu build dan periksa.**
+
+Jalankan ulang workflow (Actions → Android CI → Run workflow, atau push apa
+pun). Dua baris di log menjawab apakah rotasi berhasil:
+
+```
+Signing: repository secret (RELEASE_KEYSTORE_BASE64 set)
+Signer #1 certificate SHA-256 digest: <sidik jari baru>
+```
+
+Bandingkan sidik jari itu dengan APK lama — kalau berbeda, kunci baru sudah
+dipakai.
+
+**4. Setelah yakin, buang kunci demo dari git.**
+
+```bash
+git rm signing/retrobit-release.p12 signing/keystore.properties
+git commit -m "Remove the public demo signing key"
+```
+
+Jangan lakukan ini sebelum langkah 3 hijau: tanpa secret dan tanpa file demo,
+CI tidak punya kunci sama sekali dan APK rilis jadi tidak bertanda tangan.
+
+> **Peringatan sekali lagi.** Kunci baru berarti identitas baru. APK yang sudah
+> terpasang dengan kunci demo tidak bisa di-update dan harus di-uninstall dulu
+> (`adb uninstall dev.retrobit.agent`), jadi umumkan sebelum rotasi.
+
 ## Mengganti dengan kunci sendiri
 
 Lokal (Android Studio):

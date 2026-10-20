@@ -72,7 +72,7 @@ Rilis resmi: **<https://github.com/retrobit-dev/RetroBit-Agent/releases>**
 
 APK rilis ditandatangani (v1 + v2) dengan kunci demo di `signing/`, jadi versi berikutnya bisa dipasang sebagai *update*.
 
-> **Kunci demo itu publik.** Siapa pun bisa membuat APK yang Android terima sebagai update aplikasi ini. Untuk distribusi serius, jalankan `bash scripts/rotate-keystore.sh`, unggah empat secret yang dicetaknya, lalu hapus `signing/retrobit-release.p12` dari repo. Detail di [`signing/README.md`](signing/README.md).
+> **Kunci demo itu publik.** Siapa pun bisa membuat APK yang Android terima sebagai update aplikasi ini. Untuk distribusi serius, jalankan `bash scripts/rotate-keystore.sh`, unggah empat secret yang dicetaknya (`Settings → Secrets and variables → Actions`), lalu hapus `signing/retrobit-release.p12` dari repo. CI sudah membaca keempat secret itu dan menampilkan sidik jari sertifikat di log, jadi pergantian kunci bisa dipastikan tanpa membuka APK. Langkah lengkapnya di [`signing/README.md`](signing/README.md).
 
 Build rilis melewati **R8 + resource shrinking**: dari 7,7 MB (v0.2.6) menjadi **1,9 MB** (v0.2.7). Smoke test di emulator memasang APK rilis hasil minify — bukan build debug — jadi kalau ada aturan keep yang kurang, CI yang gagal, bukan pengguna.
 

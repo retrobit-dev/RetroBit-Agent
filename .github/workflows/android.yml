@@ -128,9 +128,23 @@ jobs:
           PY
 
       - name: Build release APK (signed)
+        env:
+          # Absent secrets arrive as empty strings, and the Gradle side ignores
+          # blanks, so forks and PRs keep falling back to the demo key in
+          # signing/. Once the four secrets exist, the private key wins and the
+          # demo key is only a historical artifact.
+          RELEASE_KEYSTORE_BASE64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
+          RELEASE_KEYSTORE_PASSWORD: ${{ secrets.RELEASE_KEYSTORE_PASSWORD }}
+          RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
+          RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
         run: |
           set -o pipefail
           chmod +x ./gradlew
+          if [ -n "$RELEASE_KEYSTORE_BASE64" ]; then
+            echo "Signing: repository secret (RELEASE_KEYSTORE_BASE64 set)"
+          else
+            echo "Signing: demo key from signing/ (no RELEASE_KEYSTORE_BASE64 secret)"
+          fi
           ./gradlew --no-daemon --console=plain --stacktrace assembleRelease assembleDebug 2>&1 | tee build.log
 
       - name: Annotate Kotlin and Gradle errors
@@ -173,6 +187,10 @@ jobs:
           APKSIGNER=$(ls "$ANDROID_HOME"/build-tools/*/apksigner | sort -V | tail -1)
           "$APKSIGNER" verify --verbose app/build/outputs/apk/release/app-release.apk
           "$APKSIGNER" verify --verbose app/build/outputs/apk/debug/app-debug.apk
+          # Fingerprints make a key rotation verifiable from the log alone:
+          # compare the SHA-256 digest before and after switching keys.
+          "$APKSIGNER" verify --print-certs app/build/outputs/apk/release/app-release.apk \
+            | grep -i "sha-256"
           ls -l app/build/outputs/apk/release/ app/build/outputs/apk/debug/
           du -h app/build/outputs/apk/release/*.apk app/build/outputs/apk/debug/*.apk
 
