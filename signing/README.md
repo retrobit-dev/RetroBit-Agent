@@ -9,6 +9,23 @@ bisa dipasang sebagai *update* tanpa harus menghapus aplikasi lebih dulu.
 > Android sebagai update untuk `dev.retrobit.agent`. Jangan pakai kunci ini
 > untuk aplikasi yang serius.
 
+## Rotasi cepat
+
+```bash
+bash scripts/rotate-keystore.sh
+```
+
+Script itu membuat keystore 4096-bit **di luar repo** (`~/retrobit-signing`),
+menulis `keystore.b64`, dan mencetak empat perintah `gh secret set` yang harus
+dijalankan sendiri — karena rotasi hanya berguna kalau kunci baru tidak ikut
+di-commit.
+
+> **Kenapa belum dilakukan otomatis di sini.** Token di lingkungan kerja ini
+> tidak punya izin `secrets: write` (`gh secret set` → 403). Mengganti file di
+> `signing/` dengan kunci baru hanya akan memindahkan masalah: kuncinya tetap
+> publik, tapi semua APK lama jadi tidak bisa di-update. Jadi kunci lama
+> dibiarkan sampai secret benar-benar bisa dipasang.
+
 ## Mengganti dengan kunci sendiri
 
 Lokal (Android Studio):
