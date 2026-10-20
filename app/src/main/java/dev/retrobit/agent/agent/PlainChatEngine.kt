@@ -5,9 +5,13 @@ import dev.retrobit.agent.ai.AiClientFactory
 import dev.retrobit.agent.ai.AiConfig
 import dev.retrobit.agent.ai.AiException
 import dev.retrobit.agent.ai.AutoRouter
+import dev.retrobit.agent.ai.KeyRing
+import dev.retrobit.agent.ai.Planner
 import dev.retrobit.agent.ai.ProviderKind
+import dev.retrobit.agent.ai.QuotaPolicy
 import dev.retrobit.agent.ai.TokenUsage
 import dev.retrobit.agent.ai.WireTurn
+import dev.retrobit.agent.ai.aiCooldowns
 import dev.retrobit.agent.data.ChatConversation
 import dev.retrobit.agent.data.ChatMessage
 import dev.retrobit.agent.data.ChatSpace
@@ -112,15 +116,37 @@ class PlainChatEngine(
             )
         }
 
+        // Every stored key is a separate attempt, and a provider whose daily
+        // free budget is gone is skipped before a request is wasted on it.
+        val attempts = Planner.attempts(
+            candidates = candidates,
+            keysFor = { kind -> KeyRing.parse(secrets.get(AgentEngine.keyFor(kind.name))) },
+            quota = settings.quotaState(),
+            today = QuotaPolicy.today(),
+            cooldowns = aiCooldowns,
+        )
+        if (attempts.isEmpty()) {
+            return failure(
+                "Kuota harian semua provider sudah habis, atau key-nya sedang jeda setelah ditolak.\n\n" +
+                    "Tambah key lain di AI Cloud (satu per baris) atau jalankan model lokal lewat Ollama — " +
+                    "yang lokal tidak punya batas harian.",
+            )
+        }
+
         var lastError = ""
         var cost = 0.0
-        for (candidate in candidates) {
+        var emitted = 0
+        for (attempt in attempts) {
             currentCoroutineContext().ensureActive()
-            val key = secrets.get(AgentEngine.keyFor(candidate.provider.name)).orEmpty()
-            onNotice("Menghubungi ${candidate.provider.label} · ${candidate.displayModel}")
+            val candidate = attempt.config
+            onNotice(
+                "Menghubungi ${candidate.provider.label} · ${candidate.displayModel}" +
+                    if (attempt.keyLabel.isBlank()) "" else " · key ${attempt.keyLabel}",
+            )
             try {
-                val client = AiClientFactory.create(candidate, key)
-                val response = if (onDelta == null) {
+                val client = AiClientFactory.create(candidate, attempt.key)
+                val sink = onDelta
+                val response = if (sink == null) {
                     client.chat(
                         system = system,
                         turns = turns,
@@ -135,7 +161,10 @@ class PlainChatEngine(
                         tools = emptyList(),
                         temperature = candidate.temperature,
                         maxTokens = candidate.maxTokens.coerceIn(256, MAX_OUTPUT_TOKENS),
-                        onDelta = onDelta,
+                        onDelta = { piece ->
+                            emitted += piece.length
+                            sink(piece)
+                        },
                     )
                 }
                 val usage = response.usage
@@ -146,6 +175,7 @@ class PlainChatEngine(
                     continue
                 }
                 record(usage, cost)
+                settings.noteRequest(candidate.provider)
                 return ChatMessage(
                     role = Role.ASSISTANT,
                     content = response.text.trim(),
@@ -155,11 +185,19 @@ class PlainChatEngine(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: AiException) {
+                aiCooldowns.cool(candidate.provider, attempt.key, e.statusCode)
                 lastError = e.message.orEmpty()
+                // Half an answer is already on screen; a second attempt would
+                // append a different model's reply to the same bubble.
+                if (emitted > 0) {
+                    return failure("Jawaban terputus: $lastError")
+                }
             } catch (e: UnknownHostException) {
                 lastError = "Tidak dapat terhubung ke ${candidate.provider.label}. Periksa koneksi atau base URL."
+                if (emitted > 0) return failure("Jawaban terputus: $lastError")
             } catch (e: IOException) {
                 lastError = "Koneksi terputus saat menghubungi ${candidate.provider.label}: ${e.message}"
+                if (emitted > 0) return failure("Jawaban terputus: $lastError")
             }
         }
 

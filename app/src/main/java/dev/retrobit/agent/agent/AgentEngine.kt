@@ -4,6 +4,10 @@ import dev.retrobit.agent.ai.AiClientFactory
 import dev.retrobit.agent.ai.AiConfig
 import dev.retrobit.agent.ai.AiException
 import dev.retrobit.agent.ai.AutoRouter
+import dev.retrobit.agent.ai.KeyRing
+import dev.retrobit.agent.ai.Planner
+import dev.retrobit.agent.ai.QuotaPolicy
+import dev.retrobit.agent.ai.aiCooldowns
 import dev.retrobit.agent.ai.ProviderKind
 import dev.retrobit.agent.ai.TokenUsage
 import dev.retrobit.agent.ai.WireTurn
@@ -46,6 +50,13 @@ class AgentEngine(
         fun keyFor(providerName: String) = "ai.apiKey.$providerName"
     }
 
+    /** The key the fixed-provider path should use right now. */
+    private fun keyForProvider(config: AiConfig): String {
+        val keys = KeyRing.parse(secrets.get(keyFor(config.provider.name)))
+        if (keys.isEmpty()) return ""
+        return keys.firstOrNull { !aiCooldowns.cooling(config.provider, it) } ?: keys.first()
+    }
+
     suspend fun run(
         project: Project,
         prompt: String,
@@ -59,7 +70,7 @@ class AgentEngine(
             when {
                 config.isDemo -> DemoAgent.run(project, prompt, repository, db, onEvent)
                 config.provider == ProviderKind.AUTO -> runAuto(project, prompt, history, config, db, onEvent)
-                else -> runCloud(project, prompt, history, config, db, onEvent)
+                else -> runCloud(project, prompt, history, config, keyForProvider(config), db, onEvent)
             }
         } finally {
             db.close()
@@ -87,15 +98,36 @@ class AgentEngine(
                 emptyList(), emptyList(), config,
             )
         }
+        val attempts = Planner.attempts(
+            candidates = candidates,
+            keysFor = { kind -> KeyRing.parse(secrets.get(keyFor(kind.name))) },
+            quota = settings.quotaState(),
+            today = QuotaPolicy.today(),
+            cooldowns = aiCooldowns,
+            // One failed agent run is expensive: never more than two keys per provider.
+            maxPerProvider = 2,
+        )
+        if (attempts.isEmpty()) {
+            return errorMessage(
+                "Kuota harian semua provider sudah habis atau key-nya sedang jeda. Tambah key lain di AI Cloud atau jalankan model lokal lewat Ollama.",
+                emptyList(), emptyList(), config,
+            )
+        }
         var last: ChatMessage? = null
-        candidates.forEachIndexed { index, candidate ->
+        attempts.forEachIndexed { index, attempt ->
             currentCoroutineContext().ensureActive()
-            onEvent(AgentEvent.Notice("Auto memakai ${candidate.provider.label} · ${candidate.model}"))
-            val result = runCloud(project, prompt, history, candidate, db, onEvent)
+            val candidate = attempt.config
+            onEvent(
+                AgentEvent.Notice(
+                    "Auto memakai ${candidate.provider.label} · ${candidate.model}" +
+                        if (attempt.keyLabel.isBlank()) "" else " · key ${attempt.keyLabel}",
+                )
+            )
+            val result = runCloud(project, prompt, history, candidate, attempt.key, db, onEvent)
             if (!result.isError) return result
             last = result
-            if (index < candidates.lastIndex) {
-                onEvent(AgentEvent.Notice("${candidate.provider.label} tidak menjawab, Auto mencoba provider berikutnya…"))
+            if (index < attempts.lastIndex) {
+                onEvent(AgentEvent.Notice("${candidate.provider.label} tidak menjawab, Auto mencoba lagi…"))
             }
         }
         return last ?: errorMessage("Mode Auto gagal menjalankan agen.", emptyList(), emptyList(), config)
@@ -106,10 +138,10 @@ class AgentEngine(
         prompt: String,
         history: List<ChatMessage>,
         config: AiConfig,
+        apiKey: String,
         db: DatabaseManager,
         onEvent: suspend (AgentEvent) -> Unit,
     ): ChatMessage {
-        val apiKey = secrets.get(keyFor(config.provider.name)).orEmpty()
         if (config.catalog().requiresKey && apiKey.isBlank()) {
             return errorMessage(
                 "API key ${config.provider.label} belum diatur.\nBuka tab AI Cloud untuk menghubungkan provider, atau pakai mode Demo untuk mencoba tanpa key.",
@@ -169,6 +201,7 @@ class AgentEngine(
                         maxTokens = config.maxTokens,
                     )
                 } catch (e: AiException) {
+                    aiCooldowns.cool(config.provider, apiKey, e.statusCode)
                     lastError = e.message
                     break
                 } catch (e: UnknownHostException) {
@@ -228,6 +261,7 @@ class AgentEngine(
             val cost = estimateCost(config, usage)
             if (usage.total > 0) {
                 settings.recordUsage(usage.prompt.toLong(), usage.completion.toLong(), cost)
+                settings.noteRequest(config.provider)
             }
             repository.update(project.copy(design = design, lastPrompt = prompt))
             repository.notifyFilesChanged()

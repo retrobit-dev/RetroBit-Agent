@@ -54,6 +54,7 @@ import dev.retrobit.agent.BuildConfig
 import dev.retrobit.agent.R
 import dev.retrobit.agent.ai.AiConfig
 import dev.retrobit.agent.ai.ProviderKind
+import dev.retrobit.agent.ai.QuotaState
 import dev.retrobit.agent.ui.components.BrandMark
 import dev.retrobit.agent.ui.components.GhostButton
 import dev.retrobit.agent.ui.components.GradientButton
@@ -71,6 +72,7 @@ fun CloudScreen(
     contentPadding: androidx.compose.foundation.layout.PaddingValues = androidx.compose.foundation.layout.PaddingValues(0.dp),
 ) {
     val usage by vm.usage.collectAsStateWithLifecycle()
+    val quota by vm.quota.collectAsStateWithLifecycle()
     var showKey by remember { mutableStateOf(false) }
     var showPrompt by remember { mutableStateOf(false) }
 
@@ -179,7 +181,7 @@ fun CloudScreen(
                     }
                     Spacer(Modifier.height(12.dp))
                     if (vm.autoMode) {
-                        AutoPlan(vm)
+                        AutoPlan(vm, quota)
                     }
                     if (!vm.autoMode) {
                     CloudField(
@@ -237,12 +239,13 @@ fun CloudScreen(
                     }
                     Spacer(Modifier.height(10.dp))
                     CloudField(
-                        label = "API key",
+                        label = "API key (satu per baris untuk menggabungkan kuota)",
                         value = vm.apiKey,
                         onValueChange = { vm.apiKey = it },
                         placeholder = AiConfig.presetFor(vm.provider).keyHint,
                         keyboardType = KeyboardType.Password,
                         mono = true,
+                        maxLines = 4,
                         visualTransformation = if (showKey) VisualTransformation.None else PasswordVisualTransformation(),
                         trailing = {
                             IconButton(onClick = { showKey = !showKey }) {
@@ -362,6 +365,26 @@ fun CloudScreen(
                 Spacer(Modifier.height(10.dp))
                 Text(
                     "Estimasi biaya bersifat perkiraan berdasarkan harga publik model. Tagihan sebenarnya mengikuti provider.",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    lineHeight = 15.sp,
+                )
+            }
+        }
+
+        Spacer(Modifier.height(18.dp))
+        NeoCard(modifier = Modifier.fillMaxWidth()) {
+            Column {
+                Text("Tanpa batas", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurface)
+                Spacer(Modifier.height(8.dp))
+                UnlimitedRow("1", "Beberapa key per provider", "Tiga key Groq = 3.000 permintaan/hari. Tempel satu key per baris.")
+                UnlimitedRow("2", "Auto pindah sendiri", "Provider yang kuota hariannya habis dilewati sebelum request dikirim.")
+                UnlimitedRow("3", "Model lokal", "Ollama di komputer sendiri tidak punya kuota per hari sama sekali.")
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    "Angka kuota diambil dari batas gratis yang dipublikasikan provider dan bisa berubah sewaktu-waktu. " +
+                        "Tidak ada layanan yang memberi inferensi tanpa batas tanpa ada yang membayarnya — di sini yang membayar " +
+                        "adalah akun gratis milikmu, dipakai bergiliran.",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     lineHeight = 15.sp,
@@ -519,7 +542,7 @@ private fun FreeBadge() {
 
 /** Shown instead of the URL/model/key fields when the provider is Auto. */
 @Composable
-private fun AutoPlan(vm: CloudViewModel) {
+private fun AutoPlan(vm: CloudViewModel, quota: QuotaState) {
     Column {
         Text(
             "Auto mencoba provider berurutan dan berhenti di yang pertama menjawab. Urutannya dari yang punya kuota gratis.",
@@ -546,10 +569,19 @@ private fun AutoPlan(vm: CloudViewModel) {
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
+                    val keys = if (target.hasKey) vm.keyCount(target.kind) else 0
+                    val left = if (target.hasKey) vm.remaining(target.kind, quota) else null
                     Text(
-                        if (target.hasKey) "siap dipakai" else "belum ada key",
+                        when {
+                            !target.hasKey -> "belum ada key"
+                            left == 0 -> "kuota hari ini habis"
+                            left != null && keys > 1 -> "sisa $left hari ini · $keys key"
+                            left != null -> "sisa $left hari ini"
+                            keys > 1 -> "$keys key · tanpa batas harian"
+                            else -> "siap dipakai"
+                        },
                         style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                        color = if (left == 0) Palette.Warning else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                     )
                 }
                 if (free && target.hasKey) FreeBadge()
@@ -558,6 +590,13 @@ private fun AutoPlan(vm: CloudViewModel) {
         }
         Text(
             "Ollama ikut hanya kalau kolom key-nya diisi (boleh teks apa saja) — supaya Auto tidak menunggu server lokal yang mati.",
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+            lineHeight = 15.sp,
+        )
+        Spacer(Modifier.height(10.dp))
+        Text(
+            "Beberapa key di satu kolom digabung jadi satu kolam kuota, dan Auto melewati provider yang hariannya habis.",
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
             lineHeight = 15.sp,
@@ -635,6 +674,7 @@ private fun CloudField(
     mono: Boolean = false,
     visualTransformation: VisualTransformation = VisualTransformation.None,
     trailing: (@Composable () -> Unit)? = null,
+    maxLines: Int = 1,
 ) {
     OutlinedTextField(
         value = value,
@@ -642,7 +682,8 @@ private fun CloudField(
         label = { Text(label, style = MaterialTheme.typography.labelSmall) },
         placeholder = { Text(placeholder, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)) },
         modifier = Modifier.fillMaxWidth(),
-        singleLine = true,
+        singleLine = maxLines == 1,
+        maxLines = maxLines,
         shape = RoundedCornerShape(4.dp),
         textStyle = MaterialTheme.typography.bodySmall.copy(
             color = MaterialTheme.colorScheme.onSurface,
@@ -675,6 +716,31 @@ private fun ResultBanner(ok: Boolean, message: String) {
         )
         Spacer(Modifier.width(8.dp))
         Text(message, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurface, lineHeight = 16.sp)
+    }
+}
+
+@Composable
+private fun UnlimitedRow(number: String, title: String, detail: String) {
+    Row(Modifier.padding(bottom = 8.dp), verticalAlignment = Alignment.Top) {
+        Box(
+            Modifier
+                .size(16.dp)
+                .clip(RoundedCornerShape(2.dp))
+                .background(MaterialTheme.colorScheme.onBackground.copy(alpha = 0.08f), RoundedCornerShape(2.dp)),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(number, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, fontFamily = MonoFont)
+        }
+        Spacer(Modifier.width(8.dp))
+        Column {
+            Text(title, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurface)
+            Text(
+                detail,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.75f),
+                lineHeight = 15.sp,
+            )
+        }
     }
 }
 

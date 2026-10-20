@@ -4,6 +4,8 @@ import android.content.Context
 import android.content.SharedPreferences
 import dev.retrobit.agent.ai.AiConfig
 import dev.retrobit.agent.ai.ProviderKind
+import dev.retrobit.agent.ai.QuotaPolicy
+import dev.retrobit.agent.ai.QuotaState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -29,6 +31,27 @@ class SettingsStore(context: Context) {
 
     private val _usage = MutableStateFlow(loadUsage())
     val usage: StateFlow<UsageRecord> = _usage.asStateFlow()
+
+    /** Free-tier requests already spent today, so Auto can skip a spent provider. */
+    private val _quota = MutableStateFlow(loadQuota())
+    val quota: StateFlow<QuotaState> = _quota.asStateFlow()
+
+    fun quotaState(): QuotaState = _quota.value
+
+    /** One served request against [provider]'s daily budget. */
+    fun noteRequest(provider: ProviderKind) {
+        val next = _quota.value.record(provider, QuotaPolicy.today())
+        _quota.value = next
+        prefs.edit()
+            .putString("quota_v1", json.encodeToString(QuotaState.serializer(), next))
+            .apply()
+    }
+
+    fun resetQuota() {
+        val empty = QuotaState(QuotaPolicy.today(), emptyMap())
+        _quota.value = empty
+        prefs.edit().putString("quota_v1", json.encodeToString(QuotaState.serializer(), empty)).apply()
+    }
 
     private val _themeMode = MutableStateFlow(prefs.getString("theme_mode", "dark") ?: "dark")
     val themeModeFlow: StateFlow<String> = _themeMode.asStateFlow()
@@ -122,6 +145,12 @@ class SettingsStore(context: Context) {
         val raw = prefs.getString("ai_config", null) ?: return AiConfig()
         return runCatching { json.decodeFromString(AiConfig.serializer(), raw) }
             .getOrElse { AiConfig(provider = ProviderKind.DEMO) }
+    }
+
+    private fun loadQuota(): QuotaState {
+        val raw = prefs.getString("quota_v1", null) ?: return QuotaState()
+        return runCatching { json.decodeFromString(QuotaState.serializer(), raw) }
+            .getOrElse { QuotaState() }
     }
 
     private fun loadUsage(): UsageRecord = UsageRecord(

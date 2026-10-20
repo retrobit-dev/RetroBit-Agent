@@ -6,6 +6,7 @@ import androidx.test.core.app.ApplicationProvider
 import dev.retrobit.agent.ai.AiConfig
 import dev.retrobit.agent.ai.ProviderKind
 import dev.retrobit.agent.ai.WireTurn
+import dev.retrobit.agent.ai.aiCooldowns
 import dev.retrobit.agent.data.ChatConversation
 import dev.retrobit.agent.data.ChatMessage
 import dev.retrobit.agent.data.Role
@@ -49,6 +50,9 @@ class PlainChatEngineTest {
         settings = SettingsStore(context)
         secrets = SecretStore(context)
         engine = PlainChatEngine(settings, secrets)
+        // Cooldowns live for the whole JVM; a rejected-key test would otherwise
+        // sideline the shared test key for every later test in this class.
+        aiCooldowns.clear()
         server = MockWebServer().apply { start() }
     }
 

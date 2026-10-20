@@ -140,6 +140,16 @@ Model bertanda `:free` otomatis dihitung **$0** pada estimasi biaya dan diberi b
 
 Batas di atas adalah angka publik per 2026-10 dan bisa berubah; angka final selalu ada di konsol masing-masing provider.
 
+### Tanpa batas
+
+Layanan berlangganan seperti Arena bisa terasa tanpa batas karena **mereka yang membayar token-nya** — itu keputusan harga, bukan sihir teknis. RetroBit memakai key milikmu, jadi tidak ada cara membuat model frontier gratis tanpa akhir. Yang bisa dilakukan, dan sudah dikerjakan:
+
+1. **Beberapa key per provider.** Tempel satu key per baris di kolom API key. Tiga key Groq berarti 3.000 permintaan/hari, bukan 1.000. Key yang kena `429`/`401` disingkirkan sementara (5 menit untuk rate limit, 24 jam untuk key ditolak) dan key berikutnya langsung dipakai.
+2. **Auto melewati provider yang habis.** Kuota harian dicatat per provider (`Gemini 200`, `Groq 1.000`, `OpenRouter 50` per key). Begitu anggaran habis, Auto tidak mengirim request yang pasti gagal — ia pindah ke provider berikutnya.
+3. **Model lokal benar-benar tanpa batas.** Ollama atau LM Studio di komputer sendiri tidak punya kuota per hari: tidak ada biaya per token, hanya listrik. Kualitasnya di bawah model frontier, tapi untuk obrolan dan kode sederhana cukup — dan tidak akan pernah menagih atau menolak karena kuota.
+
+Angka kuota itu salinan konservatif dari batas publik, dipakai untuk mengarahkan Auto, bukan untuk menagih. Kalau butuh model teratas tanpa memikirkan kuota, langganan berbayar tetap satu-satunya jalan — dan kamu bisa memakai key itu di sini.
+
 ### Streaming
 
 Jawaban chat muncul kata per kata. Ketiga dialek provider didukung: OpenAI-compatible (`data:` + `delta.content`), Anthropic (`content_block_delta`), dan Gemini (`streamGenerateContent?alt=sse`). Kalau sebuah endpoint menolak `stream`, klien tetap punya jalur non-streaming dan permintaan akan gagal dengan pesan provider — bukan jawaban kosong.
@@ -164,7 +174,7 @@ Mode **Auto** mencoba provider yang key-nya sudah tersimpan, dari yang punya kuo
 
 `Gemini → Groq → OpenRouter (openrouter/free) → Mistral → Together → DeepSeek → Anthropic → OpenAI → Ollama`
 
-Auto berhenti di provider pertama yang benar-benar menjawab. Provider baru dianggap gagal kalau ia tidak menulis file dan tidak mengembalikan teks — jadi pekerjaan setengah jadi tidak diulang di provider lain. Ollama hanya ikut kalau kolom key-nya diisi (boleh teks apa saja), supaya Auto tidak menunggu server lokal yang mati. Tanpa satu pun key, Auto memberi pesan yang menyuruh mengisi key atau memakai mode Demo.
+Auto berhenti di provider pertama yang benar-benar menjawab. Provider baru dianggap gagal kalau ia tidak menulis file dan tidak mengembalikan teks — jadi pekerjaan setengah jadi tidak diulang di provider lain. Setiap provider dengan beberapa key menghasilkan beberapa percobaan, tetapi sesi agen (yang mahal) paling banyak mencoba dua key per provider; obrolan memakai semuanya. Ollama hanya ikut kalau kolom key-nya diisi (boleh teks apa saja), supaya Auto tidak menunggu server lokal yang mati. Tanpa satu pun key, Auto memberi pesan yang menyuruh mengisi key atau memakai mode Demo.
 
 Auto **bukan** seperti model picker di layanan berlangganan: RetroBit tidak punya server yang membayari inference, jadi Auto memilih dari key milikmu, bukan dari model yang dibayar aplikasi.
 
@@ -258,7 +268,7 @@ app/src/main/res/font/         # salinan font agar bisa dipakai Compose
 Pengujian:
 
 ```
-./gradlew testDebugUnitTest   # 145 unit test (76 JVM + 69 Robolectric)
+./gradlew testDebugUnitTest   # 165 unit test (96 JVM + 69 Robolectric)
 ./gradlew lintDebug          # Android lint
 ```
 
@@ -306,7 +316,7 @@ Seluruh teks yang tampil di aplikasi berada di `app/src/main/res/values/strings.
 - Snapshot hanya memulihkan file sumber, bukan database atau design metadata.
 - Preview LAN menyajikan file statis tanpa runtime `RetroBitDB`/`__RETROBIT_ENV__`.
 - R8 menghapus kode yang tidak terpakai, jadi stack trace build rilis memakai nama kelas yang diobfuskasi. `mapping.txt` untuk membacanya diunggah sebagai artifact **`retrobit-mapping`** di setiap build CI.
-- Unit test mencakup enam area: token design (`DesignSystemTest`), katalog provider/error AI (`AiConfigTest`), filesystem proyek (`ProjectFilesTest`: traversal, zip-slip, snapshot), dan database per proyek (`DatabaseManagerTest`, berjalan di Robolectric dengan SQLite sungguhan: skema, insert/select, parameter terikat, preset seed, jembatan JSON preview, serta `clearAll`), penyimpanan pengaturan dan vault (`SettingsStoreTest`, `SecretStoreTest`: default, persistensi, fallback saat JSON rusak, nilai tidak pernah tersimpan sebagai teks biasa), serta repositori proyek (`ProjectRepositoryTest`: seed pertama, buat/hapus/duplikat, urutan recency, thread chat, ketahanan setelah restart). Mesin obrolan diuji ujung ke ujung lewat MockWebServer (`PlainChatEngineTest`: penolakan mode demo, obrolan kosong, Auto tanpa key, delta streaming, akuntansi pemakaian, batas `max_tokens`, key ditolak, prioritas persona). Format wire tiap provider diuji lewat MockWebServer (`AiStreamingTest`). Alur UI tetap diverifikasi lewat smoke test emulator.
+- Unit test mencakup enam area: token design (`DesignSystemTest`), katalog provider/error AI (`AiConfigTest`), filesystem proyek (`ProjectFilesTest`: traversal, zip-slip, snapshot), dan database per proyek (`DatabaseManagerTest`, berjalan di Robolectric dengan SQLite sungguhan: skema, insert/select, parameter terikat, preset seed, jembatan JSON preview, serta `clearAll`), penyimpanan pengaturan dan vault (`SettingsStoreTest`, `SecretStoreTest`: default, persistensi, fallback saat JSON rusak, nilai tidak pernah tersimpan sebagai teks biasa), serta repositori proyek (`ProjectRepositoryTest`: seed pertama, buat/hapus/duplikat, urutan recency, thread chat, ketahanan setelah restart). Mesin obrolan diuji ujung ke ujung lewat MockWebServer (`PlainChatEngineTest`: penolakan mode demo, obrolan kosong, Auto tanpa key, delta streaming, akuntansi pemakaian, batas `max_tokens`, key ditolak, prioritas persona). Format wire tiap provider diuji lewat MockWebServer (`AiStreamingTest`), dan kebijakan kuota/rotasi key diuji tanpa perangkat (`UnlimitedTest`). Alur UI tetap diverifikasi lewat smoke test emulator.
 
 ## Troubleshooting
 

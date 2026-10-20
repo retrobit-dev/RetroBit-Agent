@@ -11,7 +11,10 @@ import dev.retrobit.agent.ai.AiClientFactory
 import dev.retrobit.agent.ai.AiConfig
 import dev.retrobit.agent.ai.AutoRouter
 import dev.retrobit.agent.ai.AutoTarget
+import dev.retrobit.agent.ai.KeyRing
 import dev.retrobit.agent.ai.ProviderKind
+import dev.retrobit.agent.ai.QuotaPolicy
+import dev.retrobit.agent.ai.QuotaState
 import dev.retrobit.agent.data.SecretEntry
 import kotlinx.coroutines.launch
 
@@ -23,6 +26,7 @@ class CloudViewModel(private val container: AppContainer) : ViewModel() {
     private val secrets = container.secrets
     val config = settings.config
     val usage = settings.usage
+    val quota = settings.quota
 
     var provider by mutableStateOf(ProviderKind.DEMO)
         private set
@@ -57,6 +61,14 @@ class CloudViewModel(private val container: AppContainer) : ViewModel() {
 
     /** Which providers Auto can see, and whether their key is already stored. */
     val autoTargets: List<AutoTarget> get() = AutoRouter.targets(secrets)
+
+    /** How many keys the field for [kind] holds today. Several = pooled quota. */
+    fun keyCount(kind: ProviderKind): Int =
+        KeyRing.parse(secrets.get(AgentEngine.keyFor(kind.name))).size
+
+    /** Free requests left today for [kind], or null when the provider is uncapped. */
+    fun remaining(kind: ProviderKind, state: QuotaState): Int? =
+        state.remaining(kind, QuotaPolicy.today(), keyCount(kind))
 
     init {
         val current = config.value
