@@ -44,6 +44,7 @@ class ChatSpaceTest {
                 message(Role.USER, "halo"),
                 message(Role.ASSISTANT, "  "),
                 message(Role.ASSISTANT, "hai"),
+                ChatMessage(role = Role.ASSISTANT, content = "API key ditolak", isError = true),
             )
         )
         assertEquals(listOf("halo", "hai"), history.map { it.content })

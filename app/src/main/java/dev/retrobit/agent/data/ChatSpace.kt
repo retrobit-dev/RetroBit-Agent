@@ -65,6 +65,10 @@ object ChatSpace {
     fun history(messages: List<ChatMessage>): List<ChatMessage> =
         messages
             .filter { it.role == Role.USER || it.role == Role.ASSISTANT }
+            // Error bubbles are notices to the user, not something the model
+            // said. Replaying "API key ditolak oleh OpenAI" as an assistant turn
+            // taught the model to answer with apologies.
+            .filter { !it.isError }
             .filter { it.content.isNotBlank() }
             .takeLast(HISTORY_WINDOW)
 
