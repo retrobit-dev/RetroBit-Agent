@@ -39,9 +39,11 @@ cd RetroBit-Agent
 bash scripts/rotate-keystore.sh
 ```
 
-Script mencetak lima hal dan berhenti: path keystore, path `keystore.b64`,
-password keystore, password kunci, dan alias. Simpan password di tempat aman —
-tanpa itu APK berikutnya tidak bisa memperbarui yang sudah terpasang.
+Script mencetak path keystore, path `keystore.b64`, satu password, dan alias,
+lalu berhenti. PKCS12 hanya menyimpan satu password untuk seluruh kontainer
+(keytool mengabaikan `-keypass` yang berbeda), jadi password itu dipakai untuk
+keystore sekaligus kuncinya. Simpan di tempat aman — tanpa itu APK berikutnya
+tidak bisa memperbarui yang sudah terpasang.
 
 **2. Unggah empat secret.**
 
@@ -53,7 +55,10 @@ repo, lalu buat satu per satu dengan nama **persis** seperti ini:
 | `RELEASE_KEYSTORE_BASE64` | seluruh isi `~/retrobit-signing/keystore.b64` (satu baris panjang) |
 | `RELEASE_KEYSTORE_PASSWORD` | password keystore dari script |
 | `RELEASE_KEY_ALIAS` | `retrobit` |
-| `RELEASE_KEY_PASSWORD` | password kunci dari script |
+| `RELEASE_KEY_PASSWORD` | nilai yang sama dengan `RELEASE_KEYSTORE_PASSWORD` |
+
+Cara tercepat: buka `https://github.com/retrobit-dev/RetroBit-Agent/settings/secrets/actions/new`
+dan tempel satu per satu.
 
 Untuk menyalin base64: `pbcopy < ~/retrobit-signing/keystore.b64` (macOS),
 `xclip -sel clip < ~/retrobit-signing/keystore.b64` (Linux), atau
