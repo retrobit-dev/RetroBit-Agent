@@ -6,6 +6,7 @@ set -u
 
 LOG=${LOG:-artifacts/smoke.log}
 ADB=${ADB:-adb}
+APP_ID=${APP_ID:-dev.retrobit.agent}
 export LOG
 
 log() { echo "$*" | tee -a "$LOG" >/dev/null; }
@@ -134,13 +135,24 @@ PY2
   rm -f /tmp/ui.xml
 }
 
+# Only the app's own process counts. The emulator's UiAutomation service also
+# writes "FATAL EXCEPTION: UiAutomation ... Bad file descriptor" to the crash
+# buffer when the instrumentation loses its binder, and that used to fail the
+# whole walk even though the app never crashed.
 crash_check() {
   $ADB logcat -d -b crash 2>/dev/null > artifacts/crash.log
-  if grep -q "FATAL EXCEPTION" artifacts/crash.log 2>/dev/null; then
+  if ! grep -q "FATAL EXCEPTION" artifacts/crash.log 2>/dev/null; then
+    return 0
+  fi
+  if grep -qE "Process: ${APP_ID}(,|$)" artifacts/crash.log 2>/dev/null; then
     log "event=crash phase=$1"
     tail -40 artifacts/crash.log >> "$LOG"
     return 1
   fi
+  # Something else died; record it so a real crash pattern is still visible.
+  local foreign
+  foreign=$(grep -m1 "FATAL EXCEPTION" artifacts/crash.log | tr -d '\r')
+  log "event=crash-foreign phase=$1 what=${foreign#[[:space:]]}"
   return 0
 }
 
