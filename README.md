@@ -250,7 +250,7 @@ app/src/main/res/font/         # salinan font agar bisa dipakai Compose
 Pengujian:
 
 ```
-./gradlew testDebugUnitTest   # 51 unit test JVM (design token, konfigurasi AI, ProjectFiles)
+./gradlew testDebugUnitTest   # 93 unit test (67 JVM + 26 Robolectric untuk SQLite)
 ./gradlew lintDebug          # Android lint
 ```
 
