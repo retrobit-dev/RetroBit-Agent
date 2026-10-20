@@ -298,7 +298,7 @@ Seluruh teks yang tampil di aplikasi berada di `app/src/main/res/values/strings.
 - Snapshot hanya memulihkan file sumber, bukan database atau design metadata.
 - Preview LAN menyajikan file statis tanpa runtime `RetroBitDB`/`__RETROBIT_ENV__`.
 - R8 menghapus kode yang tidak terpakai, jadi stack trace build rilis memakai nama kelas yang diobfuskasi. `mapping.txt` untuk membacanya diunggah sebagai artifact **`retrobit-mapping`** di setiap build CI.
-- Unit test mencakup tiga area: token design (`DesignSystemTest`), katalog provider/error AI (`AiConfigTest`), dan filesystem proyek (`ProjectFilesTest`: traversal, zip-slip, snapshot). Alur UI dan database masih diverifikasi lewat smoke test emulator, belum lewat test otomatis.
+- Unit test mencakup empat area: token design (`DesignSystemTest`), katalog provider/error AI (`AiConfigTest`), filesystem proyek (`ProjectFilesTest`: traversal, zip-slip, snapshot), dan database per proyek (`DatabaseManagerTest`, berjalan di Robolectric dengan SQLite sungguhan: skema, insert/select, parameter terikat, preset seed, jembatan JSON preview, serta `clearAll`). Alur UI tetap diverifikasi lewat smoke test emulator.
 
 ## Troubleshooting
 

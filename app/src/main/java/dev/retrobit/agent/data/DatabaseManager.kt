@@ -22,7 +22,9 @@ class DatabaseManager(context: Context, private val projectId: String) {
         db?.let { if (it.isOpen) return it }
         dbFile.parentFile?.mkdirs()
         val opened = SQLiteDatabase.openOrCreateDatabase(dbFile, null)
-        opened.enableWriteAheadLogging()
+        // Some storage (and Robolectric's SQLite) rejects WAL; journaling is an
+        // optimisation, not a requirement.
+        runCatching { opened.enableWriteAheadLogging() }
         db = opened
         return opened
     }
