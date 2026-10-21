@@ -307,12 +307,18 @@ if tap_text "Menu"; then
     # detect button are the whole point of the unlimited path, so photograph it.
     if tap_text "Ollama / lokal"; then
       sleep 2
+      # The credentials panel opens below the grid, so the hint and the detect
+      # button are off-screen until the page moves.
+      $ADB shell input swipe 540 1300 540 800 1200 >>"$LOG" 2>&1
+      sleep 2
       shot 12a-cloud-ollama
       crash_check cloud-ollama || FAILED=1
       if ! grep -qi "deteksi model" <<<"$(dump_ui && cat /tmp/ui.xml)"; then
         log "event=missing detect-model button"
+        FAILED=1
       fi
       # Back to the top of the list before scrolling for the next section.
+      $ADB shell input swipe 540 700 540 1600 300 >>"$LOG" 2>&1
       $ADB shell input swipe 540 700 540 1600 300 >>"$LOG" 2>&1
       sleep 1
     fi
