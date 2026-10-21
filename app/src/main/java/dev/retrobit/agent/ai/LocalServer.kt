@@ -28,9 +28,11 @@ object LocalServer {
     fun normalizeBaseUrl(raw: String): String {
         val trimmed = raw.trim()
         if (trimmed.isEmpty()) return ""
+        // Rebuilt rather than passed through: 'HTTP://' is legal in a browser
+        // address bar, but every comparison downstream is lowercase.
         val withScheme = when {
-            trimmed.startsWith("http://", ignoreCase = true) -> trimmed
-            trimmed.startsWith("https://", ignoreCase = true) -> trimmed
+            trimmed.startsWith("http://", ignoreCase = true) -> "http://" + trimmed.substring(7)
+            trimmed.startsWith("https://", ignoreCase = true) -> "https://" + trimmed.substring(8)
             else -> "http://$trimmed"
         }
         val withoutSlash = withScheme.trimEnd('/')
