@@ -303,6 +303,19 @@ if tap_text "Menu"; then
     sleep 3
     shot 12-cloud
     crash_check cloud || FAILED=1
+    # The local-model panel only exists once Ollama is picked: its hint and
+    # detect button are the whole point of the unlimited path, so photograph it.
+    if tap_text "Ollama / lokal"; then
+      sleep 2
+      shot 12a-cloud-ollama
+      crash_check cloud-ollama || FAILED=1
+      if ! grep -qi "deteksi model" <<<"$(dump_ui && cat /tmp/ui.xml)"; then
+        log "event=missing detect-model button"
+      fi
+      # Back to the top of the list before scrolling for the next section.
+      $ADB shell input swipe 540 700 540 1600 300 >>"$LOG" 2>&1
+      sleep 1
+    fi
     # The unlimited/keys section sits below the provider grid, so the walk has
     # to scroll for it — the top screenshot alone would never prove it renders.
     # Slow swipes instead of flings: a fling stops wherever momentum takes it,
