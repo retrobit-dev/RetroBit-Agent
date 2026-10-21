@@ -193,6 +193,32 @@ fun CloudScreen(
                         keyboardType = KeyboardType.Uri,
                         mono = true,
                     )
+                    if (vm.provider == ProviderKind.OLLAMA) {
+                        Spacer(Modifier.height(6.dp))
+                        Text(
+                            vm.localHint,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.75f),
+                            lineHeight = 15.sp,
+                        )
+                        Spacer(Modifier.height(8.dp))
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            GhostButton(
+                                text = if (vm.detectingModels) "Mendeteksi…" else "Deteksi model",
+                                modifier = Modifier.weight(1f),
+                                onClick = { vm.detectLocalModels() },
+                            )
+                        }
+                        vm.detectMessage?.let { message ->
+                            Spacer(Modifier.height(6.dp))
+                            Text(
+                                message,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                lineHeight = 15.sp,
+                            )
+                        }
+                    }
                     Spacer(Modifier.height(10.dp))
                     CloudField(
                         label = "Model",
@@ -201,7 +227,9 @@ fun CloudScreen(
                         placeholder = AiConfig.presetFor(vm.provider).models.firstOrNull().orEmpty(),
                         mono = true,
                     )
-                    val suggestions = AiConfig.presetFor(vm.provider).models.filter { it.isNotBlank() }
+                    val suggestions = vm.localModels.ifEmpty {
+                        AiConfig.presetFor(vm.provider).models.filter { it.isNotBlank() }
+                    }
                     if (suggestions.isNotEmpty()) {
                         Spacer(Modifier.height(8.dp))
                         Row(

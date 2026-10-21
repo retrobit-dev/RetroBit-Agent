@@ -52,8 +52,8 @@ android {
         applicationId = "dev.retrobit.agent"
         minSdk = 26
         targetSdk = 35
-        versionCode = 15
-        versionName = "0.4.1"
+        versionCode = 16
+        versionName = "0.5.0"
 
         vectorDrawables { useSupportLibrary = true }
     }

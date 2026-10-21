@@ -149,6 +149,24 @@ Layanan berlangganan seperti Arena bisa terasa tanpa batas karena **mereka yang 
 2. **Auto melewati provider yang habis.** Kuota harian dicatat per provider (`Gemini 200`, `Groq 1.000`, `OpenRouter 50` per key). Begitu anggaran habis, Auto tidak mengirim request yang pasti gagal — ia pindah ke provider berikutnya.
 3. **Model lokal benar-benar tanpa batas.** Ollama atau LM Studio di komputer sendiri tidak punya kuota per hari: tidak ada biaya per token, hanya listrik. Kualitasnya di bawah model frontier, tapi untuk obrolan dan kode sederhana cukup — dan tidak akan pernah menagih atau menolak karena kuota.
 
+### Menyiapkan model lokal
+
+Di komputer (sekali saja):
+
+```bash
+OLLAMA_HOST=0.0.0.0 ollama serve        # dengarkan di jaringan, bukan cuma localhost
+ollama pull qwen2.5-coder:7b            # model yang muat di RAM kamu
+```
+
+Di HP, sambungkan ke Wi-Fi yang sama, lalu di **AI Cloud → Ollama / lokal**:
+
+1. Isi Base URL dengan IP komputer, mis. `192.168.1.10:11434` — skema `http://` dan akhiran `/v1` ditambahkan otomatis.
+2. Tekan **Deteksi model** — aplikasi membaca `GET /api/tags` dan menampilkan model yang benar-benar terpasang. Tidak perlu menebak nama.
+3. Pilih model, lalu **Simpan**.
+
+`10.0.2.2` hanya berlaku di emulator (itu cara emulator memanggil komputer host); di HP alamat itu tidak menuju ke mana-mana, dan aplikasi memberi tahu saat mendeteksinya. Kalau koneksi ditolak, biasanya firewall komputer memblokir port 11434.
+
+
 Angka kuota itu salinan konservatif dari batas publik, dipakai untuk mengarahkan Auto, bukan untuk menagih. Kalau butuh model teratas tanpa memikirkan kuota, langganan berbayar tetap satu-satunya jalan — dan kamu bisa memakai key itu di sini.
 
 ### Streaming
@@ -269,7 +287,7 @@ app/src/main/res/font/         # salinan font agar bisa dipakai Compose
 Pengujian:
 
 ```
-./gradlew testDebugUnitTest   # 165 unit test (96 JVM + 69 Robolectric)
+./gradlew testDebugUnitTest   # 182 unit test (113 JVM + 69 Robolectric)
 ./gradlew lintDebug          # Android lint
 ```
 

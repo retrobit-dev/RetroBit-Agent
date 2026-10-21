@@ -12,6 +12,7 @@ import dev.retrobit.agent.ai.AiConfig
 import dev.retrobit.agent.ai.AutoRouter
 import dev.retrobit.agent.ai.AutoTarget
 import dev.retrobit.agent.ai.KeyRing
+import dev.retrobit.agent.ai.LocalServer
 import dev.retrobit.agent.ai.ProviderKind
 import dev.retrobit.agent.ai.QuotaPolicy
 import dev.retrobit.agent.ai.QuotaState
@@ -44,6 +45,14 @@ class CloudViewModel(private val container: AppContainer) : ViewModel() {
     var savedMessage by mutableStateOf<String?>(null)
         private set
     var keyStored by mutableStateOf(false)
+        private set
+
+    /** Models the local server reported, once the user asks for them. */
+    var localModels by mutableStateOf<List<String>>(emptyList())
+        private set
+    var detectingModels by mutableStateOf(false)
+        private set
+    var detectMessage by mutableStateOf<String?>(null)
         private set
 
     var themeMode by mutableStateOf(settings.themeMode)
@@ -91,6 +100,8 @@ class CloudViewModel(private val container: AppContainer) : ViewModel() {
         keyStored = apiKey.isNotBlank()
         testResult = null
         savedMessage = null
+        localModels = emptyList()
+        detectMessage = null
     }
 
     fun updateBaseUrl(value: String) {
@@ -99,6 +110,40 @@ class CloudViewModel(private val container: AppContainer) : ViewModel() {
 
     fun updateModel(value: String) {
         model = value
+    }
+
+    /** Where the local server should be, phrased for the current host. */
+    val localHint: String get() = LocalServer.hint(baseUrl.ifBlank { AiConfig.presetFor(ProviderKind.OLLAMA).baseUrl })
+
+    /**
+     * Asks the local server which models it has. Also rewrites a bare host into
+     * a full base URL, because that is what people type.
+     */
+    fun detectLocalModels() {
+        if (detectingModels) return
+        val base = LocalServer.normalizeBaseUrl(baseUrl.ifBlank { AiConfig.presetFor(ProviderKind.OLLAMA).baseUrl })
+        baseUrl = base
+        val key = apiKey.trim().ifBlank { secrets.get(AgentEngine.keyFor(provider.name)).orEmpty() }
+        detectingModels = true
+        detectMessage = null
+        viewModelScope.launch {
+            val result = AiClientFactory.listLocalModels(base, key)
+            result.fold(
+                onSuccess = { models ->
+                    localModels = models
+                    detectMessage = when {
+                        models.isEmpty() -> "Server menjawab, tetapi belum ada model. Jalankan: ollama pull qwen2.5-coder:7b"
+                        else -> "${models.size} model ditemukan di server."
+                    }
+                    if (models.isNotEmpty() && model.isBlank()) model = models.first()
+                },
+                onFailure = { error ->
+                    localModels = emptyList()
+                    detectMessage = "Tidak bisa menghubungi ${LocalServer.tagsUrl(base)}: ${error.message ?: "gagal"}"
+                },
+            )
+            detectingModels = false
+        }
     }
 
     fun save() {
@@ -139,10 +184,15 @@ class CloudViewModel(private val container: AppContainer) : ViewModel() {
                 apiKey = cleanKey
             }
         }
+        val normalizedBase = when (provider) {
+            ProviderKind.DEMO -> ""
+            ProviderKind.OLLAMA -> LocalServer.normalizeBaseUrl(baseUrl)
+            else -> baseUrl.trim()
+        }
         settings.updateConfig { current ->
             current.copy(
                 provider = provider,
-                baseUrl = if (provider == ProviderKind.DEMO) "" else baseUrl.trim(),
+                baseUrl = normalizedBase,
                 model = if (provider == ProviderKind.DEMO) "retrobit-demo" else model.trim(),
                 temperature = temperature.toDouble(),
                 maxTokens = maxTokens.toIntOrNull()?.coerceIn(512, 64000) ?: 8192,

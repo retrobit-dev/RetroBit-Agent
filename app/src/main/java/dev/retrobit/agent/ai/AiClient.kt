@@ -99,6 +99,20 @@ object AiClientFactory {
         }
     }
 
+    /**
+     * Lists the models an Ollama (or LM Studio) server already has, so the user
+     * picks from reality instead of retyping a name from the docs.
+     */
+    suspend fun listLocalModels(baseUrl: String, apiKey: String): Result<List<String>> = runCatching {
+        val builder = Request.Builder().url(LocalServer.tagsUrl(baseUrl)).get()
+        if (apiKey.isNotBlank()) builder.header("Authorization", "Bearer $apiKey")
+        http.executeAsync(builder.build()).use { response ->
+            val body = response.body?.string().orEmpty()
+            if (!response.isSuccessful) throw errorFor(response.code, extractError(body) ?: body, "Server lokal")
+            LocalServer.models(body)
+        }
+    }
+
     suspend fun testConnection(config: AiConfig, apiKey: String): Result<String> = runCatching {
         val client = create(config, apiKey)
         val response = client.chat(
