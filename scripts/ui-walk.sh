@@ -148,8 +148,8 @@ for node in root.iter("node"):
     if not m:
         continue
     x1, y1, x2, y2 = map(int, m.groups())
-    # A node clipped by the screen edge is not a small target, just half visible.
-    if y2 >= screen_h - 2 or x2 >= screen_w - 2:
+    # A node clipped by any screen edge is not a small target, just half visible.
+    if y2 >= screen_h - 2 or x2 >= screen_w - 2 or y1 <= 2 or x1 <= 2:
         continue
     # Nor is one that the bottom tab bar covers: uiautomator reports the clipped
     # height, which made a 48 dp chip look like 26 dp whenever a fling happened

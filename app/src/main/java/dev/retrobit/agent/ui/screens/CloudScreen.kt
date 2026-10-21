@@ -240,14 +240,17 @@ fun CloudScreen(
                         ) {
                             suggestions.take(6).forEach { suggestion ->
                                 Box(
+                                    // Visible pill stays compact, the tap area is 48 dp.
                                     Modifier
+                                        .heightIn(min = 48.dp)
                                         .clip(CircleShape)
                                         .background(
                                             if (vm.model == suggestion) Palette.Primary.copy(alpha = 0.18f)
                                             else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
                                         )
                                         .clickable { vm.updateModel(suggestion) }
-                                        .padding(horizontal = 10.dp, vertical = 6.dp)
+                                        .padding(horizontal = 10.dp, vertical = 6.dp),
+                                    contentAlignment = Alignment.Center,
                                 ) {
                                     Row(verticalAlignment = Alignment.CenterVertically) {
                                         Text(
