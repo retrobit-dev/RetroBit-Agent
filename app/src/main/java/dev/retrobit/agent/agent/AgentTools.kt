@@ -1,5 +1,8 @@
 package dev.retrobit.agent.agent
 
+import dev.retrobit.agent.local.OfflineToolProtocol
+import kotlinx.coroutines.CancellationException
+import kotlinx.serialization.json.Json
 import dev.retrobit.agent.ai.AiToolDef
 import dev.retrobit.agent.ai.ToolCall
 import dev.retrobit.agent.ai.parseObject
@@ -35,8 +38,12 @@ class AgentToolRunner(
 ) {
 
     suspend fun execute(call: ToolCall): ToolOutcome {
-        val args = parseObject(call.argumentsJson)
         return try {
+            val definition = DEFINITIONS.singleOrNull { it.name == call.name }
+                ?: throw IllegalArgumentException("Tool tidak tersedia: ${call.name}")
+            val args = Json.parseToJsonElement(call.argumentsJson) as? JsonObject
+                ?: throw IllegalArgumentException("Argumen harus object JSON")
+            OfflineToolProtocol.validate(args, definition.parameters)
             when (call.name) {
                 "list_files" -> listFiles()
                 "read_file" -> readFile(args)
@@ -44,6 +51,10 @@ class AgentToolRunner(
                 "edit_file" -> editFile(args)
                 "delete_file" -> deleteFile(args)
                 "rename_file" -> renameFile(args)
+                "append_file" -> appendFile(args)
+                "search_files" -> searchFiles(args)
+                "project_info" -> projectInfo()
+                "validate_project" -> validateProject()
                 "update_design" -> updateDesign(args)
                 "create_table" -> createTable(args)
                 "run_sql" -> runSql(args)
@@ -51,6 +62,8 @@ class AgentToolRunner(
                 "request_secret" -> requestSecret(args)
                 else -> ToolOutcome(false, call.name, "Tool tidak dikenal", "ERROR: tool ${call.name} tidak tersedia")
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: IllegalArgumentException) {
             ToolOutcome(false, call.name, e.message ?: "Argumen tidak valid", "ERROR: ${e.message}")
         } catch (e: Exception) {
@@ -68,6 +81,7 @@ class AgentToolRunner(
 
     private fun readFile(args: JsonObject): ToolOutcome {
         val path = args.string("path") ?: throw IllegalArgumentException("path wajib diisi")
+        require(files.resolve(path).length() <= 400_000) { "File terlalu besar untuk dibaca tool (maks 400KB)." }
         val content = files.read(path) ?: return ToolOutcome(
             false, "Membaca $path", "File tidak ditemukan", "ERROR: file $path tidak ditemukan. Gunakan list_files."
         )
@@ -80,7 +94,7 @@ class AgentToolRunner(
     private fun writeFile(args: JsonObject): ToolOutcome {
         val path = args.string("path") ?: throw IllegalArgumentException("path wajib diisi")
         val content = args.string("content") ?: throw IllegalArgumentException("content wajib diisi")
-        if (content.length > 400_000) throw IllegalArgumentException("File terlalu besar (maks 400KB)")
+        if (content.toByteArray().size > 400_000) throw IllegalArgumentException("File terlalu besar (maks 400KB)")
         files.write(path, content)
         onProjectFileChanged()
         return ToolOutcome(
@@ -93,6 +107,8 @@ class AgentToolRunner(
         val path = args.string("path") ?: throw IllegalArgumentException("path wajib diisi")
         val find = args.string("find") ?: throw IllegalArgumentException("find wajib diisi")
         val replace = args.string("replace") ?: throw IllegalArgumentException("replace wajib diisi")
+        require(find.isNotEmpty()) { "find tidak boleh kosong" }
+        require(files.resolve(path).length() + replace.toByteArray().size <= 400_000) { "Hasil edit terlalu besar." }
         val ok = files.edit(path, find, replace, args.bool("replace_all") ?: false)
         if (!ok) {
             return ToolOutcome(
@@ -106,7 +122,7 @@ class AgentToolRunner(
 
     private fun deleteFile(args: JsonObject): ToolOutcome {
         val path = args.string("path") ?: throw IllegalArgumentException("path wajib diisi")
-        if (path == ProjectFiles.ENTRY_POINT) throw IllegalArgumentException("index.html tidak boleh dihapus")
+        if (files.resolve(path).canonicalFile == files.resolve(ProjectFiles.ENTRY_POINT).canonicalFile) throw IllegalArgumentException("index.html tidak boleh dihapus")
         val ok = files.delete(path)
         if (ok) onProjectFileChanged()
         return ToolOutcome(ok, "Menghapus $path", if (ok) "Berhasil" else "Tidak ditemukan",
@@ -116,7 +132,7 @@ class AgentToolRunner(
     private fun renameFile(args: JsonObject): ToolOutcome {
         val path = args.string("path") ?: throw IllegalArgumentException("path wajib diisi")
         val newPath = args.string("new_path") ?: throw IllegalArgumentException("new_path wajib diisi")
-        if (path == ProjectFiles.ENTRY_POINT) throw IllegalArgumentException("index.html tidak boleh dipindah")
+        if (files.resolve(path).canonicalFile == files.resolve(ProjectFiles.ENTRY_POINT).canonicalFile) throw IllegalArgumentException("index.html tidak boleh dipindah")
         val ok = files.rename(path, newPath)
         if (ok) onProjectFileChanged()
         return ToolOutcome(ok, "Memindahkan file", if (ok) "$path → $newPath" else "Gagal",
@@ -139,6 +155,8 @@ class AgentToolRunner(
             font = args.string("font") ?: design.font,
             mode = args.string("mode") ?: design.mode,
         )
+        design = design.copy(radius = design.radius.coerceIn(0, 40), font = "Pixel Operator")
+        if (!design.isGrayscale()) design = design.grayscaleFallback()
         onDesignChange(design)
         return ToolOutcome(
             true, "Memperbarui design system",
@@ -162,6 +180,9 @@ class AgentToolRunner(
             )
         }
         if (columns.isEmpty()) throw IllegalArgumentException("Minimal satu kolom valid")
+        require(columns.size <= 32) { "Maksimal 32 kolom per tool." }
+        columns.forEach { column -> require(column.default == null || AgentSqlPolicy.defaultLiteral(column.default)) { "Default kolom harus literal SQL sederhana." } }
+        require((args.int("seed_rows") ?: 0) in 0..20) { "seed_rows harus 0–20." }
         val result = db.createTable(name, columns, args.int("seed_rows") ?: 0)
         if (result.error != null) {
             return ToolOutcome(false, "Membuat tabel $name", result.error, "ERROR: ${result.error}")
@@ -175,10 +196,7 @@ class AgentToolRunner(
 
     private fun runSql(args: JsonObject): ToolOutcome {
         val sql = args.string("sql") ?: throw IllegalArgumentException("sql wajib diisi")
-        val upper = sql.uppercase()
-        if (upper.contains("ATTACH") || upper.contains("DETACH") || upper.contains("PRAGMA WRITABLE_SCHEMA")) {
-            return ToolOutcome(false, "Menjalankan SQL", "Diblokir", "ERROR: perintah tersebut tidak diizinkan.")
-        }
+        AgentSqlPolicy.validate(sql)
         val started = System.currentTimeMillis()
         val output = db.runForAgent(sql)
         val elapsed = System.currentTimeMillis() - started
@@ -205,11 +223,56 @@ class AgentToolRunner(
     private fun requestSecret(args: JsonObject): ToolOutcome {
         val key = args.string("key") ?: throw IllegalArgumentException("key wajib diisi")
         val description = args.string("description") ?: "Dibutuhkan aplikasi"
-        secrets.request(key.uppercase().replace(" ", "_"), description)
+        val normalized = key.uppercase().replace(" ", "_")
+        require(normalized.matches(Regex("[A-Z_][A-Z0-9_]{0,63}"))) { "Nama secret hanya huruf, angka, underscore (maks 64)." }
+        secrets.request(normalized, description.take(400))
         return ToolOutcome(
             true, "Meminta secret $key", "Menunggu diisi pengguna",
             "OK: permintaan secret $key dicatat. Kode bisa memakai placeholder {{SECRET:$key}} atau window.__RETROBIT_ENV__.Jangan pernah menulis nilai rahasia di file.",
         )
+    }
+
+    private fun appendFile(args: JsonObject): ToolOutcome {
+        val path = args.string("path")!!
+        val content = args.string("content")!!
+        require(files.resolve(path).length() + content.toByteArray().size <= 400_000) { "File terlalu besar (maks 400KB)." }
+        files.append(path, content)
+        onProjectFileChanged()
+        return ToolOutcome(true, "Menambah isi $path", "${content.length} karakter", "OK: isi ditambahkan ke $path.", listOf(path))
+    }
+
+    private fun searchFiles(args: JsonObject): ToolOutcome {
+        val query = args.string("query")!!
+        require(query.length in 1..200) { "query harus 1–200 karakter, pencarian literal (bukan regex)." }
+        val results = mutableListOf<String>()
+        var scanned = 0
+        for (file in files.allFiles().take(200)) {
+            val path = file.relativeTo(files.root).path.replace('\\', '/')
+            if (!files.isTextFile(path) || file.length() > 400_000) continue
+            scanned++
+            file.useLines { lines ->
+                for ((index, line) in lines.withIndex()) {
+                    if (line.contains(query, ignoreCase = true)) results += "$path:${index + 1}: ${line.take(180)}"
+                    if (results.size >= 30) break
+                }
+            }
+            if (results.size >= 30) break
+        }
+        return ToolOutcome(true, "Mencari teks proyek", "${results.size} hasil · $scanned file dipindai", results.joinToString("\n").ifEmpty { "Tidak ditemukan. Maksimal 200 file, 30 hasil; file >400KB dilewati." })
+    }
+
+    private fun projectInfo(): ToolOutcome = ToolOutcome(true, "Informasi proyek", "${files.fileCount()} file",
+        "${files.fileCount()} file · ${files.totalBytes()} byte. Entry: index.html. Preview HTML/CSS/JS, ekspor ZIP source, bukan APK. Snapshot file: ${files.latestSnapshot() != null}.\n${db.statsText()}")
+
+    private fun validateProject(): ToolOutcome {
+        val issues = mutableListOf<String>()
+        if (!files.exists(ProjectFiles.ENTRY_POINT)) issues += "index.html belum ada"
+        for (file in files.allFiles().take(200)) {
+            if (file.extension != "json" || file.length() > 400_000) continue
+            if (runCatching { Json.parseToJsonElement(file.readText()) }.isFailure) issues += "JSON tidak valid: ${file.relativeTo(files.root).path}"
+        }
+        return ToolOutcome(issues.isEmpty(), "Memeriksa struktur proyek", if (issues.isEmpty()) "Lulus cek struktur" else "${issues.size} masalah",
+            if (issues.isEmpty()) "OK: entry point ada dan JSON valid (maks 200 file). Ini bukan tes JavaScript, keamanan, kompilasi Kotlin, atau build APK. Buka tab Preview untuk menguji tampilan." else issues.take(20).joinToString("\n"))
     }
 
     private fun formatBytes(bytes: Int): String =
@@ -239,6 +302,12 @@ class AgentToolRunner(
             }
 
         val DEFINITIONS: List<AiToolDef> = listOf(
+            AiToolDef("project_info", "Informasi workspace, snapshot file, database dan format ekspor.", schema(buildJsonObject {}, emptyList())),
+            AiToolDef("search_files", "Cari teks literal di maksimal 200 file proyek; maksimal 30 hasil dengan nomor baris.",
+                schema(buildJsonObject { put("query", prop("string", "Teks literal 1–200 karakter")) }, listOf("query"))),
+            AiToolDef("append_file", "Tambahkan teks di akhir file (atau buat file baru). Berguna untuk model kecil yang menulis bertahap.",
+                schema(buildJsonObject { put("path", prop("string", "Path relatif")); put("content", prop("string", "Teks tambahan")) }, listOf("path", "content"))),
+            AiToolDef("validate_project", "Cek entry point dan JSON; bukan compiler/tes runtime atau build APK.", schema(buildJsonObject {}, emptyList())),
             AiToolDef(
                 "list_files",
                 "Tampilkan semua file dan folder di proyek. Panggil ini dulu untuk memahami struktur sebelum mengubah apa pun.",
@@ -363,6 +432,10 @@ class AgentToolRunner(
         fun titleFor(tool: String, args: JsonObject): String {
             val path = (args["path"] as? JsonPrimitive)?.content
             return when (tool) {
+                "project_info" -> "Informasi proyek"
+                "search_files" -> "Mencari teks proyek"
+                "append_file" -> "Menambah isi ${path ?: "file"}"
+                "validate_project" -> "Memeriksa struktur proyek"
                 "list_files" -> "Membaca struktur proyek"
                 "read_file" -> "Membaca ${path ?: "file"}"
                 "write_file" -> "Menulis ${path ?: "file"}"

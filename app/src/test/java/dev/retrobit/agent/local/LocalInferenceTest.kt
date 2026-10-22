@@ -21,6 +21,7 @@ class LocalInferenceTest {
         var linkError: LinkageError? = null
         var failBegin = false
         var failNext = false
+        var grammarText = ""
         var roles = listOf<String>()
         var contents = listOf<String>()
         val pieces = ArrayDeque<ByteArray>()
@@ -28,8 +29,9 @@ class LocalInferenceTest {
             linkError?.let { throw it }
             opened++; this.context = context; return 1
         }
-        override fun begin(handle: Long, roles: Array<ByteArray>, contents: Array<ByteArray>): Int {
+        override fun begin(handle: Long, roles: Array<ByteArray>, contents: Array<ByteArray>, grammar: ByteArray): Int {
             if (failBegin) error("Prompt terlalu panjang")
+            grammarText = grammar.decodeToString()
             this.roles = roles.map { it.toString(Charsets.UTF_8) }
             this.contents = contents.map { it.toString(Charsets.UTF_8) }
             return 10
@@ -86,13 +88,14 @@ class LocalInferenceTest {
         assertTrue(result.exceptionOrNull() is AiException)
         assertTrue(result.exceptionOrNull()!!.message.orEmpty().contains("GGUF"))
     }
-    @Test fun `tools are refused before loading model`() {
+    @Test fun `incomplete tool JSON is never executed`() {
         val backend = Backend()
         val result = runCatching { runBlocking {
             LocalInference.clientForTest(config, backend).chat("S", emptyList(), listOf(AiToolDef("write", "write", buildJsonObject {})), 0.0, 1)
         } }
         assertTrue(result.exceptionOrNull() is AiException)
-        assertEquals(0, backend.opened)
+        assertEquals(1, backend.opened)
+        assertEquals(1, backend.closed)
     }
     @Test fun `failed prompt releases model`() {
         val backend = Backend().apply { failBegin = true }
@@ -132,4 +135,14 @@ class LocalInferenceTest {
     @Test fun `local answers have no guessed cloud billing`() {
         assertEquals(TokenUsage(), answer(Backend()).usage)
     }
+    @Test fun `offline tool mode sends grammar and parses without leaking raw JSON to chat`() = runBlocking {
+        val backend = Backend().apply { pieces.add("""{"tool":"list_files","arguments":{}}""".toByteArray()) }
+        val tools = dev.retrobit.agent.agent.AgentToolRunner.DEFINITIONS
+        val deltas = mutableListOf<String>()
+        val result = LocalInference.clientForTest(config, backend).chatStream("System", listOf(WireTurn.User("Buat app")), tools, 0.0, 1024) { deltas += it }
+        assertEquals("list_files", result.toolCalls.single().name)
+        assertTrue(backend.grammarText.contains("tool-name"))
+        assertTrue(deltas.isEmpty()); assertEquals(1, backend.closed)
+    }
+
 }

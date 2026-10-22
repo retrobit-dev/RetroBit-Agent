@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.material3.MaterialTheme
@@ -40,15 +41,34 @@ fun OnDevicePanel(vm: CloudViewModel) {
                 vm.localMessage?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
                 Text(vm.localModelName, style = MaterialTheme.typography.labelLarge)
                 if (vm.localModelBytes > 0) Text(ProjectFiles.formatBytes(vm.localModelBytes), style = MaterialTheme.typography.bodySmall)
+                Text("Download GGUF dari internet", style = MaterialTheme.typography.titleSmall)
+                Text("Gunakan Wi-Fi. Download besar memakai kuota internet; tetap buka aplikasi. Belum mendukung resume/background. URL bawaan menuju model Qwen resmi; periksa lisensi sebelum download.", style = MaterialTheme.typography.bodySmall)
+                OutlinedTextField(value = vm.downloadUrl, onValueChange = { vm.downloadUrl = it },
+                    label = { Text("URL HTTPS langsung ke GGUF") }, enabled = !vm.importingModel,
+                    modifier = Modifier.fillMaxWidth(), maxLines = 3)
+                OutlinedTextField(value = vm.expectedSha256, onValueChange = { vm.expectedSha256 = it.take(64) },
+                    label = { Text("SHA-256 penerbit (opsional)") }, enabled = !vm.importingModel,
+                    modifier = Modifier.fillMaxWidth(), maxLines = 2)
+                Text("Tanpa checksum penerbit, HTTPS + header GGUF bukan jaminan keaslian atau kompatibilitas model.", style = MaterialTheme.typography.bodySmall)
+                GradientButton("Download & impor GGUF", enabled = !vm.importingModel && !vm.testing,
+                    modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp), onClick = vm::downloadLocalModel)
+                TextButton(onClick = { vm.downloadUrl = dev.retrobit.agent.local.ModelDownloadPolicy.RECOMMENDED_URL }, enabled = !vm.importingModel) {
+                    Text("Pakai rekomendasi Qwen 1.5B Q4")
+                }
                 TextButton(
                     modifier = Modifier.heightIn(min = 48.dp),
                     enabled = !vm.importingModel && !vm.testing,
                     onClick = { picker.launch(arrayOf("*/*")) },
                 ) { Text(if (vm.localModelBytes > 0) "Ganti model GGUF" else "Impor GGUF") }
                 if (vm.importingModel) {
-                    Text("Disalin: ${ProjectFiles.formatBytes(vm.importBytes)}. Jangan tutup aplikasi.")
-                    TextButton(onClick = vm::cancelModelImport) { Text("Batalkan impor") }
+                    if (vm.transferTotal > 0) {
+                        LinearProgressIndicator(progress = { (vm.importBytes.toFloat() / vm.transferTotal).coerceIn(0f, 1f) }, modifier = Modifier.fillMaxWidth())
+                    } else LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                    Text("${if (vm.downloadingModel) "Download" else "Disalin"}: ${ProjectFiles.formatBytes(vm.importBytes)}" +
+                        if (vm.transferTotal > 0) " / ${ProjectFiles.formatBytes(vm.transferTotal)}" else " · ukuran belum diketahui")
+                    TextButton(onClick = vm::cancelModelImport) { Text("Batalkan transfer") }
                 }
+                if (vm.localModelHash.isNotEmpty()) Text("SHA-256 salinan: ${vm.localModelHash}", style = MaterialTheme.typography.labelSmall)
                 Text("Konteks (prompt + jawaban)", style = MaterialTheme.typography.labelMedium)
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     listOf(2048, 4096).forEach { size ->
@@ -64,7 +84,7 @@ fun OnDevicePanel(vm: CloudViewModel) {
                     modifier = Modifier.fillMaxWidth(),
                 )
                 Text(
-                    "Mode awal: Chat offline, streaming, tombol Berhenti. Tool agen pembuat proyek dan analisis APK belum tersedia di mode ini. " +
+                    "Chat dan agen proyek offline: tool file, pencarian, desain, SQLite, secret placeholder, serta validasi proyek. Snapshot tersedia sebelum perubahan. Belum build APK atau eksekusi shell. Untuk agen, disarankan konteks 4096. " +
                         "CPU hingga 4 thread; tidak ada klaim akselerasi NPU. Konteks/panas/RAM tetap membatasi pemakaian.",
                     style = MaterialTheme.typography.bodySmall,
                 )

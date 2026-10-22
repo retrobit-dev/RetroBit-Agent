@@ -28,7 +28,7 @@ class ProjectFiles(val root: File) {
         private val IGNORED = setOf(META_DIR, "node_modules", ".git", "dist")
         private val TEXT_EXTENSIONS = setOf(
             "html", "htm", "css", "js", "mjs", "jsx", "ts", "tsx", "json", "md", "txt",
-            "svg", "xml", "yml", "yaml", "csv", "sql", "env", "gitignore"
+            "svg", "xml", "yml", "yaml", "csv", "sql", "env", "gitignore", "kt", "kts", "gradle", "properties"
         )
     }
 
@@ -38,7 +38,10 @@ class ProjectFiles(val root: File) {
         require(!cleaned.split('/').any { it == ".." }) { "Path tidak valid: $path" }
         require(cleaned != META_DIR && !cleaned.startsWith("$META_DIR/")) { "_meta hanya untuk internal" }
         val file = File(root, cleaned)
-        require(file.canonicalPath.startsWith(root.canonicalPath)) { "Path keluar dari proyek" }
+        val base = root.canonicalPath + File.separator
+        require(file.canonicalPath.startsWith(base)) { "Path keluar dari proyek atau menunjuk root" }
+        val relative = file.canonicalFile.relativeTo(root.canonicalFile).path.replace('\\', '/')
+        require(relative != META_DIR && !relative.startsWith("$META_DIR/")) { "_meta hanya untuk internal" }
         return file
     }
 
@@ -78,7 +81,7 @@ class ProjectFiles(val root: File) {
     fun rename(path: String, newPath: String): Boolean {
         val from = resolve(path)
         val to = resolve(newPath)
-        if (!from.exists()) return false
+        if (!from.exists() || to.exists()) return false
         to.parentFile?.mkdirs()
         return from.renameTo(to)
     }
@@ -118,7 +121,7 @@ class ProjectFiles(val root: File) {
     private fun collect(dir: File, out: MutableList<FileNode>, depth: Int) {
         val files = dir.listFiles()?.sortedWith(compareBy({ !it.isDirectory }, { it.name.lowercase() })) ?: return
         for (f in files) {
-            if (f.name in IGNORED) continue
+            if (f.name in IGNORED || java.nio.file.Files.isSymbolicLink(f.toPath())) continue
             val rel = f.relativeTo(root).path.replace('\\', '/')
             out.add(FileNode(rel, f.name, f.isDirectory, if (f.isFile) f.length() else 0, depth))
             if (f.isDirectory && depth < 6) collect(f, out, depth + 1)
@@ -126,8 +129,8 @@ class ProjectFiles(val root: File) {
     }
 
     fun allFiles(): List<File> = root.walkTopDown()
-        .onEnter { it == root || it.name !in IGNORED }
-        .filter { it.isFile }
+        .onEnter { it == root || (it.name !in IGNORED && !java.nio.file.Files.isSymbolicLink(it.toPath())) }
+        .filter { it.isFile && !java.nio.file.Files.isSymbolicLink(it.toPath()) }
         .toList()
 
     fun totalBytes(): Long = allFiles().sumOf { it.length() }

@@ -48,4 +48,22 @@ class LocalModelStoreTest {
         assertFalse(store.ready)
         assertTrue(input.isFile)
     }
+    @Test fun `checksum mismatch preserves previous model and removes partial`() = runBlocking {
+        store.import(Uri.fromFile(input)) {}
+        val original = LocalInference.modelFile!!.readBytes()
+        assertTrue(runCatching { input.inputStream().use { store.install(it, "new", input.length(), "0".repeat(64)) {} } }.isFailure)
+        assertArrayEquals(original, LocalInference.modelFile!!.readBytes())
+        assertFalse(File(LocalInference.modelFile!!.parentFile, "import.partial").exists())
+    }
+    @Test fun `truncated declared body preserves previous model`() = runBlocking {
+        store.import(Uri.fromFile(input)) {}
+        assertTrue(runCatching { input.inputStream().use { store.install(it, "new", 999, null) {} } }.isFailure)
+        assertEquals(72L, store.sizeBytes)
+    }
+    @Test fun `successful import exposes computed hash`() = runBlocking {
+        store.import(Uri.fromFile(input)) {}
+        val expected = java.security.MessageDigest.getInstance("SHA-256").digest(input.readBytes()).joinToString("") { "%02x".format(it.toInt() and 255) }
+        assertEquals(expected, store.sha256)
+    }
+
 }

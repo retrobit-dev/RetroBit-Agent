@@ -19,6 +19,7 @@ struct Session {
     llama_context *ctx = nullptr;
     llama_sampler *sampler = nullptr;
     std::vector<llama_token> prompt;
+    float temperature = 0;
     int offset = 0;
     int past = 0;
     llama_token previous = LLAMA_TOKEN_NULL;
@@ -65,21 +66,13 @@ Java_dev_retrobit_agent_local_NativeBridge_open(JNIEnv *env, jobject, jbyteArray
         cp.n_threads = cp.n_threads_batch = std::clamp<int>(threads, 1, 4);
         s->ctx = llama_init_from_model(s->model, cp);
         if (!s->ctx) throw std::runtime_error("Memori tidak cukup untuk konteks. Turunkan konteks atau pilih model lebih kecil.");
-        s->sampler = llama_sampler_chain_init(llama_sampler_chain_default_params());
-        if (temperature <= 0) {
-            llama_sampler_chain_add(s->sampler, llama_sampler_init_greedy());
-        } else {
-            llama_sampler_chain_add(s->sampler, llama_sampler_init_top_k(40));
-            llama_sampler_chain_add(s->sampler, llama_sampler_init_top_p(0.95f, 1));
-            llama_sampler_chain_add(s->sampler, llama_sampler_init_temp(temperature));
-            llama_sampler_chain_add(s->sampler, llama_sampler_init_dist(LLAMA_DEFAULT_SEED));
-        }
+        s->temperature = temperature;
         return reinterpret_cast<jlong>(s.release());
     } catch (const std::exception &e) { fail(env, e.what()); return 0; }
 }
 
 extern "C" JNIEXPORT jint JNICALL
-Java_dev_retrobit_agent_local_NativeBridge_begin(JNIEnv *env, jobject, jlong handle, jobjectArray roles, jobjectArray contents) {
+Java_dev_retrobit_agent_local_NativeBridge_begin(JNIEnv *env, jobject, jlong handle, jobjectArray roles, jobjectArray contents, jbyteArray grammar) {
     try {
         auto s = session(handle);
         const int count = env->GetArrayLength(roles);
@@ -108,6 +101,21 @@ Java_dev_retrobit_agent_local_NativeBridge_begin(JNIEnv *env, jobject, jlong han
         s->prompt.resize(n);
         if (llama_tokenize(vocab, prompt.data(), rendered, s->prompt.data(), n, true, true) < 0)
             throw std::runtime_error("Gagal membaca token prompt.");
+        s->sampler = llama_sampler_chain_init(llama_sampler_chain_default_params());
+        const auto grammar_text = bytes(env, grammar);
+        if (!grammar_text.empty()) {
+            auto filter = llama_sampler_init_grammar(vocab, grammar_text.c_str(), "root");
+            if (!filter) throw std::runtime_error("Grammar tool lokal tidak valid.");
+            llama_sampler_chain_add(s->sampler, filter);
+        }
+        if (s->temperature <= 0) {
+            llama_sampler_chain_add(s->sampler, llama_sampler_init_greedy());
+        } else {
+            llama_sampler_chain_add(s->sampler, llama_sampler_init_top_k(40));
+            llama_sampler_chain_add(s->sampler, llama_sampler_init_top_p(0.95f, 1));
+            llama_sampler_chain_add(s->sampler, llama_sampler_init_temp(s->temperature));
+            llama_sampler_chain_add(s->sampler, llama_sampler_init_dist(LLAMA_DEFAULT_SEED));
+        }
         return n;
     } catch (const std::exception &e) { fail(env, e.what()); return 0; }
 }

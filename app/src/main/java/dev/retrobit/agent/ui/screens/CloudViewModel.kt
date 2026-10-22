@@ -72,23 +72,65 @@ class CloudViewModel(private val container: AppContainer) : ViewModel() {
         private set
     var localContext by mutableStateOf(settings.config.value.localContext)
         private set
+    var downloadUrl by mutableStateOf(dev.retrobit.agent.local.ModelDownloadPolicy.RECOMMENDED_URL)
+    var expectedSha256 by mutableStateOf("")
+    var transferTotal by mutableStateOf(-1L)
+        private set
+    var downloadingModel by mutableStateOf(false)
+        private set
+    var localModelHash by mutableStateOf(container.localModels.sha256)
+        private set
     private var importJob: kotlinx.coroutines.Job? = null
+
+    private fun refreshLocalModel() {
+        localModelName = container.localModels.label
+        localModelBytes = container.localModels.sizeBytes
+        localModelHash = container.localModels.sha256
+    }
+
+    fun downloadLocalModel() {
+        if (importingModel || testing) return
+        val url = downloadUrl
+        val hash = expectedSha256
+        importingModel = true
+        downloadingModel = true
+        importBytes = 0
+        transferTotal = -1
+        localMessage = "Menghubungi server model… Tetap buka aplikasi."
+        importJob = viewModelScope.launch {
+            try {
+                container.localModels.download(url, hash) { bytes, total ->
+                    withContext(Dispatchers.Main) { importBytes = bytes; transferTotal = total }
+                }
+                refreshLocalModel()
+                localMessage = "Download selesai dan model diimpor. Tekan Simpan lalu Uji model."
+            } catch (e: CancellationException) {
+                refreshLocalModel()
+                localMessage = "Download dibatalkan. Berkas parsial dibersihkan."
+                throw e
+            } catch (e: Exception) {
+                localMessage = e.message ?: "Download gagal. Model lama tidak diganti oleh berkas parsial."
+            } finally { importingModel = false; downloadingModel = false }
+        }
+    }
 
     fun updateLocalContext(value: Int) { localContext = value.coerceIn(512, 4096) }
 
     fun importLocalModel(uri: Uri) {
-        if (importingModel) return
+        if (importingModel || testing) return
         importingModel = true
+        downloadingModel = false
+        transferTotal = -1
         importBytes = 0
         localMessage = "Menyalin model ke penyimpanan privat…"
         importJob = viewModelScope.launch {
             try {
                 container.localModels.import(uri) { bytes -> withContext(Dispatchers.Main) { importBytes = bytes } }
-                localModelName = container.localModels.label
-                localModelBytes = container.localModels.sizeBytes
+                refreshLocalModel()
                 localMessage = "Model diimpor. Tekan Simpan lalu Uji model untuk memeriksa kompatibilitas."
             } catch (e: CancellationException) {
-                localMessage = "Impor dibatalkan. Model sebelumnya tetap disimpan."
+                refreshLocalModel()
+                localMessage = "Impor dibatalkan. Berkas parsial dibersihkan."
                 throw e
             } catch (e: Exception) {
                 localMessage = e.message ?: "Impor model gagal."
@@ -119,6 +161,7 @@ class CloudViewModel(private val container: AppContainer) : ViewModel() {
                 container.localModels.delete()
                 localModelName = container.localModels.label
                 localModelBytes = 0
+                localModelHash = ""
                 localMessage = "Model dihapus dari penyimpanan privat."
             } catch (e: Exception) { localMessage = e.message }
         }

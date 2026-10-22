@@ -35,14 +35,16 @@ object LocalInference {
             system: String, turns: List<WireTurn>, tools: List<AiToolDef>, temperature: Double,
             maxTokens: Int, onDelta: suspend (String) -> Unit,
         ): AiResponse = withContext(Dispatchers.Default) {
-            if (tools.isNotEmpty()) throw AiException("AI di HP tahap ini mendukung Chat, belum eksekusi tool proyek. Gunakan tab Chat; proyek tetap bisa memakai provider cloud.")
             gate.withLock {
                 val file = modelFile?.takeIf { it.isFile }
                     ?: throw AiException("Belum ada model GGUF. Buka AI Cloud → AI di HP → Impor GGUF.")
                 val roles = mutableListOf("system")
-                val contents = mutableListOf(system)
+                val contents = mutableListOf(if (tools.isEmpty()) system else system + OfflineToolProtocol.instructions(tools))
                 turns.forEach { turn ->
-                    when (turn) {
+                    if (tools.isNotEmpty()) {
+                        val (role, content) = OfflineToolProtocol.turn(turn)
+                        roles += role; contents += content
+                    } else when (turn) {
                         is WireTurn.User -> { roles += "user"; contents += turn.text }
                         is WireTurn.Assistant -> { roles += "assistant"; contents += turn.text }
                         is WireTurn.ToolResult -> throw AiException("Riwayat tool tidak didukung oleh mode Chat offline.")
@@ -58,7 +60,8 @@ object LocalInference {
                         temperature.toFloat().coerceIn(0f, 1.2f),
                     )
                     currentCoroutineContext().ensureActive()
-                    backend.begin(handle, roles.map { it.toByteArray(Charsets.UTF_8) }.toTypedArray(), contents.map { it.toByteArray(Charsets.UTF_8) }.toTypedArray())
+                    backend.begin(handle, roles.map { it.toByteArray(Charsets.UTF_8) }.toTypedArray(), contents.map { it.toByteArray(Charsets.UTF_8) }.toTypedArray(),
+                        if (tools.isEmpty()) byteArrayOf() else OfflineToolProtocol.grammar(tools).toByteArray(Charsets.UTF_8))
                     val utf8 = Utf8Pieces()
                     val text = StringBuilder()
                     var emitted = 0
@@ -68,13 +71,13 @@ object LocalInference {
                         if (bytes.isEmpty()) continue // prompt prefill, not an output token
                         emitted++
                         val piece = utf8.append(bytes)
-                        if (piece.isNotEmpty()) { text.append(piece); onDelta(piece) }
+                        if (piece.isNotEmpty()) { text.append(piece); if (tools.isEmpty()) onDelta(piece) }
                     }
                     currentCoroutineContext().ensureActive()
                     val tail = utf8.append(byteArrayOf(), end = true)
-                    if (tail.isNotEmpty()) { text.append(tail); onDelta(tail) }
+                    if (tail.isNotEmpty()) { text.append(tail); if (tools.isEmpty()) onDelta(tail) }
                     // No guessed token/cost accounting: the cloud billing counters stay unchanged.
-                    AiResponse(text.toString(), emptyList())
+                    if (tools.isEmpty()) AiResponse(text.toString(), emptyList()) else OfflineToolProtocol.parse(text.toString(), tools)
                 } catch (e: CancellationException) {
                     throw e
                 } catch (e: LinkageError) {
