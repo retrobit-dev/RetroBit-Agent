@@ -26,7 +26,7 @@ class AiConfigTest {
     // Ollama runs on the local network and a custom endpoint may sit behind its
     // own auth, so only the hosted providers are keyed.
     private val keyless = setOf(
-        ProviderKind.AUTO, ProviderKind.DEMO, ProviderKind.OLLAMA, ProviderKind.CUSTOM,
+        ProviderKind.AUTO, ProviderKind.DEMO, ProviderKind.OLLAMA, ProviderKind.CUSTOM, ProviderKind.ON_DEVICE,
     )
 
     @Test
