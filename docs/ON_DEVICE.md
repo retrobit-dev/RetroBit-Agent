@@ -9,6 +9,8 @@ Auto tidak diam-diam memindahkan percakapan offline ke cloud.
 
 1. Unduh **model Instruct GGUF satu berkas** dari penerbit tepercaya melalui
    browser HP. Contoh awal: Qwen2.5-Coder-1.5B-Instruct dengan kuantisasi Q4_K_M.
+   [Halaman model resmi Qwen](https://huggingface.co/Qwen/Qwen2.5-Coder-1.5B-Instruct-GGUF/tree/main):
+   pilih `qwen2.5-coder-1.5b-instruct-q4_k_m.gguf` melalui browser HP.
    Perhatikan lisensi model. Model tidak termasuk dalam APK. Safetensors,
    model ZIP, model terpecah, dan file APK bukan berkas yang bisa diimpor.
 2. Di AI Cloud, pilih **AI di HP (offline)**. Tekan **Periksa mesin** untuk

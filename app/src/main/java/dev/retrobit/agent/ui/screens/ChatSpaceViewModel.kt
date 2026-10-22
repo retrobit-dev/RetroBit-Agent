@@ -12,6 +12,8 @@ import dev.retrobit.agent.ai.ProviderKind
 import dev.retrobit.agent.data.ChatConversation
 import dev.retrobit.agent.data.ChatMessage
 import dev.retrobit.agent.data.Role
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.launch
@@ -127,10 +129,15 @@ class ChatSpaceViewModel(private val container: AppContainer) : ViewModel() {
                 )
                 store.append(conversation.id, listOf(reply))
             } finally {
-                chunks.close()
-                painter.join()
-                streamingText = ""
-                sending = false
+                // Joining from a cancelled coroutine throws immediately unless
+                // cleanup is non-cancellable; that would leave Send disabled
+                // forever after stopping a native decode.
+                withContext(NonCancellable) {
+                    chunks.close()
+                    painter.join()
+                    streamingText = ""
+                    sending = false
+                }
             }
         }
     }
@@ -158,8 +165,9 @@ class ChatSpaceViewModel(private val container: AppContainer) : ViewModel() {
         job = null
         // Native decoding cooperatively stops at the next batch boundary. Keep
         // Send disabled until its finally block has actually released RAM.
-        if (config.value.provider != ProviderKind.ON_DEVICE) sending = false
-        else if (sending) notice = "Menghentikan model dan melepas RAM…"
+        if (sending) notice = if (config.value.provider == ProviderKind.ON_DEVICE) {
+            "Menghentikan model dan melepas RAM…"
+        } else "Menghentikan jawaban…"
     }
 
     override fun onCleared() {
