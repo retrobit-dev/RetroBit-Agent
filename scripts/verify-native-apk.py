@@ -8,9 +8,11 @@ import zipfile
 def verify(path):
     with zipfile.ZipFile(path) as apk:
         for abi in ("arm64-v8a", "x86_64"):
-            for library in ("libretrobit_local.so", "libc++_shared.so"):
-                name = f"lib/{abi}/{library}"
-                info = apk.getinfo(name)  # Missing ABI/dependency is a build failure.
+            apk.getinfo(f"lib/{abi}/libretrobit_local.so")  # Both CPU ABIs are required.
+            # Our sole JNI library uses c++_static. Check every packaged library,
+            # including libc++_shared if any future dependency introduces it.
+            for name in sorted(n for n in apk.namelist() if n.startswith(f"lib/{abi}/") and n.endswith(".so")):
+                info = apk.getinfo(name)
                 elf = apk.read(info)
                 assert elf[:6] == b"\x7fELF\x02\x01", f"not 64-bit LE ELF: {name}"
                 offset = struct.unpack_from("<Q", elf, 32)[0]
@@ -36,4 +38,9 @@ def verify(path):
 
 if __name__ == "__main__":
     for argument in sys.argv[1:]:
-        verify(argument)
+        try:
+            verify(argument)
+        except (AssertionError, KeyError, ValueError, struct.error) as error:
+            detail = str(error).replace("%", "%25").replace("\n", " ")
+            print(f"::error title=Native APK::{detail}", file=sys.stderr)
+            raise SystemExit(1)

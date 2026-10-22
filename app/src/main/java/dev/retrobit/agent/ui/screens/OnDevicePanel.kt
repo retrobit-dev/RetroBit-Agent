@@ -83,6 +83,6 @@ fun OnDevicePanel(vm: CloudViewModel) {
                 ) { Text("Hapus model dari penyimpanan HP") }
                 Spacer(Modifier.height(4.dp))
             }
+        }
     }
-}
 }

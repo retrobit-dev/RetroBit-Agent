@@ -59,7 +59,12 @@ android {
         versionCode = 18
         versionName = "0.6.0"
         ndk { abiFilters += listOf("arm64-v8a", "x86_64") }
-        externalNativeBuild { cmake { cppFlags += "-std=c++17" } }
+        externalNativeBuild {
+            cmake {
+                cppFlags += "-std=c++17"
+                arguments += listOf("-DANDROID_STL=c++_static", "-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON")
+            }
+        }
 
         vectorDrawables { useSupportLibrary = true }
     }
