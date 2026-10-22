@@ -34,6 +34,7 @@ inline bool validate_tool_grammar(const std::string &source) {
         {"{\"message\":\"bare\nnewline\"}", false},
         {"```json\n{\"message\":\"x\"}\n```", false},
         {"n{\"message\":\"x\"}", false},
+        {"         {\"message\":\"x\"}", false},
     };
     for (const auto &test : cases) {
         if (grammar_accepts(source, test.first) != test.second) return false;

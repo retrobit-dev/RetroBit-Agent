@@ -100,7 +100,7 @@ array ::= "[" ws (value ("," ws value)*)? "]" ws
 value ::= object | array | string | number | ("true" | "false" | "null") ws
 string ::= "\"" ([^"\\\x00-\x1F] | "\\" (["\\/bfnrt] | "u" [0-9a-fA-F]{4}))* "\"" ws
 number ::= "-"? ("0" | [1-9] [0-9]*) ("." [0-9]+)? ([eE] [+-]? [0-9]+)? ws
-ws ::= [ \t\n\r]*
+ws ::= [ \t\n\r]{0,8}
 """.trimIndent()
     }
 }
