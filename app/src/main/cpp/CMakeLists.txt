@@ -25,6 +25,7 @@ FetchContent_Declare(llama
     URL_HASH SHA256=8dd9fcc7c17f972673960ffdcc7521f52de5a9ec594aa6acebd9dfd8c17c0a5c)
 FetchContent_MakeAvailable(llama)
 add_library(retrobit_local SHARED local_jni.cpp)
+target_include_directories(retrobit_local PRIVATE ${llama_SOURCE_DIR}/src)
 target_link_libraries(retrobit_local PRIVATE llama android log)
 # Android 15/16 devices with 16 KB memory pages.
 target_link_options(retrobit_local PRIVATE "-Wl,-z,max-page-size=16384")

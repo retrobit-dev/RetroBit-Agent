@@ -1,5 +1,6 @@
 #include <jni.h>
 #include "llama.h"
+#include "llama-grammar.h"
 #include <algorithm>
 #include <memory>
 #include <mutex>
@@ -163,4 +164,13 @@ Java_dev_retrobit_agent_local_NativeBridge_probe(JNIEnv *env, jobject) {
         initialize_backend();
         return env->NewStringUTF("Mesin CPU siap (llama.cpp b5046). Model belum diuji.");
     } catch (const std::exception &e) { fail(env, e.what()); return nullptr; }
+}
+
+// Validate the exact generated GBNF in emulator smoke without needing weights.
+extern "C" JNIEXPORT jboolean JNICALL
+Java_dev_retrobit_agent_local_NativeBridge_validateGrammar(JNIEnv *env, jobject, jbyteArray grammar) {
+    try {
+        llama_grammar_parser parser;
+        return parser.parse(bytes(env, grammar).c_str()) && parser.symbol_ids.count("root") ? JNI_TRUE : JNI_FALSE;
+    } catch (const std::exception &e) { fail(env, e.what()); return JNI_FALSE; }
 }

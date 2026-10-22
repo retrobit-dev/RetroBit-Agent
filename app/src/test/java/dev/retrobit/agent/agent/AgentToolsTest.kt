@@ -62,7 +62,13 @@ class AgentToolsTest {
     }
     @Test fun `unsafe SQL and injected column default are blocked`() = runBlocking {
         assertFalse(call("run_sql", buildJsonObject { put("sql", "PRAGMA\twritable_schema=1") }).success)
-        assertFalse(call("create_table", buildJsonObject { put("name", "evil"); put("columns", buildJsonArray { add(buildJsonObject { put("name", "id"); put("default", "1); ATTACH 'x' AS y;--") }) }).success)
+        val args = buildJsonObject {
+            put("name", "evil")
+            put("columns", buildJsonArray {
+                add(buildJsonObject { put("name", "id"); put("default", "1); ATTACH 'x' AS y;--") })
+            })
+        }
+        assertFalse(call("create_table", args).success)
         assertFalse(db.tables().any { it.name == "evil" })
     }
     @Test fun `secret requests never return stored values`() = runBlocking {

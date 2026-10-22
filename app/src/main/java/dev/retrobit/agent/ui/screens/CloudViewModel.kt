@@ -10,6 +10,7 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dev.retrobit.agent.AppContainer
+import dev.retrobit.agent.agent.AgentToolRunner
 import dev.retrobit.agent.agent.AgentEngine
 import dev.retrobit.agent.ai.AiClientFactory
 import dev.retrobit.agent.ai.AiConfig
@@ -142,7 +143,10 @@ class CloudViewModel(private val container: AppContainer) : ViewModel() {
         viewModelScope.launch {
             localMessage = withContext(Dispatchers.Default) {
                 try {
-                    dev.retrobit.agent.local.NativeBridge.probe()
+                    val engine = dev.retrobit.agent.local.NativeBridge.probe()
+                    val grammar = dev.retrobit.agent.local.OfflineToolProtocol.grammar(AgentToolRunner.DEFINITIONS)
+                    check(dev.retrobit.agent.local.NativeBridge.validateGrammar(grammar.toByteArray())) { "Grammar tool gagal divalidasi native." }
+                    "$engine Grammar tool valid."
                 } catch (e: LinkageError) {
                     "Mesin tidak dapat dimuat: ${e.message}"
                 } catch (e: Exception) {

@@ -309,7 +309,7 @@ if tap_text "Menu"; then
       if tap_text_scrolling "Periksa mesin"; then
         sleep 2
         dump_ui || true
-        if grep -q "Mesin CPU siap" /tmp/ui.xml; then
+        if grep -q "Mesin CPU siap" /tmp/ui.xml && grep -q "Grammar tool valid" /tmp/ui.xml; then
           log "event=native-backend-ready"
         else
           log "event=native-backend-failed"
@@ -319,12 +319,22 @@ if tap_text "Menu"; then
         sleep 1
         shot 12aa-ondevice
         touch_target_check ondevice
+        # A separate screenshot proves the download/import controls, without
+        # fetching model weights or spending anyone's data allowance in smoke.
+        for _ in 1 2 3; do
+          dump_ui || true
+          DOWNLOAD=$(find_xy "Download & impor GGUF" || true)
+          if [ -n "$DOWNLOAD" ]; then break; fi
+          $ADB shell input swipe 540 1300 540 900 1200 >>"$LOG" 2>&1
+        done
+        if [ -z "${DOWNLOAD:-}" ]; then log "event=missing download-model button"; FAILED=1; fi
+        shot 12ab-model-download
         crash_check ondevice || FAILED=1
       else
         FAILED=1
       fi
       # Reset scroll before the existing Ollama step.
-      for _ in 1 2 3; do
+      for _ in 1 2 3 4 5; do
         $ADB shell input swipe 540 700 540 1600 300 >>"$LOG" 2>&1
       done
       sleep 1

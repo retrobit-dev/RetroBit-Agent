@@ -4,6 +4,7 @@ package dev.retrobit.agent.local
 internal object NativeBridge {
     init { System.loadLibrary("retrobit_local") }
     external fun probe(): String
+    external fun validateGrammar(grammar: ByteArray): Boolean
     external fun open(path: ByteArray, context: Int, threads: Int, temperature: Float): Long
     external fun begin(handle: Long, roles: Array<ByteArray>, contents: Array<ByteArray>, grammar: ByteArray): Int
     /** Empty bytes = prompt batch processed, null = end of generation. */
