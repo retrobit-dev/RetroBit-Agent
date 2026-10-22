@@ -96,6 +96,16 @@ class CloudViewModel(private val container: AppContainer) : ViewModel() {
         }
     }
 
+    fun probeLocalEngine() {
+        viewModelScope.launch {
+            localMessage = withContext(Dispatchers.Default) {
+                try { dev.retrobit.agent.local.NativeBridge.probe() }
+                catch (e: LinkageError) { "Mesin tidak dapat dimuat: ${e.message}" }
+                catch (e: Exception) { "Mesin gagal: ${e.message}" }
+            }
+        }
+    }
+
     fun cancelModelImport() { importJob?.cancel() }
 
     fun deleteLocalModel() {

@@ -10,6 +10,10 @@
 // Each Kotlin request owns a session and closes it in finally. No global model,
 // retained KV cache, network, or executable supplied by an imported file.
 namespace {
+void initialize_backend() {
+    static std::once_flag backend;
+    std::call_once(backend, [] { llama_backend_init(); });
+}
 struct Session {
     llama_model *model = nullptr;
     llama_context *ctx = nullptr;
@@ -47,8 +51,7 @@ Session *session(jlong handle) {
 extern "C" JNIEXPORT jlong JNICALL
 Java_dev_retrobit_agent_local_NativeBridge_open(JNIEnv *env, jobject, jbyteArray path, jint context, jint threads, jfloat temperature) {
     try {
-        static std::once_flag backend;
-        std::call_once(backend, [] { llama_backend_init(); });
+        initialize_backend();
         auto s = std::make_unique<Session>();
         auto mp = llama_model_default_params();
         mp.n_gpu_layers = 0; // portable CPU backend; no promise of MediaTek NPU acceleration
@@ -144,4 +147,12 @@ Java_dev_retrobit_agent_local_NativeBridge_next(JNIEnv *env, jobject, jlong hand
 extern "C" JNIEXPORT void JNICALL
 Java_dev_retrobit_agent_local_NativeBridge_close(JNIEnv *, jobject, jlong handle) {
     delete reinterpret_cast<Session *>(handle);
+}
+
+extern "C" JNIEXPORT jstring JNICALL
+Java_dev_retrobit_agent_local_NativeBridge_probe(JNIEnv *env, jobject) {
+    try {
+        initialize_backend();
+        return env->NewStringUTF("Mesin CPU siap (llama.cpp b5046). Model belum diuji.");
+    } catch (const std::exception &e) { fail(env, e.what()); return nullptr; }
 }

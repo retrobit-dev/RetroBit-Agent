@@ -150,6 +150,16 @@ Layanan berlangganan seperti Arena bisa terasa tanpa batas karena **mereka yang 
 2. **Auto melewati provider yang habis.** Kuota harian dicatat per provider (`Gemini 200`, `Groq 1.000`, `OpenRouter 50` per key). Begitu anggaran habis, Auto tidak mengirim request yang pasti gagal — ia pindah ke provider berikutnya.
 3. **Model lokal benar-benar tanpa batas.** Ollama atau LM Studio di komputer sendiri tidak punya kuota per hari: tidak ada biaya per token, hanya listrik. Kualitasnya di bawah model frontier, tapi untuk obrolan dan kode sederhana cukup — dan tidak akan pernah menagih atau menolak karena kuota.
 
+### AI langsung di HP (tanpa komputer)
+
+Provider **AI di HP (offline)** menjalankan GGUF melalui llama.cpp/JNI di Android.
+Impor model Instruct tepercaya (awal: 1.5B Q4), simpan, uji, lalu gunakan tab Chat.
+Model tidak disertakan APK. CPU saja; 2048/4096 konteks; maksimum 1024 token
+jawaban. Chat offline tahap ini belum menjalankan tool agen proyek.
+
+[Lihat panduan HP, keamanan model, batasan, dan perbedaan ZIP dengan APK](docs/ON_DEVICE.md).
+Preview proyek HTML dan ekspor ZIP **belum** berarti APK native siap dipasang.
+
 ### Menyiapkan model lokal
 
 Di komputer (sekali saja):

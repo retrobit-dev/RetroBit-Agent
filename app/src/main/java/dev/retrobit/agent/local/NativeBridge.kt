@@ -3,6 +3,7 @@ package dev.retrobit.agent.local
 /** Called only on a worker dispatcher; kept by R8 because JNI resolves names. */
 internal object NativeBridge {
     init { System.loadLibrary("retrobit_local") }
+    external fun probe(): String
     external fun open(path: ByteArray, context: Int, threads: Int, temperature: Float): Long
     external fun begin(handle: Long, roles: Array<ByteArray>, contents: Array<ByteArray>): Int
     /** Empty bytes = prompt batch processed, null = end of generation. */

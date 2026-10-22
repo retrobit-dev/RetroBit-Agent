@@ -303,6 +303,31 @@ if tap_text "Menu"; then
     sleep 3
     shot 12-cloud
     crash_check cloud || FAILED=1
+    # On-device startup smoke: load the actual JNI library from the release APK,
+    # without a model/network. Do not mistake this for an inference benchmark.
+    if tap_text_scrolling "AI di HP (offline)"; then
+      if tap_text_scrolling "Periksa mesin"; then
+        sleep 2
+        dump_ui || true
+        if grep -q "Mesin CPU siap" /tmp/ui.xml; then
+          log "event=native-backend-ready"
+        else
+          log "event=native-backend-failed"
+          FAILED=1
+        fi
+        shot 12aa-ondevice
+        crash_check ondevice || FAILED=1
+      else
+        FAILED=1
+      fi
+      # Reset scroll before the existing Ollama step.
+      for _ in 1 2 3; do
+        $ADB shell input swipe 540 700 540 1600 300 >>"$LOG" 2>&1
+      done
+      sleep 1
+    else
+      FAILED=1
+    fi
     # The local-model panel only exists once Ollama is picked: its hint and
     # detect button are the whole point of the unlimited path, so photograph it.
     if tap_text "Ollama / lokal"; then

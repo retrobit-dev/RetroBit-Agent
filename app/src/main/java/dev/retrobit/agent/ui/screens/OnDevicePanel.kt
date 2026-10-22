@@ -33,6 +33,8 @@ fun OnDevicePanel(vm: CloudViewModel) {
                     "Untuk GT 30 Pro 12 GB, mulai dari Qwen2.5-Coder 1.5B Instruct Q4_K_M. Model tidak disertakan dalam APK.",
                 style = MaterialTheme.typography.bodySmall,
             )
+            TextButton(onClick = vm::probeLocalEngine, modifier = Modifier.heightIn(min = 48.dp)) { Text("Periksa mesin") }
+            vm.localMessage?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
             Text(vm.localModelName, style = MaterialTheme.typography.labelLarge)
             if (vm.localModelBytes > 0) Text(ProjectFiles.formatBytes(vm.localModelBytes), style = MaterialTheme.typography.bodySmall)
             TextButton(
@@ -64,13 +66,12 @@ fun OnDevicePanel(vm: CloudViewModel) {
                 style = MaterialTheme.typography.bodySmall,
             )
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                GradientButton("Simpan", Modifier.weight(1f)) { if (!vm.importingModel) vm.save() }
+                GradientButton("Simpan", Modifier.weight(1f), enabled = !vm.importingModel && !vm.testing) { vm.save() }
                 TextButton(onClick = vm::testConnection, enabled = !vm.testing && !vm.importingModel) {
                     Text(if (vm.testing) "Menguji…" else "Uji model")
                 }
             }
             Text("Uji model memuat GGUF dan meminta jawaban singkat. Pemuatan awal dapat lama; RAM dilepas setelah jawaban selesai. Berhenti diproses di antara batch token.", style = MaterialTheme.typography.bodySmall)
-            vm.localMessage?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
             vm.savedMessage?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
             vm.testResult?.let { Text(if (it.ok) "OK · ${it.message}" else "Gagal · ${it.message}", style = MaterialTheme.typography.bodySmall) }
             if (vm.localModelBytes > 0) TextButton(
