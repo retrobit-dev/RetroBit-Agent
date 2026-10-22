@@ -19,3 +19,7 @@ app/build
 # python bytecode from tools/
 __pycache__/
 *.pyc
+
+# Never commit user model weights or local diagnostic artifacts.
+*.gguf
+artifacts-local/

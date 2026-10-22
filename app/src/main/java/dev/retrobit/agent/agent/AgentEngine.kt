@@ -68,6 +68,10 @@ class AgentEngine(
         repository.filesFor(project.id).createSnapshot()
         return try {
             when {
+                config.provider == ProviderKind.ON_DEVICE -> ChatMessage(
+                    role = Role.ASSISTANT, isError = true,
+                    content = "AI di HP mendukung Chat offline pada tahap ini, belum eksekusi tool pembuat proyek. Buka tab Chat untuk bantuan kode. Untuk agen proyek, pilih provider cloud di AI Cloud. Preview HTML/ZIP juga bukan APK native yang siap dipasang.",
+                )
                 config.isDemo -> DemoAgent.run(project, prompt, repository, db, onEvent)
                 config.provider == ProviderKind.AUTO -> runAuto(project, prompt, history, config, db, onEvent)
                 else -> runCloud(project, prompt, history, config, keyForProvider(config), db, onEvent)

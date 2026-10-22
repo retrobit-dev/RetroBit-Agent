@@ -94,7 +94,7 @@ class PlainChatEngine(
             return failure(
                 "Mode demo tidak memanggil model, jadi obrolan belum bisa dijawab.\n\n" +
                     "Buka **AI Cloud**, simpan satu key gratis (Gemini, Groq, atau OpenRouter), " +
-                    "lalu pilih provider itu atau **Auto**.",
+                    "lalu pilih provider itu atau **Auto**. Tanpa komputer/key: pilih **AI di HP** dan impor model GGUF.",
             )
         }
 

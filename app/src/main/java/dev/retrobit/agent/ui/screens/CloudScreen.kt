@@ -164,6 +164,8 @@ fun CloudScreen(
                     )
                 }
             }
+        } else if (vm.onDeviceMode) {
+            OnDevicePanel(vm)
         } else {
             NeoCard(modifier = Modifier.fillMaxWidth()) {
                 Column {

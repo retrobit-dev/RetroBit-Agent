@@ -14,6 +14,7 @@ enum class ProviderKind(val label: String) {
     DEEPSEEK("DeepSeek"),
     MISTRAL("Mistral"),
     TOGETHER("Together AI"),
+    ON_DEVICE("AI di HP (offline)"),
     OLLAMA("Ollama / lokal"),
     CUSTOM("OpenAI-compatible"),
 }
@@ -38,6 +39,7 @@ data class AiConfig(
     val temperature: Double = 0.6,
     val maxTokens: Int = 8192,
     val connectedAt: Long = 0,
+    val localContext: Int = 2048,
 ) {
     val isDemo: Boolean get() = provider == ProviderKind.DEMO
     val displayModel: String get() = model.ifBlank { catalog().models.firstOrNull().orEmpty() }
@@ -94,6 +96,10 @@ data class AiConfig(
                 ProviderKind.TOGETHER, "https://api.together.xyz/v1",
                 listOf("Qwen/Qwen3-Coder-480B-A35B-Instruct", "Qwen/Qwen2.5-Coder-32B-Instruct", "deepseek-ai/DeepSeek-V3"),
                 keyHint = "…", docsUrl = "api.together.ai/settings/api-keys"
+            ),
+            ProviderPreset(
+                ProviderKind.ON_DEVICE, "", listOf("GGUF di perangkat"),
+                keyHint = "Tidak perlu key", requiresKey = false,
             ),
             ProviderPreset(
                 ProviderKind.OLLAMA, "http://10.0.2.2:11434/v1",

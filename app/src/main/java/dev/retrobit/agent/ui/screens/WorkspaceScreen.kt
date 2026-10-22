@@ -195,7 +195,7 @@ fun WorkspaceScreen(vm: WorkspaceViewModel, onBack: () -> Unit) {
                         onClick = { menuOpen = false; lanOpen = true },
                     )
                     DropdownMenuItem(
-                        text = { Text("Ekspor ZIP") },
+                        text = { Text("Ekspor kode ZIP (bukan APK)") },
                         leadingIcon = { Icon(PixelIcons.Download, null, modifier = Modifier.size(17.dp)) },
                         onClick = {
                             menuOpen = false

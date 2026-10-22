@@ -47,13 +47,19 @@ val signingProps = loadSigningConfig()
 android {
     namespace = "dev.retrobit.agent"
     compileSdk = 35
+    ndkVersion = "27.2.12479018"
+    externalNativeBuild {
+        cmake { path = file("src/main/cpp/CMakeLists.txt"); version = "3.22.1" }
+    }
 
     defaultConfig {
         applicationId = "dev.retrobit.agent"
         minSdk = 26
         targetSdk = 35
-        versionCode = 17
-        versionName = "0.5.1"
+        versionCode = 18
+        versionName = "0.6.0"
+        ndk { abiFilters += listOf("arm64-v8a", "x86_64") }
+        externalNativeBuild { cmake { cppFlags += "-std=c++17" } }
 
         vectorDrawables { useSupportLibrary = true }
     }

@@ -1,5 +1,9 @@
 package dev.retrobit.agent.ui.screens
 
+import android.net.Uri
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -55,6 +59,57 @@ class CloudViewModel(private val container: AppContainer) : ViewModel() {
     var detectMessage by mutableStateOf<String?>(null)
         private set
 
+    val onDeviceMode: Boolean get() = provider == ProviderKind.ON_DEVICE
+    var localModelName by mutableStateOf(container.localModels.label)
+        private set
+    var localModelBytes by mutableStateOf(container.localModels.sizeBytes)
+        private set
+    var importingModel by mutableStateOf(false)
+        private set
+    var importBytes by mutableStateOf(0L)
+        private set
+    var localMessage by mutableStateOf<String?>(null)
+        private set
+    var localContext by mutableStateOf(settings.config.value.localContext)
+        private set
+    private var importJob: kotlinx.coroutines.Job? = null
+
+    fun updateLocalContext(value: Int) { localContext = value.coerceIn(512, 4096) }
+
+    fun importLocalModel(uri: Uri) {
+        if (importingModel) return
+        importingModel = true
+        importBytes = 0
+        localMessage = "Menyalin model ke penyimpanan privat…"
+        importJob = viewModelScope.launch {
+            try {
+                container.localModels.import(uri) { bytes -> withContext(Dispatchers.Main) { importBytes = bytes } }
+                localModelName = container.localModels.label
+                localModelBytes = container.localModels.sizeBytes
+                localMessage = "Model diimpor. Tekan Simpan lalu Uji model untuk memeriksa kompatibilitas."
+            } catch (e: CancellationException) {
+                localMessage = "Impor dibatalkan. Model sebelumnya tetap disimpan."
+                throw e
+            } catch (e: Exception) {
+                localMessage = e.message ?: "Impor model gagal."
+            } finally { importingModel = false }
+        }
+    }
+
+    fun cancelModelImport() { importJob?.cancel() }
+
+    fun deleteLocalModel() {
+        if (importingModel || testing) return
+        viewModelScope.launch {
+            try {
+                container.localModels.delete()
+                localModelName = container.localModels.label
+                localModelBytes = 0
+                localMessage = "Model dihapus dari penyimpanan privat."
+            } catch (e: Exception) { localMessage = e.message }
+        }
+    }
+
     var themeMode by mutableStateOf(settings.themeMode)
         private set
     var language by mutableStateOf(settings.agentLanguage)
@@ -93,6 +148,10 @@ class CloudViewModel(private val container: AppContainer) : ViewModel() {
 
     fun chooseProvider(kind: ProviderKind) {
         provider = kind
+        if (kind == ProviderKind.ON_DEVICE) {
+            maxTokens = "512"
+            localContext = settings.config.value.localContext
+        }
         val preset = AiConfig.presetFor(kind)
         baseUrl = if (kind == ProviderKind.AUTO) "" else preset.baseUrl
         model = preset.models.firstOrNull().orEmpty()
@@ -147,6 +206,19 @@ class CloudViewModel(private val container: AppContainer) : ViewModel() {
     }
 
     fun save() {
+        if (onDeviceMode) {
+            if (importingModel || !container.localModels.ready) {
+                savedMessage = "Impor model GGUF terlebih dahulu dan tunggu sampai selesai."
+                return
+            }
+            settings.updateConfig { it.copy(
+                provider = ProviderKind.ON_DEVICE, baseUrl = "", model = container.localModels.label,
+                temperature = temperature.toDouble(), maxTokens = maxTokens.toIntOrNull()?.coerceIn(1, 1024) ?: 512,
+                localContext = localContext, connectedAt = System.currentTimeMillis(),
+            ) }
+            savedMessage = "AI offline disimpan. Gunakan tab Chat; tool proyek belum didukung."
+            return
+        }
         val preset = AiConfig.presetFor(provider)
         val cleanKey = apiKey.trim()
         if (provider == ProviderKind.AUTO) {
@@ -204,6 +276,11 @@ class CloudViewModel(private val container: AppContainer) : ViewModel() {
     }
 
     fun testConnection() {
+        if (testing || importingModel) return
+        if (onDeviceMode && !container.localModels.ready) {
+            testResult = ConnectionTest(false, "Impor GGUF terlebih dahulu.")
+            return
+        }
         if (provider == ProviderKind.DEMO) {
             testResult = ConnectionTest(true, "Mode demo berjalan offline, tanpa API key.")
             return
@@ -221,6 +298,7 @@ class CloudViewModel(private val container: AppContainer) : ViewModel() {
         val probeConfig = AiConfig(
             provider = provider,
             baseUrl = baseUrl.trim().ifBlank { preset.baseUrl },
+            localContext = localContext,
             model = model.trim().ifBlank { preset.models.firstOrNull().orEmpty() },
             temperature = 0.0,
             maxTokens = 64,

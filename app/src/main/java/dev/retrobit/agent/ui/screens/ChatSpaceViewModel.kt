@@ -156,7 +156,10 @@ class ChatSpaceViewModel(private val container: AppContainer) : ViewModel() {
     fun stop() {
         job?.cancel()
         job = null
-        sending = false
+        // Native decoding cooperatively stops at the next batch boundary. Keep
+        // Send disabled until its finally block has actually released RAM.
+        if (config.value.provider != ProviderKind.ON_DEVICE) sending = false
+        else if (sending) notice = "Menghentikan model dan melepas RAM…"
     }
 
     override fun onCleared() {

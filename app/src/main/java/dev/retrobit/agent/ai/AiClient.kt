@@ -93,6 +93,7 @@ object AiClientFactory {
     fun create(config: AiConfig, apiKey: String): AiClient {
         val base = config.baseUrl.ifBlank { config.catalog().baseUrl }
         return when (config.provider) {
+            ProviderKind.ON_DEVICE -> dev.retrobit.agent.local.LocalInference.client(config)
             ProviderKind.ANTHROPIC -> AnthropicClient(http, base, apiKey, config.displayModel)
             ProviderKind.GEMINI -> GeminiClient(http, base, apiKey, config.displayModel)
             else -> OpenAiCompatibleClient(http, base, apiKey, config.displayModel, config.provider)

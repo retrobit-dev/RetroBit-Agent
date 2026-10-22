@@ -40,3 +40,6 @@
 # Readable crash reports without leaking the full class map.
 -renamesourcefileattribute SourceFile
 -keepattributes SourceFile,LineNumberTable
+
+# JNI entry points are resolved by their Kotlin class/method names.
+-keep class dev.retrobit.agent.local.NativeBridge { *; }
