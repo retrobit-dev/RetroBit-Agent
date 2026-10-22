@@ -211,6 +211,12 @@ touch_target_check dashboard
 if tap_text_scrolling "Nimbus"; then
   sleep 3
   shot 02-workspace-chat
+  if tap_text "Menu" && tap_text "Tool agen"; then
+    shot 02a-toolbox
+    if ! tap_text "Tutup tool"; then UI_ISSUES=$((UI_ISSUES + 1)); fi
+  else
+    UI_ISSUES=$((UI_ISSUES + 1))
+  fi
   touch_target_check workspace
   crash_check workspace || FAILED=1
 else

@@ -286,4 +286,19 @@ class ProjectFilesTest {
 
     private fun zipNames(zip: File): List<String> =
         java.util.zip.ZipFile(zip).use { file -> file.entries().toList().map { it.name }.sorted() }
+    @Test fun `root and meta aliases are not project files`() {
+        listOf(".", "./", "./_meta", "a/./../_meta").forEach { assertTrue(it, runCatching { files.resolve(it) }.isFailure) }
+    }
+    @Test fun `sibling symlink cannot escape canonical prefix or leak into exports`() {
+        val sibling = File(root.parentFile, "project-sibling").apply { mkdirs() }
+        File(sibling, "secret.txt").writeText("private")
+        java.nio.file.Files.createSymbolicLink(File(root, "link").toPath(), sibling.toPath())
+        assertTrue(runCatching { files.resolve("link/secret.txt") }.isFailure)
+        assertTrue(files.allFiles().none { it.name == "secret.txt" })
+    }
+    @Test fun `native and build source files remain editable as text`() {
+        listOf("MainActivity.kt", "build.gradle.kts", "native.cpp", "native.h", "build.cmake").forEach { assertTrue(it, files.isTextFile(it)) }
+        assertFalse(files.isTextFile("image.png"))
+    }
+
 }

@@ -155,7 +155,11 @@ Layanan berlangganan seperti Arena bisa terasa tanpa batas karena **mereka yang 
 Provider **AI di HP (offline)** menjalankan GGUF melalui llama.cpp/JNI di Android.
 Impor model Instruct tepercaya (awal: 1.5B Q4), simpan, uji, lalu gunakan tab Chat.
 Model tidak disertakan APK. CPU saja; 2048/4096 konteks; maksimum 1024 token
-jawaban. Chat offline tahap ini belum menjalankan tool agen proyek.
+jawaban. Agen offline kini memakai 15 tool proyek dengan grammar JSON dan
+validasi argumen, maksimal 14 langkah/sesi. Download GGUF langsung dari HTTPS
+atau impor lewat pemilih berkas; ada progres, pembatalan dan checksum SHA-256
+opsional. Menu proyek → Tool agen menampilkan katalog. Belum ada resume atau
+layanan download background.
 
 [Lihat panduan HP, keamanan model, batasan, dan perbedaan ZIP dengan APK](docs/ON_DEVICE.md).
 Preview proyek HTML dan ekspor ZIP **belum** berarti APK native siap dipasang.

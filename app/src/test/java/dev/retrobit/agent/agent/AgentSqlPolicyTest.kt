@@ -8,7 +8,7 @@ class AgentSqlPolicyTest {
         listOf("SELECT * FROM todos;", "INSERT INTO todos(title) VALUES('a;b')", "CREATE TABLE todos(id INTEGER)", "-- hi\nUPDATE todos SET title='ATTACH';", "WITH t AS (SELECT 1) SELECT * FROM t").forEach(AgentSqlPolicy::validate)
     }
     @Test fun `external file access and internal pragmas blocked`() {
-        listOf("ATTACH DATABASE '/tmp/a' AS a", "PRAGMA\twritable_schema=1", "VACUUM INTO '/tmp/x'", "SELECT load_extension('/tmp/x')", "/*x*/ DETACH a").forEach { assertTrue(it, runCatching { AgentSqlPolicy.validate(it) }.isFailure) }
+        listOf("ATTACH DATABASE '/tmp/a' AS a", "PRAGMA\twritable_schema=1", "VACUUM INTO '/tmp/x'", "SELECT load_extension('/tmp/x')", "/*x*/ DETACH a", "SELECT \"load_extension\"('/tmp/x')").forEach { assertTrue(it, runCatching { AgentSqlPolicy.validate(it) }.isFailure) }
     }
     @Test fun `multiple statements and recursive expansion blocked`() {
         listOf("SELECT 1; DROP TABLE todos", "CREATE TABLE x(id); ATTACH 'x' AS y", "WITH RECURSIVE a AS (SELECT 1) SELECT * FROM a").forEach { assertTrue(it, runCatching { AgentSqlPolicy.validate(it) }.isFailure) }

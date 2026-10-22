@@ -28,7 +28,7 @@ class ProjectFiles(val root: File) {
         private val IGNORED = setOf(META_DIR, "node_modules", ".git", "dist")
         private val TEXT_EXTENSIONS = setOf(
             "html", "htm", "css", "js", "mjs", "jsx", "ts", "tsx", "json", "md", "txt",
-            "svg", "xml", "yml", "yaml", "csv", "sql", "env", "gitignore", "kt", "kts", "gradle", "properties"
+            "svg", "xml", "yml", "yaml", "csv", "sql", "env", "gitignore", "kt", "kts", "gradle", "properties", "c", "cpp", "h", "hpp", "cmake", "sh", "py", "toml", "pro"
         )
     }
 

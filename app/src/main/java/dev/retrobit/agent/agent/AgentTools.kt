@@ -155,6 +155,8 @@ class AgentToolRunner(
             font = args.string("font") ?: design.font,
             mode = args.string("mode") ?: design.mode,
         )
+        require(listOf(design.primary, design.accent, design.background, design.surface, design.textColor, design.muted).all { it.matches(Regex("#[0-9a-fA-F]{6}")) }) { "Warna harus hex #RRGGBB." }
+        require(design.mode in setOf("dark", "light")) { "mode harus dark/light." }
         design = design.copy(radius = design.radius.coerceIn(0, 40), font = "Pixel Operator")
         if (!design.isGrayscale()) design = design.grayscaleFallback()
         onDesignChange(design)
@@ -227,8 +229,8 @@ class AgentToolRunner(
         require(normalized.matches(Regex("[A-Z_][A-Z0-9_]{0,63}"))) { "Nama secret hanya huruf, angka, underscore (maks 64)." }
         secrets.request(normalized, description.take(400))
         return ToolOutcome(
-            true, "Meminta secret $key", "Menunggu diisi pengguna",
-            "OK: permintaan secret $key dicatat. Kode bisa memakai placeholder {{SECRET:$key}} atau window.__RETROBIT_ENV__.Jangan pernah menulis nilai rahasia di file.",
+            true, "Meminta secret $normalized", "Menunggu diisi pengguna",
+            "OK: permintaan secret $normalized dicatat. Kode bisa memakai placeholder {{SECRET:$normalized}} atau window.__RETROBIT_ENV__.Jangan pernah menulis nilai rahasia di file.",
         )
     }
 
@@ -268,7 +270,7 @@ class AgentToolRunner(
         val issues = mutableListOf<String>()
         if (!files.exists(ProjectFiles.ENTRY_POINT)) issues += "index.html belum ada"
         for (file in files.allFiles().take(200)) {
-            if (file.extension != "json" || file.length() > 400_000) continue
+            if (file.extension.lowercase() != "json" || file.length() > 400_000) continue
             if (runCatching { Json.parseToJsonElement(file.readText()) }.isFailure) issues += "JSON tidak valid: ${file.relativeTo(files.root).path}"
         }
         return ToolOutcome(issues.isEmpty(), "Memeriksa struktur proyek", if (issues.isEmpty()) "Lulus cek struktur" else "${issues.size} masalah",

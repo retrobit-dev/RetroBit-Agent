@@ -36,7 +36,7 @@ internal object AgentSqlPolicy {
         require(';' !in code) { "Tool SQL menerima satu perintah per langkah." }
         val words = Regex("[A-Z_]+").findAll(code).map { it.value }.toList()
         require(words.firstOrNull() in setOf("SELECT", "WITH", "EXPLAIN", "INSERT", "UPDATE", "DELETE", "CREATE", "ALTER", "DROP", "REPLACE")) { "Jenis SQL ini tidak diizinkan." }
-        require(words.none { it in setOf("ATTACH", "DETACH", "PRAGMA", "VACUUM", "LOAD_EXTENSION", "RECURSIVE") }) { "SQL akses berkas/schema internal atau rekursif tidak diizinkan." }
+        require(words.none { it in setOf("ATTACH", "DETACH", "PRAGMA", "VACUUM", "LOAD_EXTENSION", "READFILE", "WRITEFILE", "RECURSIVE") }) { "SQL akses berkas/schema internal atau rekursif tidak diizinkan." }
     }
     fun defaultLiteral(raw: String): Boolean = raw.uppercase() in setOf("NULL", "CURRENT_TIMESTAMP", "CURRENT_DATE", "CURRENT_TIME") ||
         raw.matches(Regex("[+-]?[0-9]+(\\.[0-9]+)?")) || raw.matches(Regex("'(?:[^']|'')*'"))

@@ -46,9 +46,9 @@ Model-format/arsitektur baru setelah versi backend yang dipin dapat ditolak.
   tetap ada jika proses salin gagal. File asli tidak dihapus oleh aplikasi.
 - Model disimpan di `noBackupFilesDir`, tidak masuk backup Android/ZIP proyek.
   Hapus model dari panel bila tidak digunakan. Hapus aplikasi menghapus salinan.
-- Chat biasa sudah tersedia. Eksekusi tool agen proyek dan inspeksi APK belum
-  diaktifkan untuk provider offline ini. Tidak ada klaim reverse engineering
-  universal atau bypass proteksi. Cloud dan Demo yang ada tetap terpisah.
+- Chat dan tool agen proyek offline tersedia (lihat bagian v0.7 di bawah).
+  Inspeksi APK dan reverse engineering universal/bypass proteksi tidak diklaim.
+  Cloud dan Demo yang ada tetap terpisah.
 
 ## Apakah hasil aplikasi dapat langsung diinstal?
 
@@ -73,3 +73,51 @@ penggantian berkas. C++ bridge juga diperiksa sintaks terhadap header upstream.
 Smoke release emulator memuat pustaka native melalui **Periksa mesin**.
 Pengujian tersebut tidak membuktikan kualitas/kecepatan inferensi model nyata
 di Infinix. Model besar tidak disimpan di Git atau diunduh otomatis oleh CI.
+
+## v0.7: tool proyek dan download langsung
+
+**Download** tersedia di panel AI di HP: pilih URL rekomendasi Qwen atau masukkan
+URL HTTPS langsung ke satu berkas GGUF publik. SHA-256 penerbit opsional;
+bila diberikan harus cocok. SHA-256 salinan selalu dihitung dan ditampilkan.
+Download besar memakai kuota internet. Tetap buka aplikasi: belum ada resume
+atau layanan background. Pembatalan saat menunggu body jaringan dapat menunggu
+read-timeout (20 detik). Retry dimulai dari awal, bukan menambahkan ke parsial.
+
+HTTP selain 200, redirect ke HTTP/server lokal, lebih dari 5 redirect, ukuran
+lebih dari 3 GiB, header salah, transfer terpotong, atau checksum salah tidak
+mengganti model aktif. File parsial dibersihkan pada kegagalan/pembatalan atau
+startup berikutnya. Model lama tetap bisa digunakan selama transfer; penggantian
+menunggu inferensi aktif selesai. Hanya satu slot model aktif: download/impor
+berhasil mengganti salinan sebelumnya. Header + HTTPS tanpa hash penerbit bukan
+jaminan keaslian model; pilih penerbit tepercaya.
+
+**Agen offline** kini diaktifkan untuk workspace proyek. Buat proyek/template
+dari Beranda, pilih provider AI di HP dan simpan, lalu kirim tugas dari Chat
+proyek (bukan Chat biasa). Menu proyek → **Tool agen** menampilkan katalog:
+
+- `project_info`, `list_files`, `search_files`, `read_file`;
+- `write_file`, `append_file`, `edit_file`, `rename_file`, `delete_file`;
+- `update_design` (grayscale/Pixel Operator);
+- `create_table`, `run_sql`, `inspect_database`;
+- `request_secret` (permintaan/placeholder saja, bukan nilai rahasia);
+- `validate_project` (entry point + JSON, bukan compiler atau tes runtime).
+
+Backend menerapkan grammar GBNF untuk satu envelope JSON per giliran. Envelope
+lengkap harus lolos whitelist nama tool dan skema argumen sebelum dieksekusi.
+JSON terpotong/fenced/prosa tidak diambil paksa menjadi panggilan tool. File dan
+hasil tool adalah data, bukan pesan system. Argumen yang valid tetap tidak
+menjamin model mengambil keputusan yang benar: periksa hasil perubahan.
+
+Maksimum 14 langkah/sesi; disarankan konteks 4096 dan tugas kecil. Konteks agen
+mempertahankan permintaan saat ini serta dua siklus tool terakhir, bukan seluruh
+riwayat. Argumen tool lama dihilangkan secara eksplisit; baca ulang file jika
+perlu. Pesan persona pengguna tetap dipertahankan. Berkas dibatasi 400KB/tool.
+Snapshot **file** dibuat sebelum sesi, bisa dipulihkan lewat menu proyek;
+snapshot tersebut tidak mencakup database. Gagal/dibatalkan tidak otomatis
+membatalkan tool yang sudah selesai—lihat daftar langkah dan pulihkan jika perlu.
+
+Path dibatasi ke proyek, termasuk alias root/_meta dan symlink yang keluar.
+SQL tool menerima satu statement; ATTACH/DETACH/PRAGMA/VACUUM/extension loading
+serta SQL rekursif diblokir. Tidak ada tool shell, root, instalasi diam-diam,
+atau build APK. Source Kotlin/Gradle bisa ditulis/diekspor, tetapi pipeline
+kompilasi/signing APK hasil proyek tetap belum terintegrasi.

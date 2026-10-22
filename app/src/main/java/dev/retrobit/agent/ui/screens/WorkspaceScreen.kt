@@ -94,6 +94,7 @@ fun WorkspaceScreen(vm: WorkspaceViewModel, onBack: () -> Unit) {
 
     var tab by rememberSaveable { mutableStateOf(WorkspaceTab.CHAT) }
     var menuOpen by remember { mutableStateOf(false) }
+    var toolsOpen by remember { mutableStateOf(false) }
     var consoleOpen by remember { mutableStateOf(false) }
     var lanOpen by remember { mutableStateOf(false) }
     var clearOpen by remember { mutableStateOf(false) }
@@ -179,6 +180,11 @@ fun WorkspaceScreen(vm: WorkspaceViewModel, onBack: () -> Unit) {
                     Icon(PixelIcons.MoreVertical, "Menu", tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(19.dp))
                 }
                 DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+                    DropdownMenuItem(
+                        text = { Text("Tool agen (${dev.retrobit.agent.agent.AgentToolRunner.DEFINITIONS.size})") },
+                        leadingIcon = { Icon(PixelIcons.Code, null, modifier = Modifier.size(17.dp)) },
+                        onClick = { menuOpen = false; toolsOpen = true },
+                    )
                     DropdownMenuItem(
                         text = { Text("Muat ulang preview") },
                         leadingIcon = { Icon(PixelIcons.Reload, null, modifier = Modifier.size(17.dp)) },
@@ -315,6 +321,8 @@ fun WorkspaceScreen(vm: WorkspaceViewModel, onBack: () -> Unit) {
             }
         }
     }
+
+    if (toolsOpen) ToolboxDialog(onClose = { toolsOpen = false })
 
     if (consoleOpen) {
         ConsoleSheet(
