@@ -140,7 +140,7 @@ class PlainChatEngine(
             currentCoroutineContext().ensureActive()
             val candidate = attempt.config
             onNotice(
-                "Menghubungi ${candidate.provider.label} · ${candidate.displayModel}" +
+                (if (candidate.provider == ProviderKind.ON_DEVICE) "Memuat model di HP · ${candidate.displayModel}" else "Menghubungi ${candidate.provider.label} · ${candidate.displayModel}") +
                     if (attempt.keyLabel.isBlank()) "" else " · key ${attempt.keyLabel}",
             )
             try {

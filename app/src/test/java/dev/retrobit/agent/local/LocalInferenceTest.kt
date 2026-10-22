@@ -18,12 +18,14 @@ class LocalInferenceTest {
         var opened = 0
         var closed = 0
         var context = 0
+        var linkError: LinkageError? = null
         var failBegin = false
         var failNext = false
         var roles = listOf<String>()
         var contents = listOf<String>()
         val pieces = ArrayDeque<ByteArray>()
         override fun open(path: ByteArray, context: Int, threads: Int, temperature: Float): Long {
+            linkError?.let { throw it }
             opened++; this.context = context; return 1
         }
         override fun begin(handle: Long, roles: Array<ByteArray>, contents: Array<ByteArray>): Int {
@@ -116,6 +118,16 @@ class LocalInferenceTest {
     @Test fun `prefill batches do not spend output budget`() {
         val backend = Backend().apply { pieces.add(byteArrayOf()); pieces.add("a".toByteArray()) }
         assertEquals("a", answer(backend, max = 1).text)
+    }
+    @Test fun `missing JNI library gives an actionable error`() {
+        val backend = Backend().apply { linkError = UnsatisfiedLinkError("missing") }
+        assertTrue(runCatching { answer(backend) }.exceptionOrNull() is AiException)
+        assertEquals(0, backend.closed)
+    }
+    @Test fun `failed native class initialization is also reported instead of crashing`() {
+        val backend = Backend().apply { linkError = NoClassDefFoundError("NativeBridge") }
+        assertTrue(runCatching { answer(backend) }.exceptionOrNull() is AiException)
+        assertEquals(0, backend.closed)
     }
     @Test fun `local answers have no guessed cloud billing`() {
         assertEquals(TokenUsage(), answer(Backend()).usage)

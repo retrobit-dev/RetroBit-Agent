@@ -298,7 +298,7 @@ app/src/main/res/font/         # salinan font agar bisa dipakai Compose
 Pengujian:
 
 ```
-./gradlew testDebugUnitTest   # 182 unit test (113 JVM + 69 Robolectric)
+./gradlew testDebugUnitTest   # 210 unit test (138 JVM + 72 Robolectric)
 ./gradlew lintDebug          # Android lint
 ```
 

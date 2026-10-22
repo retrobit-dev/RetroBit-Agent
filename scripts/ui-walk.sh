@@ -315,7 +315,10 @@ if tap_text "Menu"; then
           log "event=native-backend-failed"
           FAILED=1
         fi
+        $ADB shell input swipe 540 1300 540 900 1200 >>"$LOG" 2>&1
+        sleep 1
         shot 12aa-ondevice
+        touch_target_check ondevice
         crash_check ondevice || FAILED=1
       else
         FAILED=1

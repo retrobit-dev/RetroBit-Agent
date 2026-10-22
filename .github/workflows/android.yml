@@ -196,6 +196,9 @@ jobs:
             | grep -i "sha-256"
           ls -l app/build/outputs/apk/release/ app/build/outputs/apk/debug/
           du -h app/build/outputs/apk/release/*.apk app/build/outputs/apk/debug/*.apk
+          python3 scripts/verify-native-apk.py \
+            app/build/outputs/apk/release/app-release.apk \
+            app/build/outputs/apk/debug/app-debug.apk
 
       - name: Upload R8 mapping
         if: success()

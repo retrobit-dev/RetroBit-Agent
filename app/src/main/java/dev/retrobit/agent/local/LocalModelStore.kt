@@ -19,7 +19,12 @@ class LocalModelStore(private val context: Context) {
     private val file = File(directory, "model.gguf")
     private val preferences = context.getSharedPreferences("local_model", Context.MODE_PRIVATE)
 
-    init { LocalInference.modelFile = file }
+    init {
+        // A killed process may leave a large unfinished copy. It is never the
+        // active model and can be reclaimed safely on the next app startup.
+        File(directory, "import.partial").delete()
+        LocalInference.modelFile = file
+    }
 
     val ready: Boolean get() = file.isFile
     val label: String get() = if (ready) preferences.getString("name", "Model GGUF").orEmpty() else "Belum ada model"

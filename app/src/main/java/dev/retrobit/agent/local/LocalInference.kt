@@ -77,7 +77,7 @@ object LocalInference {
                     AiResponse(text.toString(), emptyList())
                 } catch (e: CancellationException) {
                     throw e
-                } catch (e: UnsatisfiedLinkError) {
+                } catch (e: LinkageError) {
                     throw AiException("Mesin native belum tersedia untuk perangkat ini. Pasang APK yang memuat arm64-v8a.")
                 } catch (e: IllegalStateException) {
                     throw AiException(e.message ?: "Inferensi lokal gagal.")

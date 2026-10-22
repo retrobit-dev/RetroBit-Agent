@@ -9,6 +9,8 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.material3.LocalContentColor
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -26,6 +28,7 @@ fun OnDevicePanel(vm: CloudViewModel) {
         if (uri != null) vm.importLocalModel(uri)
     }
     NeoCard(modifier = Modifier.fillMaxWidth()) {
+        CompositionLocalProvider(LocalContentColor provides MaterialTheme.colorScheme.onSurface) {
         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Text("AI langsung di HP", style = MaterialTheme.typography.titleMedium)
             Text(
@@ -66,7 +69,7 @@ fun OnDevicePanel(vm: CloudViewModel) {
                 style = MaterialTheme.typography.bodySmall,
             )
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                GradientButton("Simpan", Modifier.weight(1f), enabled = !vm.importingModel && !vm.testing) { vm.save() }
+                GradientButton("Simpan", Modifier.weight(1f).heightIn(min = 48.dp), enabled = !vm.importingModel && !vm.testing) { vm.save() }
                 TextButton(onClick = vm::testConnection, enabled = !vm.testing && !vm.importingModel) {
                     Text(if (vm.testing) "Menguji…" else "Uji model")
                 }
@@ -81,4 +84,5 @@ fun OnDevicePanel(vm: CloudViewModel) {
             Spacer(Modifier.height(4.dp))
         }
     }
+}
 }
