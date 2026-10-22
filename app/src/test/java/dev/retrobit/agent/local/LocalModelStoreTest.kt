@@ -25,7 +25,7 @@ class LocalModelStoreTest {
         input = File(app.cacheDir, "chosen.gguf")
         input.writeBytes(byteArrayOf(0x47, 0x47, 0x55, 0x46, 3, 0, 0, 0) + ByteArray(64))
     }
-    @After fun cleanup() = runBlocking { store.delete(); input.delete() }
+    @After fun cleanup() { runBlocking { store.delete(); input.delete(); Unit } }
     @Test fun `import copies into private no backup storage`() = runBlocking {
         store.import(Uri.fromFile(input)) {}
         assertTrue(store.ready)
