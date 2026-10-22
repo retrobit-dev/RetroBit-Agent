@@ -102,6 +102,10 @@ proyek (bukan Chat biasa). Menu proyek → **Tool agen** menampilkan katalog:
 - `request_secret` (permintaan/placeholder saja, bukan nilai rahasia);
 - `validate_project` (entry point + JSON, bukan compiler atau tes runtime).
 
+Default konfigurasi baru adalah konteks 4096; konfigurasi lama tidak ditimpa.
+Tombol **Setelan agen: 4096 / 1024 token** menyiapkan batas yang disarankan
+(dan masih perlu Simpan). Pesan/persona yang panjang tetap bisa melampaui batas.
+
 Backend menerapkan grammar GBNF untuk satu envelope JSON per giliran. Envelope
 lengkap harus lolos whitelist nama tool dan skema argumen sebelum dieksekusi.
 JSON terpotong/fenced/prosa tidak diambil paksa menjadi panggilan tool. File dan

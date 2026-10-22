@@ -4,7 +4,9 @@ import android.app.Application
 import androidx.test.core.app.ApplicationProvider
 import dev.retrobit.agent.ai.*
 import dev.retrobit.agent.data.*
-import dev.retrobit.agent.local.OfflineToolProtocol
+import dev.retrobit.agent.local.LocalInference
+import dev.retrobit.agent.local.LocalBackend
+import java.io.File
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.*
@@ -23,19 +25,35 @@ class OfflineAgentEngineTest {
         val repository = ProjectRepository(app, settings)
         val project = repository.create("Offline test", "blank", DesignSystem())
         var round = 0
-        val client = object : AiClient {
-            override suspend fun chat(system: String, turns: List<WireTurn>, tools: List<AiToolDef>, temperature: Double, maxTokens: Int): AiResponse {
-                assertTrue(system.contains("Kamu agen proyek"))
-                assertTrue(turns.size <= 5)
-                return OfflineToolProtocol.parse(responses.getOrElse(round++) { """{"message":"done"}""" }, tools)
+        var closed = 0
+        var piece: ByteArray? = null
+        val backend = object : LocalBackend {
+            override fun open(path: ByteArray, context: Int, threads: Int, temperature: Float): Long { assertEquals(4096, context); return 1L }
+            override fun begin(handle: Long, roles: Array<ByteArray>, contents: Array<ByteArray>, grammar: ByteArray): Int {
+                assertEquals("system", roles.first().decodeToString())
+                assertTrue(contents.first().decodeToString().contains("Kamu agen proyek"))
+                assertTrue(contents.first().decodeToString().contains("OFFLINE TOOL PROTOCOL"))
+                assertTrue(roles.size <= 6); assertTrue(grammar.isNotEmpty())
+                piece = responses.getOrElse(round++) { """{"message":"done"}""" }.toByteArray()
+                return 100
             }
+            override fun next(handle: Long): ByteArray? = piece.also { piece = null }
+            override fun close(handle: Long) { closed++ }
         }
+        val client = LocalInference.clientForTest(settings.config.value, backend)
         val engine = AgentEngine(app, repository, settings, SecretStore(app)) { config, _ ->
             assertEquals(ProviderKind.ON_DEVICE, config.provider); client
         }
-        val result = engine.run(project, "Buat aplikasi todo", emptyList()) {}
-        assertTrue(repository.filesFor(project.id).latestSnapshot() != null)
-        result to repository.filesFor(project.id)
+        val previous = LocalInference.modelFile
+        val fakeFile = File.createTempFile("fake-gguf", ".gguf").apply { writeText("GGUF fake backend only") }
+        LocalInference.modelFile = fakeFile
+        try {
+            val result = engine.run(project, "Buat aplikasi todo", emptyList()) {}
+            assertTrue(repository.filesFor(project.id).latestSnapshot() != null)
+            assertEquals(round, closed)
+            result to repository.filesFor(project.id)
+        } finally { LocalInference.modelFile = previous; fakeFile.delete() }
+
     }
     @Test fun `offline envelopes execute real file tools and finish summary`() {
         val (result, files) = scenario(listOf(

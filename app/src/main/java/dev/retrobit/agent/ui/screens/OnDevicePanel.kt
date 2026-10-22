@@ -42,7 +42,7 @@ fun OnDevicePanel(vm: CloudViewModel) {
                 Text(vm.localModelName, style = MaterialTheme.typography.labelLarge)
                 if (vm.localModelBytes > 0) Text(ProjectFiles.formatBytes(vm.localModelBytes), style = MaterialTheme.typography.bodySmall)
                 Text("Download GGUF dari internet", style = MaterialTheme.typography.titleSmall)
-                Text("Gunakan Wi-Fi. Download besar memakai kuota internet; tetap buka aplikasi. Belum mendukung resume/background. URL bawaan menuju model Qwen resmi; periksa lisensi sebelum download.", style = MaterialTheme.typography.bodySmall)
+                Text("Gunakan Wi-Fi. Download besar memakai kuota internet; tetap buka aplikasi. Satu model aktif: setelah sukses, model lama diganti. Belum mendukung resume/background. URL bawaan menuju model Qwen resmi; periksa lisensi sebelum download.", style = MaterialTheme.typography.bodySmall)
                 OutlinedTextField(value = vm.downloadUrl, onValueChange = { vm.downloadUrl = it },
                     label = { Text("URL HTTPS langsung ke GGUF") }, enabled = !vm.importingModel,
                     modifier = Modifier.fillMaxWidth(), maxLines = 3)
@@ -76,6 +76,9 @@ fun OnDevicePanel(vm: CloudViewModel) {
                             Text(if (vm.localContext == size) "[$size token]" else "$size token")
                         }
                     }
+                }
+                TextButton(onClick = { vm.updateLocalContext(4096); vm.maxTokens = "1024" }, modifier = Modifier.heightIn(min = 48.dp)) {
+                    Text("Setelan agen: 4096 / 1024 token")
                 }
                 OutlinedTextField(
                     value = vm.maxTokens,

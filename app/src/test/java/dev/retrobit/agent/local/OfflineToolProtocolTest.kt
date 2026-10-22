@@ -36,6 +36,8 @@ class OfflineToolProtocolTest {
         assertTrue(grammar.contains("root ::= "))
         assertTrue(grammar.contains("\\\"write_file\\\""))
         assertFalse(grammar.contains("shell"))
+        assertTrue(grammar.contains("""ws ::= [ \t\n\r]{0,8}"""))
+        assertFalse(grammar.contains("""\\t"""))
     }
     @Test fun `malformed tool names cannot inject grammar`() {
         assertTrue(runCatching { OfflineToolProtocol.grammar(listOf(tools.first().copy(name = "x\" | root"))) }.isFailure)

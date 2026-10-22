@@ -210,7 +210,7 @@ class CloudViewModel(private val container: AppContainer) : ViewModel() {
     fun chooseProvider(kind: ProviderKind) {
         provider = kind
         if (kind == ProviderKind.ON_DEVICE) {
-            maxTokens = "512"
+            maxTokens = if (settings.config.value.provider == ProviderKind.ON_DEVICE) settings.config.value.maxTokens.coerceIn(1, 1024).toString() else "1024"
             localContext = settings.config.value.localContext
         }
         val preset = AiConfig.presetFor(kind)

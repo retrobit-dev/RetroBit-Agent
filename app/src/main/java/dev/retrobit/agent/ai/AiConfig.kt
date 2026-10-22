@@ -39,7 +39,7 @@ data class AiConfig(
     val temperature: Double = 0.6,
     val maxTokens: Int = 8192,
     val connectedAt: Long = 0,
-    val localContext: Int = 2048,
+    val localContext: Int = 4096,
 ) {
     val isDemo: Boolean get() = provider == ProviderKind.DEMO
     val displayModel: String get() = model.ifBlank { catalog().models.firstOrNull().orEmpty() }
