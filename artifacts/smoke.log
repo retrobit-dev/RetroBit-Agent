@@ -1,0 +1,106 @@
+apk=app/build/outputs/apk/release/app-release.apk
+== adb devices ==
+List of devices attached
+emulator-5554	device
+
+== boot ==
+boot_completed=1
+== real model fixture ==
+== install ==
+Performing Streamed Install
+Success
+install_exit=0
+== package ==
+package:dev.retrobit.agent
+== launch ==
+Starting: Intent { cmp=dev.retrobit.agent/.MainActivity }
+Status: ok
+LaunchState: COLD
+Activity: dev.retrobit.agent/.MainActivity
+TotalTime: 1456
+WaitTime: 1458
+Complete
+== foreground ==
+    mResumedActivity: ActivityRecord{957e6a u0 dev.retrobit.agent/.MainActivity t9}
+== screenshots ==
+== crash buffer ==
+install=0 launch=0 foreground=1 crash=0
+== basic: OK ==
+== ui walk ==
+shot=01-dashboard
+event=touch-targets phase=dashboard min_px=126 small=0
+event=tap text="Nimbus" at=339 1429
+shot=02-workspace-chat
+event=tap text="Menu" at=1014 124
+event=tap text="Tool agen" at=717 258
+shot=02a-toolbox
+event=tap text="Tutup tool" at=787 1567
+event=touch-targets phase=workspace min_px=126 small=0
+event=tap text="Preview" at=280 280
+shot=03-preview
+event=preview-virtual-origin-rendered
+event=tap text="Kode" at=454 280
+shot=04-code
+event=tap text="Desain" at=628 280
+shot=05-design
+event=tap text="Data" at=802 280
+shot=06-data
+event=tap text="Vault" at=976 280
+shot=07-vault
+event=tap text="Chat" at=104 280
+shot=08-chat
+event=tap-composer at=674,1660
+shot=09-prompt-typed
+event=prompt-typed
+event=tap text="Kirim" at=974 885
+event=prompt-sent
+shot=09-after-prompt
+event=prompt-in-transcript
+shot=10-back-to-dashboard
+event=tap text="Menu" at=93 135
+shot=11-drawer
+event=tap text="Inspeksi APK" at=231 967
+shot=11a-apk-inspector
+event=tap text="Analisis APK RetroBit" at=235 592
+shot=11b-apk-report
+event=apk-inspector-real-package
+event=tap text="Sertifikat" at=586 934
+shot=11c-apk-certificate
+event=apk-inspector-certificate
+event=tap text="Menu" at=84 126
+event=tap text="AI Cloud" at=197 852
+shot=12-cloud
+event=tap text="AI di HP (offline)" at=235 1133
+event=tap text="Periksa mesin" at=231 1483
+event=native-backend-ready
+shot=12aa-ondevice
+event=touch-targets phase=ondevice min_px=126 small=0
+shot=12ab-model-download
+event=tap text="Ollama / lokal" at=707 1133
+shot=12a-cloud-ollama
+event=scrolled-to cloud-unlimited y=unknown
+shot=12b-cloud-unlimited
+event=touch-targets phase=cloud-scrolled min_px=126 small=0
+event=tap text="Chat" at=411 1687
+shot=13-chat-list
+event=tap text="Obrolan baru" at=244 274
+shot=14-chat-thread
+event=tap-chat-composer at=674,1503
+event=tap text="Kirim" at=974 602
+shot=15-chat-reply
+event=chat-needs-real-model-no-simulation
+event=tap text="Cloud" at=927 1687
+event=tap text="AI di HP (offline)" at=235 1133
+event=tap text="URL HTTPS langsung ke GGUF" at=540 1573
+event=tap text="SHA-256 penerbit (opsional)" at=540 1298
+shot=16a-real-download-settings
+event=tap text="Download & impor GGUF" at=540 1216
+shot=16b-real-download-complete
+event=production-https-model-downloaded-and-hash-verified
+event=tap text="Uji model" at=882 1243
+shot=16c-real-model-inference
+event=real-gguf-inference-ok
+ui_issues=0
+failed=0
+ui_walk=ok
+== result: OK ==
