@@ -74,7 +74,7 @@ internal class ApkInspector(
 
     internal suspend fun analyze(input: InputStream, name: String, progress: suspend (Long) -> Unit): ApkReport {
         val temp = File.createTempFile("inspect-", ".partial.apk", directory)
-        try {
+        return try {
             val digest = MessageDigest.getInstance("SHA-256")
             var bytes = 0L
             var last = 0L
