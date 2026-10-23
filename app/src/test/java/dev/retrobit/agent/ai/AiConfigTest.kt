@@ -20,7 +20,8 @@ class AiConfigTest {
     fun `demo mode needs no key`() {
         val preset = AiConfig.presetFor(ProviderKind.DEMO)
         assertFalse(preset.requiresKey)
-        assertTrue(AiConfig().isDemo)
+        assertTrue(AiConfig(provider = ProviderKind.DEMO).isDemo)
+        assertEquals(ProviderKind.ON_DEVICE, AiConfig().provider)
     }
 
     // Ollama runs on the local network and a custom endpoint may sit behind its

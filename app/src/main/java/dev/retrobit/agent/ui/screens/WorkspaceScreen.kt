@@ -163,7 +163,7 @@ fun WorkspaceScreen(vm: WorkspaceViewModel, onBack: () -> Unit) {
                     )
                     Spacer(Modifier.width(5.dp))
                     Text(
-                        if (config.isDemo) "Demo · ${files.size} file" else "${config.displayModel} · ${files.size} file",
+                        if (config.isDemo) "Simulasi · ${files.size} file" else if (config.provider == dev.retrobit.agent.ai.ProviderKind.ON_DEVICE && config.connectedAt == 0L) "Siapkan model GGUF · ${files.size} file" else "${config.displayModel} · ${files.size} file",
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1,

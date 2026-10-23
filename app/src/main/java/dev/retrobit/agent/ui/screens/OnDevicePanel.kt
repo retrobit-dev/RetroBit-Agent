@@ -34,7 +34,7 @@ fun OnDevicePanel(vm: CloudViewModel) {
                 Text("AI langsung di HP", style = MaterialTheme.typography.titleMedium)
                 Text(
                     "Tanpa laptop, server, atau API key. Impor model Instruct GGUF tepercaya (satu berkas, maksimum 3 GiB). " +
-                        "Untuk GT 30 Pro 12 GB, mulai dari Qwen2.5-Coder 1.5B Instruct Q4_K_M. Model tidak disertakan dalam APK.",
+                        "Untuk GT 30 Pro 12 GB, mulai dari Qwen2.5-Coder 1.5B Instruct Q4_K_M. Model tidak disertakan dalam APK. Download/impor selesai akan mengaktifkan AI di HP otomatis jika provider cloud belum aktif; tidak perlu Simpan lagi.",
                     style = MaterialTheme.typography.bodySmall,
                 )
                 TextButton(onClick = vm::probeLocalEngine, modifier = Modifier.heightIn(min = 48.dp)) { Text("Periksa mesin") }

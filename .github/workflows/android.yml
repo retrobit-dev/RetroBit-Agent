@@ -28,7 +28,7 @@ jobs:
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository
     name: Build signed APK
     runs-on: ubuntu-latest
-    timeout-minutes: 35
+    timeout-minutes: 60
 
     steps:
       - name: Checkout
@@ -48,8 +48,14 @@ jobs:
           if [[ "$EVENT_NAME" == "push" && "$TITLE" == "Release preview: "* ]]; then
             TAG="${TITLE#Release preview: }"
           fi
+          STABLE=false
+          if [[ "$EVENT_NAME" == "push" && "$TITLE" == "Release stable: "* ]]; then
+            TAG="${TITLE#Release stable: }"
+            STABLE=true
+          fi
           if [ -n "$TAG" ]; then
-            [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+-preview\.[0-9]+$ ]] || {
+            if [ "$STABLE" = true ]; then PATTERN='^v[0-9]+\.[0-9]+\.[0-9]+$'; else PATTERN='^v[0-9]+\.[0-9]+\.[0-9]+-preview\.[0-9]+$'; fi
+            [[ "$TAG" =~ $PATTERN ]] || {
               echo "preview tag harus berbentuk vX.Y.Z-preview.N"; exit 1;
             }
             echo "tag=$TAG" >> "$GITHUB_OUTPUT"
@@ -243,7 +249,7 @@ jobs:
           fi
           # Do not publish a build tested only with injected PackageInfo. The
           # release-APK / PackageManager smoke must pass on this exact SHA.
-          timeout 15m gh run watch "$RUN" --exit-status --interval 30
+          timeout 40m gh run watch "$RUN" --exit-status --interval 30
           LINT=$(gh api --method GET "repos/$GITHUB_REPOSITORY/actions/workflows/lint.yml/runs" \
             -f head_sha="$GITHUB_SHA" -f per_page=20 \
             --jq '[.workflow_runs[] | select(.event == "pull_request" or .event == "workflow_dispatch")] | first | .id // empty')

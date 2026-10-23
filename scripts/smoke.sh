@@ -29,6 +29,14 @@ for _ in $(seq 1 60); do
 done
 log "boot_completed=$BOOT"
 
+log "== real model fixture =="
+if [ ! -f artifacts-local/ci-model.gguf ]; then
+  log "event=real-model-fixture-missing"; exit 1
+fi
+adb shell mkdir -p /sdcard/Download
+adb push artifacts-local/ci-model.gguf /sdcard/Download/ci-model.gguf >> "$LOG" 2>&1 || exit 1
+cp artifacts-local/ci-model.json artifacts/ci-model.json
+
 log "== install =="
 adb install -r "$APK" 2>&1 | tee -a "$LOG"
 INSTALL=${PIPESTATUS[0]}

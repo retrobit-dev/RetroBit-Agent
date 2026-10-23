@@ -13,7 +13,7 @@ import kotlinx.coroutines.delay
 import java.util.Locale
 
 /**
- * Offline, deterministic agent used when no cloud provider is connected.
+ * Deterministic template simulator, used only after an explicit DEMO selection.
  * It builds real screens from the bundled templates so the whole flow can be
  * tried without an API key. It is explicitly labelled as a demo in the UI.
  */

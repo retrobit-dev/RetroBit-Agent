@@ -75,6 +75,8 @@ fun ProjectsScreen(
     onOpenCloud: () -> Unit,
     onBrowseTemplates: () -> Unit,
     onCreateWithPrompt: (prompt: String, projectId: String) -> Unit,
+    localModelReady: Boolean = false,
+    onPrepareLocal: () -> Unit = onOpenCloud,
     contentPadding: PaddingValues = PaddingValues(0.dp),
 ) {
     var showCreate by remember { mutableStateOf(false) }
@@ -142,7 +144,7 @@ fun ProjectsScreen(
                     )
                     Spacer(Modifier.width(6.dp))
                     Text(
-                        if (config.isDemo) "DEMO" else "CLOUD",
+                        when { config.isDemo -> "SIMULASI"; config.provider == dev.retrobit.agent.ai.ProviderKind.ON_DEVICE -> "DI HP"; else -> "CLOUD" },
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurface,
                     )
@@ -150,6 +152,18 @@ fun ProjectsScreen(
                 Spacer(Modifier.width(4.dp))
                 IconButton(onClick = { showCreate = true }, modifier = Modifier.size(34.dp)) {
                     Icon(PixelIcons.Plus, "Proyek baru", tint = MaterialTheme.colorScheme.onBackground, modifier = Modifier.size(18.dp))
+                }
+            }
+        }
+
+        if (config.provider == dev.retrobit.agent.ai.ProviderKind.ON_DEVICE && !localModelReady) {
+            item {
+                NeoCard(modifier = Modifier.fillMaxWidth()) {
+                    Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text("Siapkan AI sungguhan di HP", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurface)
+                        Text("Sekali saja: download model GGUF sekitar 1,12 GB lewat Wi-Fi, atau impor model yang sudah Anda punya. Setelah itu Chat dan agen berjalan tanpa API key/komputer. Belum ada model berarti belum bisa menjawab; tidak memakai jawaban simulasi.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        GradientButton("Siapkan AI di HP", modifier = Modifier.fillMaxWidth(), onClick = onPrepareLocal)
+                    }
                 }
             }
         }
@@ -269,8 +283,9 @@ fun ProjectsScreen(
 
         item {
             CloudStatusCard(
-                connected = !config.isDemo,
+                connected = !config.isDemo && (config.provider != dev.retrobit.agent.ai.ProviderKind.ON_DEVICE || localModelReady),
                 model = config.displayModel,
+                local = config.provider == dev.retrobit.agent.ai.ProviderKind.ON_DEVICE,
                 onOpenCloud = onOpenCloud,
             )
         }
@@ -462,7 +477,7 @@ private fun FilterChip(label: String, active: Boolean, onClick: () -> Unit) {
 }
 
 @Composable
-private fun CloudStatusCard(connected: Boolean, model: String, onOpenCloud: () -> Unit) {
+private fun CloudStatusCard(connected: Boolean, model: String, local: Boolean, onOpenCloud: () -> Unit) {
     val shape = RoundedCornerShape(5.dp)
     Row(
         modifier = Modifier
@@ -494,12 +509,12 @@ private fun CloudStatusCard(connected: Boolean, model: String, onOpenCloud: () -
         Spacer(Modifier.width(11.dp))
         Column(Modifier.weight(1f)) {
             Text(
-                if (connected) "Agen cloud aktif" else "Mode demo aktif",
+                if (local) { if (connected) "Model di HP tersimpan" else "Model GGUF belum tersedia" } else if (connected) "Provider cloud dikonfigurasi" else "Simulasi — bukan AI",
                 style = MaterialTheme.typography.titleSmall,
                 color = MaterialTheme.colorScheme.onSurface,
             )
             Text(
-                if (connected) model else "Hubungkan provider untuk agen sungguhan",
+                if (connected) model else "Ketuk untuk menyiapkan model GGUF atau provider cloud",
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,

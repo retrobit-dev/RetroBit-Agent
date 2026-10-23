@@ -5,7 +5,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 enum class ProviderKind(val label: String) {
     AUTO("Auto"),
-    DEMO("Demo lokal"),
+    DEMO("Simulasi (bukan AI)"),
     OPENROUTER("OpenRouter"),
     OPENAI("OpenAI"),
     ANTHROPIC("Anthropic"),
@@ -33,7 +33,7 @@ data class ProviderPreset(
 
 @Serializable
 data class AiConfig(
-    val provider: ProviderKind = ProviderKind.DEMO,
+    val provider: ProviderKind = ProviderKind.ON_DEVICE,
     val baseUrl: String = "",
     val model: String = "",
     val temperature: Double = 0.6,

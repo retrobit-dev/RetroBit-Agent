@@ -124,7 +124,8 @@ object AiClientFactory {
             temperature = 0.0,
             maxTokens = 20,
         )
-        response.text.ifBlank { "Terhubung" }.take(160)
+        if (response.text.isBlank()) throw AiException("Model tidak menghasilkan jawaban. Periksa model/konteks lalu uji ulang.")
+        response.text.take(160)
     }
 }
 

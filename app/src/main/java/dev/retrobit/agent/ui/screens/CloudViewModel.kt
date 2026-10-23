@@ -34,7 +34,7 @@ class CloudViewModel(private val container: AppContainer) : ViewModel() {
     val usage = settings.usage
     val quota = settings.quota
 
-    var provider by mutableStateOf(ProviderKind.DEMO)
+    var provider by mutableStateOf(ProviderKind.ON_DEVICE)
         private set
     var baseUrl by mutableStateOf("")
         private set
@@ -106,7 +106,8 @@ class CloudViewModel(private val container: AppContainer) : ViewModel() {
                     withContext(Dispatchers.Main) { importBytes = bytes; transferTotal = total }
                 }
                 refreshLocalModel()
-                localMessage = "Download selesai dan model diimpor. Tekan Simpan lalu Uji model."
+                settings.activateLocalModel(localModelName)
+                localMessage = "Model tersimpan. AI di HP aktif jika belum ada provider cloud; tekan Uji model untuk memeriksa jawaban nyata."
             } catch (e: CancellationException) {
                 refreshLocalModel()
                 localMessage = "Download dibatalkan. Berkas parsial dibersihkan."
@@ -131,7 +132,8 @@ class CloudViewModel(private val container: AppContainer) : ViewModel() {
             try {
                 container.localModels.import(uri, checksum) { bytes -> withContext(Dispatchers.Main) { importBytes = bytes } }
                 refreshLocalModel()
-                localMessage = "Model diimpor. Tekan Simpan lalu Uji model untuk memeriksa kompatibilitas."
+                settings.activateLocalModel(localModelName)
+                localMessage = "Model tersimpan. AI di HP aktif jika belum ada provider cloud; tekan Uji model untuk memeriksa jawaban nyata."
             } catch (e: CancellationException) {
                 refreshLocalModel()
                 localMessage = "Impor dibatalkan. Berkas parsial dibersihkan."
@@ -213,7 +215,7 @@ class CloudViewModel(private val container: AppContainer) : ViewModel() {
         apiKey = secrets.get(AgentEngine.keyFor(provider.name)).orEmpty()
         keyStored = apiKey.isNotBlank()
         temperature = current.temperature.toFloat()
-        maxTokens = current.maxTokens.toString()
+        maxTokens = (if (current.provider == ProviderKind.ON_DEVICE) current.maxTokens.coerceIn(1, 1024) else current.maxTokens).toString()
     }
 
     fun chooseProvider(kind: ProviderKind) {
@@ -286,7 +288,7 @@ class CloudViewModel(private val container: AppContainer) : ViewModel() {
                 temperature = temperature.toDouble(), maxTokens = maxTokens.toIntOrNull()?.coerceIn(1, 1024) ?: 512,
                 localContext = localContext, connectedAt = System.currentTimeMillis(),
             ) }
-            savedMessage = "AI offline disimpan. Gunakan tab Chat; tool proyek belum didukung."
+            savedMessage = "AI di HP aktif untuk Chat dan tool proyek. Jawaban berasal dari model GGUF, bukan simulasi."
             return
         }
         val preset = AiConfig.presetFor(provider)
@@ -378,7 +380,7 @@ class CloudViewModel(private val container: AppContainer) : ViewModel() {
         viewModelScope.launch {
             val result = AiClientFactory.testConnection(probeConfig, key)
             testResult = result.fold(
-                onSuccess = { ConnectionTest(true, "Terhubung! Model menjawab: ${it.trim().ifBlank { "OK" }}") },
+                onSuccess = { ConnectionTest(true, "Terhubung! Model menjawab: ${it.trim()}") },
                 onFailure = { ConnectionTest(false, it.message ?: "Gagal terhubung") },
             )
             testing = false
@@ -404,7 +406,7 @@ class CloudViewModel(private val container: AppContainer) : ViewModel() {
                     onSuccess = {
                         ConnectionTest(
                             true,
-                            "Auto memakai ${candidate.provider.label} · ${candidate.model}. Jawaban: ${it.trim().ifBlank { "OK" }}",
+                            "Auto memakai ${candidate.provider.label} · ${candidate.model}. Jawaban: ${it.trim()}",
                         )
                     },
                     onFailure = { failure ->
@@ -423,11 +425,9 @@ class CloudViewModel(private val container: AppContainer) : ViewModel() {
         secrets.remove(AgentEngine.keyFor(provider.name))
         apiKey = ""
         keyStored = false
-        settings.updateConfig { it.copy(connectedAt = 0, provider = ProviderKind.DEMO) }
-        provider = ProviderKind.DEMO
-        baseUrl = ""
-        model = "retrobit-demo"
-        testResult = ConnectionTest(true, "Provider diputuskan. Kembali ke mode demo.")
+        settings.updateConfig { it.copy(connectedAt = 0, provider = ProviderKind.ON_DEVICE, baseUrl = "", model = "") }
+        chooseProvider(ProviderKind.ON_DEVICE)
+        testResult = ConnectionTest(true, "Provider diputuskan. Siapkan model GGUF untuk AI di HP; tidak beralih ke simulasi.")
     }
 
     fun setTheme(mode: String) {

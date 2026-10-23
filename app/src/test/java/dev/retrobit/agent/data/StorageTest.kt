@@ -31,6 +31,34 @@ class SettingsStoreTest {
         settings = SettingsStore(context)
     }
 
+    @Test fun `new install starts with real on device setup not demo`() {
+        assertEquals(dev.retrobit.agent.ai.ProviderKind.ON_DEVICE, settings.config.value.provider)
+        assertFalse(settings.config.value.isDemo)
+    }
+    @Test fun `old default demo migrates once without changing persona or theme`() {
+        val prefs = context.getSharedPreferences("retrobit_settings", android.content.Context.MODE_PRIVATE)
+        prefs.edit().putString("ai_config", """{"provider":"DEMO","model":"retrobit-demo"}""").remove("real_ai_setup_v1").commit()
+        settings.systemPrompt = "my persona"
+        val updated = SettingsStore(context)
+        assertEquals(dev.retrobit.agent.ai.ProviderKind.ON_DEVICE, updated.config.value.provider)
+        assertEquals("my persona", updated.systemPrompt)
+        updated.updateConfig { it.copy(provider = dev.retrobit.agent.ai.ProviderKind.DEMO) }
+        assertTrue(SettingsStore(context).config.value.isDemo) // explicit opt-in after upgrade
+    }
+    @Test fun `model activation enables actual backend but preserves real cloud choice`() {
+        settings.activateLocalModel("model.gguf")
+        assertEquals("model.gguf", settings.config.value.model)
+        assertTrue(settings.config.value.connectedAt > 0)
+        settings.updateConfig { it.copy(provider = dev.retrobit.agent.ai.ProviderKind.GEMINI, model = "cloud", baseUrl = "https://example.com") }
+        val before = settings.config.value
+        settings.activateLocalModel("other.gguf")
+        assertEquals(before, settings.config.value)
+    }
+    @Test fun `corrupt config never silently invokes simulation`() {
+        context.getSharedPreferences("retrobit_settings", android.content.Context.MODE_PRIVATE).edit().putString("ai_config", "bad json").commit()
+        assertFalse(SettingsStore(context).config.value.isDemo)
+    }
+
     @Test
     fun `first launch uses the documented defaults`() {
         assertEquals("id", settings.agentLanguage)

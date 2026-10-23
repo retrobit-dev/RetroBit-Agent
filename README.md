@@ -390,3 +390,12 @@ atomic source/JSON writes, SSE timeout propagation, dan busy guard penghapusan
 model. Lihat [audit/test matrix](docs/HARDENING.md) serta
 [perubahan kompatibilitas](docs/releases/v0.8.1-preview.2.md), terutama perubahan
 origin/localStorage WebView. Ini bukan janji bebas bug selamanya.
+
+### v0.9.0 — alur AI nyata, bukan demo bawaan
+
+Instalasi baru/upgrade demo diarahkan ke **AI di HP**. Download/impor GGUF
+mengaktifkan backend nyata secara otomatis jika cloud belum aktif. Tetap perlu
+satu kali unduh model sekitar 1,12 GB; APK tidak berisi bobot model. Lihat
+[cara pakai dan batas stable](docs/releases/v0.9.0.md). CI menguji inferensi
+model Instruct nyata melalui SAF/JNI, bukan hanya probe engine. Compiler APK
+hasil proyek tetap belum tersedia; signer fallback publik bukan signing privat.

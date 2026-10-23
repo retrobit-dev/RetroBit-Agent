@@ -13,6 +13,11 @@ class AppContainer(context: Context) {
     val context: Context = context.applicationContext
     val localModels = dev.retrobit.agent.local.LocalModelStore(this.context)
     val settings = SettingsStore(this.context)
+    init {
+        if (localModels.ready && settings.config.value.provider == dev.retrobit.agent.ai.ProviderKind.ON_DEVICE && settings.config.value.connectedAt == 0L) {
+            settings.activateLocalModel(localModels.label)
+        }
+    }
     val repository = ProjectRepository(this.context, settings)
     val secrets = SecretStore(this.context)
     val engine = AgentEngine(this.context, repository, settings, secrets)

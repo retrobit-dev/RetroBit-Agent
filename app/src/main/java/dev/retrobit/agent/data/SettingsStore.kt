@@ -141,10 +141,24 @@ class SettingsStore(context: Context) {
             .apply()
     }
 
+    /** Never silently start with a simulated agent. Preserve real cloud settings. */
     private fun loadConfig(): AiConfig {
-        val raw = prefs.getString("ai_config", null) ?: return AiConfig()
-        return runCatching { json.decodeFromString(AiConfig.serializer(), raw) }
-            .getOrElse { AiConfig(provider = ProviderKind.DEMO) }
+        val raw = prefs.getString("ai_config", null)
+        val stored = raw?.let { runCatching { json.decodeFromString(AiConfig.serializer(), it) }.getOrNull() } ?: AiConfig()
+        val migrate = !prefs.getBoolean("real_ai_setup_v1", false)
+        val next = if (migrate && stored.provider == ProviderKind.DEMO) {
+            stored.copy(provider = ProviderKind.ON_DEVICE, model = "", baseUrl = "", connectedAt = 0, maxTokens = 1024)
+        } else stored
+        prefs.edit().putBoolean("real_ai_setup_v1", true)
+            .putString("ai_config", json.encodeToString(AiConfig.serializer(), next)).apply()
+        return next
+    }
+
+    /** Auto-activate a completed transfer only if no real cloud provider is active. */
+    fun activateLocalModel(name: String) {
+        if (_config.value.provider !in listOf(ProviderKind.ON_DEVICE, ProviderKind.DEMO)) return
+        updateConfig { it.copy(provider = ProviderKind.ON_DEVICE, baseUrl = "", model = name,
+            maxTokens = it.maxTokens.coerceIn(1, 1024), connectedAt = System.currentTimeMillis()) }
     }
 
     private fun loadQuota(): QuotaState {

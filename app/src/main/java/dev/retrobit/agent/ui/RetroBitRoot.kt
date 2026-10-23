@@ -132,6 +132,11 @@ fun RetroBitRoot() {
                             MainShell("projects", navController) {
                                 ProjectsScreen(
                                     vm = projectsVm,
+                                    localModelReady = cloudVm.localModelBytes > 0,
+                                    onPrepareLocal = {
+                                        cloudVm.chooseProvider(dev.retrobit.agent.ai.ProviderKind.ON_DEVICE)
+                                        navigateTab(navController, "cloud")
+                                    },
                                     onOpenProject = { id -> navController.navigate("workspace/$id") },
                                     onOpenCloud = { navigateTab(navController, "cloud") },
                                     onBrowseTemplates = { navigateTab(navController, "templates") },

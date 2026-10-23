@@ -113,6 +113,7 @@ class PlainChatEngineTest {
 
     @Test
     fun `demo mode refuses and never touches the network`() {
+        settings.updateConfig { it.copy(provider = ProviderKind.DEMO) }
         val reply = ask()
 
         assertTrue(reply.isError)

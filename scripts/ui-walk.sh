@@ -474,8 +474,8 @@ if tap_text "Chat"; then
       if tap_text "Kirim"; then
         sleep 3
         shot 15-chat-reply
-        if dump_ui && grep -qiE "mode demo|api key gratis" /tmp/ui.xml; then
-          log "event=chat-reply-demo"
+        if dump_ui && grep -qiE "Belum ada model GGUF" /tmp/ui.xml; then
+          log "event=chat-needs-real-model-no-simulation"
         else
           log "event=chat-reply-missing"
           UI_ISSUES=$((UI_ISSUES + 1))
@@ -493,6 +493,37 @@ if tap_text "Chat"; then
 else
   UI_ISSUES=$((UI_ISSUES + 1))
 fi
+
+# --- Actual GGUF through SAF, auto-activation, JNI loading and generation ----
+if tap_text "Cloud"; then
+  for _ in 1 2 3 4 5; do $ADB shell input swipe 540 650 540 1600 250 >>"$LOG" 2>&1; done
+  if tap_text_scrolling "AI di HP (offline)" && tap_text_scrolling "Impor GGUF"; then
+    sleep 2
+    shot 16a-model-picker
+    # DocumentsUI's default Recent view does not reliably index unknown GGUF.
+    if tap_text "Show roots"; then tap_text "Downloads" || FAILED=1; fi
+    if tap_text "ci-model.gguf"; then
+      sleep 5
+      # Testing loads real weights, unlike the separate engine/grammar probe.
+      if tap_text_scrolling "Uji model"; then
+        $ADB shell input swipe 540 1300 540 950 400 >>"$LOG" 2>&1
+        REAL_MODEL_OK=0
+        for _ in $(seq 1 90); do
+          sleep 2
+          if dump_ui && grep -q "Terhubung! Model menjawab:" /tmp/ui.xml; then REAL_MODEL_OK=1; break; fi
+        done
+        shot 16b-real-model-inference
+        if [ "$REAL_MODEL_OK" = 1 ]; then
+          log "event=real-gguf-inference-ok"
+        else
+          log "event=real-gguf-inference-failed"
+          dump_ui && cp /tmp/ui.xml artifacts/real-model-failure.xml
+          FAILED=1
+        fi
+      else FAILED=1; fi
+    else FAILED=1; fi
+  else FAILED=1; fi
+else FAILED=1; fi
 
 log "ui_issues=$UI_ISSUES"
 log "failed=$FAILED"
