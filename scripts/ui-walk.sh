@@ -494,52 +494,59 @@ else
   UI_ISSUES=$((UI_ISSUES + 1))
 fi
 
-# --- Actual GGUF through SAF, auto-activation, JNI loading and generation ----
-# Sending leaves the IME open: UIAutomator still exposes nav under the keyboard.
-# BACK hides it (or goes to the chat list), both safe before selecting Cloud.
+# --- Actual production HTTPS download -> private model -> JNI generation ----
+# The default user path, not a fixture copied into private app storage. A host
+# reference was independently verified against immutable publisher LFS metadata.
 $ADB shell input keyevent KEYCODE_BACK >>"$LOG" 2>&1
 sleep 2
+MODEL_URL=$(python3 -c 'import json; m=json.load(open("artifacts-local/ci-model.json")); print("https://huggingface.co/"+m["repository"]+"/resolve/"+m["revision"]+"/"+m["filename"])')
+EXPECTED_SHA=$(python3 -c 'import json; print(json.load(open("artifacts-local/ci-model.json"))["sha256"])')
 if tap_text "Cloud"; then
   for _ in 1 2 3 4 5; do $ADB shell input swipe 540 650 540 1600 250 >>"$LOG" 2>&1; done
-  if tap_text_scrolling "AI di HP (offline)" && tap_text_scrolling "Impor GGUF" exact; then
-    sleep 2
-    shot 16a-model-picker
-    # DocumentsUI's default Recent view does not reliably index unknown GGUF.
-    if tap_text "Show roots"; then tap_text "Downloads" || FAILED=1; fi
-    # Grid thumbnails relayout after loading. Use stable list rows and verify
-    # the picker really returned, rather than trusting a coordinate tap.
-    sleep 2
-    tap_text "List view" || log "event=picker-already-list"
-    sleep 2
-    PICKED=0
-    for _ in 1 2 3; do
-      tap_text "ci-model.gguf" || break
-      sleep 3
-      if $ADB shell dumpsys window | grep -q 'mCurrentFocus=.*dev.retrobit.agent'; then PICKED=1; break; fi
-    done
-    if [ "$PICKED" = 1 ]; then
-      log "event=saf-picker-returned-to-app"
-      sleep 15
-      # Testing loads real weights, unlike the separate engine/grammar probe.
-      if tap_text_scrolling "Uji model" exact; then
-        $ADB shell input swipe 540 1300 540 950 400 >>"$LOG" 2>&1
-        REAL_MODEL_OK=0
-        for _ in $(seq 1 90); do
-          sleep 2
-          if dump_ui && grep -q "Terhubung! Model menjawab:" /tmp/ui.xml; then REAL_MODEL_OK=1; break; fi
-        done
-        shot 16b-real-model-inference
-        if [ "$REAL_MODEL_OK" = 1 ]; then
-          log "event=real-gguf-inference-ok"
-        else
-          log "event=real-gguf-inference-failed"
-          dump_ui && cp /tmp/ui.xml artifacts/real-model-failure.xml
-          FAILED=1
-        fi
+  if tap_text_scrolling "AI di HP (offline)"; then
+    if tap_text_scrolling "URL HTTPS langsung ke GGUF" exact; then
+      # Clear both sides of the cursor in a multiline field, independent of
+      # tap location/selection/IME. No clipboard helper or debug backdoor.
+      $ADB shell input keyevent 123 $(printf '67 %.0s' $(seq 1 240)) $(printf '112 %.0s' $(seq 1 240)) >>"$LOG" 2>&1
+      $ADB shell input text "$MODEL_URL" >>"$LOG" 2>&1
+      $ADB shell input keyevent KEYCODE_BACK >>"$LOG" 2>&1
+      sleep 1
+      if tap_text_scrolling "SHA-256 penerbit (opsional)" exact; then
+        $ADB shell input text "$EXPECTED_SHA" >>"$LOG" 2>&1
+        $ADB shell input keyevent KEYCODE_BACK >>"$LOG" 2>&1
+        sleep 1
+        shot 16a-real-download-settings
+        if dump_ui && grep -q "$EXPECTED_SHA" /tmp/ui.xml && tap_text_scrolling "Download & impor GGUF" exact; then
+          $ADB shell input swipe 540 1400 540 950 400 >>"$LOG" 2>&1
+          DOWNLOADED=0
+          for _ in $(seq 1 120); do
+            sleep 2
+            if dump_ui && grep -q "SHA-256 salinan: $EXPECTED_SHA" /tmp/ui.xml; then DOWNLOADED=1; break; fi
+          done
+          shot 16b-real-download-complete
+          if [ "$DOWNLOADED" = 1 ]; then
+            log "event=production-https-model-downloaded-and-hash-verified"
+            if tap_text_scrolling "Uji model" exact; then
+              $ADB shell input swipe 540 1300 540 950 400 >>"$LOG" 2>&1
+              REAL_MODEL_OK=0
+              for _ in $(seq 1 90); do
+                sleep 2
+                if dump_ui; then
+                  if grep -q "Terhubung! Model menjawab:" /tmp/ui.xml; then REAL_MODEL_OK=1; break; fi
+                  if grep -q "Gagal ·" /tmp/ui.xml; then break; fi
+                fi
+              done
+              shot 16c-real-model-inference
+              if [ "$REAL_MODEL_OK" = 1 ]; then log "event=real-gguf-inference-ok"; else FAILED=1; fi
+            else FAILED=1; fi
+          else FAILED=1; fi
+        else FAILED=1; fi
       else FAILED=1; fi
     else FAILED=1; fi
   else FAILED=1; fi
 else FAILED=1; fi
+$ADB logcat -d -b crash > artifacts/real-model-crash.log 2>/dev/null
+$ADB shell dumpsys activity activities > artifacts/real-model-activity.log 2>/dev/null
 
 if [ "$FAILED" -ne 0 ]; then
   shot 16z-final-failure

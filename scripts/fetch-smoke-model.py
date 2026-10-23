@@ -2,7 +2,7 @@
 """Fetch an actual small Instruct model for CI, never include weights in Git/APK.
 
 Resolve official publisher metadata to an immutable revision; verify advertised
-LFS SHA-256 and length, then use the production Android SAF/import/JNI UI path.
+LFS SHA-256 and length as a reference for production Android HTTPS/JNI smoke.
 """
 import hashlib
 import json

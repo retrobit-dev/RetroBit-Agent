@@ -402,5 +402,5 @@ Instalasi baru/upgrade demo diarahkan ke **AI di HP**. Download/impor GGUF
 mengaktifkan backend nyata secara otomatis jika cloud belum aktif. Tetap perlu
 satu kali unduh model sekitar 1,12 GB; APK tidak berisi bobot model. Lihat
 [cara pakai dan batas stable](docs/releases/v0.9.0.md). CI menguji inferensi
-model Instruct nyata melalui SAF/JNI, bukan hanya probe engine. Compiler APK
+model Instruct nyata melalui downloader HTTPS aplikasi/JNI, bukan hanya probe engine. Compiler APK
 hasil proyek tetap belum tersedia; signer fallback publik bukan signing privat.
