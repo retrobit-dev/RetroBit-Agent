@@ -373,3 +373,12 @@ AGP 8.7.3 · Kotlin 2.0.21 · Compose BOM 2024.12.01 · Navigation Compose 2.8.5
 ---
 
 Dibuat untuk eksperimen membangun aplikasi dari mana saja, langsung dari Android.
+
+### Inspeksi APK di HP (v0.8 preview)
+
+**Menu → Inspeksi APK** membaca satu APK lokal (maksimum 256 MiB): package,
+versi/SDK, permission diminta, komponen, SHA-256 APK, identitas sertifikat dari
+Android, dan listing resource/DEX/ABI. Ada analisis APK RetroBit sendiri serta
+ekspor JSON. Tidak memasang/menjalankan APK atau mengirimkannya ke AI/server.
+Ini bukan dekompilasi, verifikasi signature penuh, scanner malware, atau pipeline
+build APK hasil proyek. [Panduan, batas dan privasi](docs/APK_INSPECTOR.md).

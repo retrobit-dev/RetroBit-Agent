@@ -304,6 +304,43 @@ shot 10-back-to-dashboard
 if tap_text "Menu"; then
   sleep 2
   shot 11-drawer
+  if tap_text "Inspeksi APK"; then
+    shot 11a-apk-inspector
+    if tap_text "Analisis APK RetroBit"; then
+      APK_READY=0
+      for _ in 1 2 3 4 5 6 7 8 9 10; do
+        dump_ui || true
+        if grep -q "Salinan sementara dihapus" /tmp/ui.xml; then APK_READY=1; break; fi
+        sleep 2
+      done
+      if [ "$APK_READY" = "1" ]; then
+        for _ in 1 2 3; do
+          dump_ui || true
+          if grep -q "SHA-256 APK" /tmp/ui.xml && grep -q "dev.retrobit.agent" /tmp/ui.xml; then break; fi
+          $ADB shell input swipe 540 1300 540 900 500 >>"$LOG" 2>&1
+        done
+        shot 11b-apk-report
+        if grep -q "SHA-256 APK" /tmp/ui.xml && grep -q "dev.retrobit.agent" /tmp/ui.xml; then
+          log "event=apk-inspector-real-package"
+        else
+          log "event=apk-inspector-report-missing"; FAILED=1
+        fi
+        if tap_text "Sertifikat"; then
+          dump_ui || true
+          shot 11c-apk-certificate
+          if grep -q "SHA-256 sertifikat" /tmp/ui.xml && grep -q "Signer saat ini" /tmp/ui.xml; then
+            log "event=apk-inspector-certificate"
+          else
+            log "event=apk-inspector-certificate-missing"; FAILED=1
+          fi
+        else FAILED=1; fi
+      else
+        log "event=apk-inspector-not-ready"; FAILED=1
+      fi
+    else FAILED=1; fi
+    crash_check apk-inspector || FAILED=1
+    if ! tap_text "Menu"; then FAILED=1; fi
+  else FAILED=1; fi
   crash_check drawer || FAILED=1
   if tap_text "AI Cloud"; then
     sleep 3

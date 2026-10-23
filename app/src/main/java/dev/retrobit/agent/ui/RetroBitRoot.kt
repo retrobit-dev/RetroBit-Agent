@@ -63,6 +63,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import dev.retrobit.agent.ui.components.AuroraBackground
+import dev.retrobit.agent.ui.screens.ApkInspectorScreen
+import dev.retrobit.agent.ui.screens.ApkInspectorViewModel
 import dev.retrobit.agent.ui.screens.ChatSpaceScreen
 import dev.retrobit.agent.ui.screens.ChatSpaceViewModel
 import dev.retrobit.agent.ui.screens.CloudScreen
@@ -92,6 +94,7 @@ fun RetroBitRoot() {
     val projectsVm: ProjectsViewModel = viewModel(factory = SimpleVmFactory { ProjectsViewModel(container) })
     val cloudVm: CloudViewModel = viewModel(factory = SimpleVmFactory { CloudViewModel(container) })
     val chatSpaceVm: ChatSpaceViewModel = viewModel(factory = SimpleVmFactory { ChatSpaceViewModel(container) })
+    val apkVm: ApkInspectorViewModel = viewModel(factory = SimpleVmFactory { ApkInspectorViewModel(container.context) })
     val projects by projectsVm.projects.collectAsStateWithLifecycle()
 
     RetroBitTheme {
@@ -153,6 +156,9 @@ fun RetroBitRoot() {
                                     onOpenProject = { id -> navController.navigate("workspace/$id") },
                                 )
                             }
+                        }
+                        composable("apk-inspector") {
+                            MainShell("apk-inspector", navController) { ApkInspectorScreen(apkVm) }
                         }
                         composable("cloud") {
                             MainShell("cloud", navController) {
@@ -234,6 +240,7 @@ private fun DashboardSidebar(
             SidebarItem(stringResource(R.string.nav_chat), PixelIcons.Comment, route.startsWith("chat")) { onNavigate("chat") }
             SidebarItem(stringResource(R.string.nav_templates), PixelIcons.Layout, route.startsWith("templates")) { onNavigate("templates") }
             SidebarItem(stringResource(R.string.nav_ai_cloud), PixelIcons.Cloud, route.startsWith("cloud")) { onNavigate("cloud") }
+            SidebarItem("Inspeksi APK", PixelIcons.Search, route == "apk-inspector") { onNavigate("apk-inspector") }
 
             Spacer(Modifier.height(20.dp))
             Text(
