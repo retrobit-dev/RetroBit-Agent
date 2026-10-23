@@ -119,6 +119,15 @@ class SecretStoreTest {
     }
 
     @Test
+    fun `legacy plaintext remains flagged after reopening vault`() {
+        val raw = """[{"key":"LEGACY","value":"plain:old","note":"","expose":false,"updatedAt":0}]"""
+        context.getSharedPreferences("retrobit_secrets", android.content.Context.MODE_PRIVATE).edit().putString("entries_v1", raw).commit()
+        val reopened = SecretStore(context)
+        assertEquals("old", reopened.get("LEGACY"))
+        assertFalse(reopened.keystoreAvailable)
+    }
+
+    @Test
     fun `put then get round trips the value`() {
         store.put(SecretEntry("SUPABASE_URL", "https://x.supabase.co", "URL proyek"))
         assertEquals("https://x.supabase.co", store.get("SUPABASE_URL"))

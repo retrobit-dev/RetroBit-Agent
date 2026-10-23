@@ -63,8 +63,8 @@ class SecretStore(private val context: Context) {
     }
 
     private fun decrypt(stored: String): String {
-        if (stored.startsWith("plain:")) return stored.removePrefix("plain:")
-        if (!stored.startsWith("enc:")) return stored
+        if (stored.startsWith("plain:")) { keystoreAvailable = false; return stored.removePrefix("plain:") }
+        if (!stored.startsWith("enc:")) { keystoreAvailable = false; return stored }
         val key = secretKey() ?: return ""
         return runCatching {
             val combined = Base64.decode(stored.removePrefix("enc:"), Base64.NO_WRAP)

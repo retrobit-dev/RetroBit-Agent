@@ -2,6 +2,8 @@ package dev.retrobit.agent.preview
 
 import dev.retrobit.agent.data.ProjectFiles
 import java.io.File
+import java.io.FilterInputStream
+import java.io.InputStream
 import java.net.URI
 import java.net.URLDecoder
 import java.security.MessageDigest
@@ -31,6 +33,34 @@ internal class PreviewFiles(private val files: ProjectFiles) {
             name == ".git" || name == ".env" || name.startsWith(".env.") || name.endsWith(".jks") || name.endsWith(".keystore")
         }) { "Berkas konfigurasi/kunci privat tidak dilayani preview" }
         return target
+    }
+
+    data class Asset(val bytes: Long, val stream: InputStream)
+
+    /** Validate the opened descriptor, not a path that an atomic editor can replace. */
+    fun open(file: File, maxBytes: Long = MAX_FILE_BYTES): Asset {
+        val input = file.inputStream()
+        try {
+            val size = input.channel.size()
+            require(size <= maxBytes) { "File melebihi batas preview" }
+            val bounded = object : FilterInputStream(input) {
+                private var remaining = size
+                override fun read(): Int {
+                    if (remaining == 0L) return -1
+                    return super.read().also { if (it >= 0) remaining-- }
+                }
+                override fun read(buffer: ByteArray, offset: Int, length: Int): Int {
+                    if (length == 0) return 0
+                    if (remaining == 0L) return -1
+                    return input.read(buffer, offset, minOf(length.toLong(), remaining).toInt()).also { if (it > 0) remaining -= it }
+                }
+                override fun skip(n: Long): Long = input.skip(n.coerceIn(0, remaining)).also { remaining -= it }
+                override fun available(): Int = minOf(input.available().toLong(), remaining).toInt()
+                override fun markSupported() = false
+                override fun reset() { throw java.io.IOException("Mark/reset unsupported") }
+            }
+            return Asset(size, bounded)
+        } catch (e: Exception) { input.close(); throw e }
     }
 
     companion object {

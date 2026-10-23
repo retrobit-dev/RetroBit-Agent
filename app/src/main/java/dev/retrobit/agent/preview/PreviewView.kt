@@ -199,12 +199,12 @@ fun PreviewPane(
                                 if (target.length() > max) return previewError(413)
                                 val stream = if (mime == "text/html") {
                                     val (currentDesign, currentSecrets) = liveConfig.value
-                                    val source = target.inputStream().use { input ->
+                                    val source = boundary.open(target, max).stream.use { input ->
                                         val bytes = input.readNBytesBounded(max.toInt())
                                         bytes.toString(Charsets.UTF_8)
                                     }
                                     PreviewInjector.inject(source, currentDesign, currentSecrets).byteInputStream(Charsets.UTF_8)
-                                } else target.inputStream()
+                                } else boundary.open(target, max).stream
                                 WebResourceResponse(mime, "UTF-8", 200, "OK", mapOf(
                                     "Content-Security-Policy" to PreviewFiles.CSP,
                                     "X-Content-Type-Options" to "nosniff", "Cache-Control" to "no-store",

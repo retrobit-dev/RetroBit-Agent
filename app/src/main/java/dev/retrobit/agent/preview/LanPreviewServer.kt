@@ -101,8 +101,12 @@ class LanPreviewServer(
             if (target.length() > PreviewFiles.MAX_FILE_BYTES) {
                 respond(socket, 413, "text/plain", "File exceeds preview limit".toByteArray(), head); onHit(path, 413); return
             }
-            target.inputStream().use { source ->
-                val size = target.length()
+            val asset = runCatching { policy.open(target) }.getOrNull()
+            if (asset == null) {
+                respond(socket, 413, "text/plain", "File unavailable or too large".toByteArray(), head); return
+            }
+            asset.stream.use { source ->
+                val size = asset.bytes
                 writeHeaders(socket, 200, PreviewFiles.mime(target.name), size)
                 if (!head) {
                     val out = socket.getOutputStream()

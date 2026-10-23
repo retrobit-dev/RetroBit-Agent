@@ -46,4 +46,22 @@ class PreviewFilesTest {
         assertTrue(PreviewFiles.CSP.contains("frame-src 'none'"))
         assertTrue(PreviewFiles.CSP.contains("object-src 'none'"))
     }
+    @Test fun `asset stream stays bounded if source is appended while reading`() {
+        val root = temp.newFolder(); val files = ProjectFiles(root); val p = PreviewFiles(files)
+        val target = files.write("asset.txt", "old")
+        val asset = p.open(target)
+        target.appendText(" appended")
+        asset.stream.use { assertEquals("old", it.readBytes().toString(Charsets.UTF_8)) }
+        assertEquals(3L, asset.bytes)
+    }
+    @Test fun `asset descriptor survives atomic path replacement without mixing length`() {
+        val root = temp.newFolder(); val files = ProjectFiles(root); val p = PreviewFiles(files)
+        val target = files.write("asset.txt", "original")
+        val asset = p.open(target)
+        files.write("asset.txt", "new")
+        asset.stream.use { assertEquals("original", it.readBytes().toString(Charsets.UTF_8)) }
+        assertEquals(8L, asset.bytes)
+        assertTrue(runCatching { p.open(target, 2) }.isFailure)
+    }
+
 }
