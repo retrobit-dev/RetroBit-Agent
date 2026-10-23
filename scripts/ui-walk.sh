@@ -506,8 +506,20 @@ if tap_text "Cloud"; then
     shot 16a-model-picker
     # DocumentsUI's default Recent view does not reliably index unknown GGUF.
     if tap_text "Show roots"; then tap_text "Downloads" || FAILED=1; fi
-    if tap_text "ci-model.gguf"; then
-      sleep 5
+    # Grid thumbnails relayout after loading. Use stable list rows and verify
+    # the picker really returned, rather than trusting a coordinate tap.
+    sleep 2
+    tap_text "List view" || log "event=picker-already-list"
+    sleep 2
+    PICKED=0
+    for _ in 1 2 3; do
+      tap_text "ci-model.gguf" || break
+      sleep 3
+      if $ADB shell dumpsys window | grep -q 'mCurrentFocus=.*dev.retrobit.agent'; then PICKED=1; break; fi
+    done
+    if [ "$PICKED" = 1 ]; then
+      log "event=saf-picker-returned-to-app"
+      sleep 15
       # Testing loads real weights, unlike the separate engine/grammar probe.
       if tap_text_scrolling "Uji model" exact; then
         $ADB shell input swipe 540 1300 540 950 400 >>"$LOG" 2>&1

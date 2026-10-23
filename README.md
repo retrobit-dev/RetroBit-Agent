@@ -39,7 +39,11 @@ Aplikasi Android native (Kotlin + Jetpack Compose) untuk membangun aplikasi web 
 | **Template** | 7 starter: SaaS (Nimbus), tugas (Flow), toko online (Lumen), kesehatan (Pulse), chat (Relay), portofolio (Atelier), dan kanvas kosong. |
 | **Ekspor** | Bagikan proyek sebagai ZIP lewat FileProvider (file `_meta` tidak ikut). |
 
-Mode **Demo** aktif secara default sehingga seluruh aplikasi bisa dicoba tanpa API key: agen demo memilih template, tema, dan data contoh dari kata kunci permintaanmu.
+Mulai v0.9.0, **AI di HP (offline)** adalah default — bukan demo/template simulator.
+Ketuk **Siapkan AI di HP**, lalu **Download & impor GGUF** (sekitar 1,12 GB,
+satu kali, sebaiknya Wi-Fi). Model otomatis aktif jika tidak ada provider cloud
+aktif. Tanpa model, aplikasi menampilkan panduan, bukan jawaban simulasi.
+Tidak perlu laptop atau API key. [Langkah dan batas stable](docs/releases/v0.9.0.md).
 
 ## Persyaratan
 
@@ -100,17 +104,18 @@ Workflow memakai JDK 17 (Temurin), Gradle wrapper 8.9, `gradle/actions/setup-gra
 ## Alur pertama kali
 
 1. Aplikasi membuka tab **Proyek** dan otomatis membuat proyek contoh **Nimbus** dari template SaaS.
-2. Ketuk proyek → masuk **Workspace** dengan enam tab: Chat, Preview, Kode, Design, Data, Vault.
-3. Di tab Chat, minta sesuatu — misalnya *"buat aplikasi kebiasaan dengan grafik mingguan"*.
-4. Tab **Preview** menampilkan hasilnya; tab **Design** untuk mengubah tema; tab **Vault** untuk mengisi secret.
-5. Untuk memakai model sungguhan, buka **AI Cloud** → pilih provider → tempel API key → **Uji koneksi** → **Simpan**.
+2. Untuk AI tanpa komputer/key: **Siapkan AI di HP** → **Download & impor GGUF** → tunggu selesai → **Uji model**. Bobot tidak dibundel dalam APK; setelah satu kali download, inference bisa offline.
+3. Ketuk proyek → **Workspace** dengan tab Chat, Preview, Kode, Design, Data, Vault; minta sesuatu di Chat, misalnya *"buat aplikasi kebiasaan dengan grafik mingguan"*.
+4. Tab **Preview** menampilkan hasilnya; tab **Design** untuk mengubah tema; tab **Vault** untuk mengisi secret. Chat biasa tanpa proyek ada di navigasi bawah.
+5. Cloud bersifat opsional: **AI Cloud** → pilih provider → tempel API key → **Uji koneksi** → **Simpan**. Cloud tetap tunduk pada kuota penyedia. Template simulator bukan model AI dan hanya aktif bila dipilih eksplisit.
 
 ## Menghubungkan AI
 
 | Provider | Base URL default | Contoh model |
 | --- | --- | --- |
 | Auto | — | memilih dari key yang tersimpan |
-| Demo lokal | — | `retrobit-demo` (tanpa key) |
+| AI di HP (offline, default) | — | GGUF Instruct, rekomendasi Qwen2.5-Coder 1.5B Q4_K_M |
+| Simulasi (opsional, bukan AI) | — | template deterministik, tanpa key |
 | OpenRouter | `https://openrouter.ai/api/v1` | `anthropic/claude-sonnet-4.5`, `qwen/qwen3-coder` |
 | OpenAI | `https://api.openai.com/v1` | `gpt-4.1`, `gpt-4.1-mini` |
 | Anthropic | `https://api.anthropic.com` | `claude-sonnet-4-5` |
@@ -122,7 +127,7 @@ Workflow memakai JDK 17 (Temurin), Gradle wrapper 8.9, `gradle/actions/setup-gra
 | Ollama / lokal | `http://10.0.2.2:11434/v1` | `qwen2.5-coder:7b` |
 | OpenAI-compatible | URL sendiri | nama model sendiri |
 
-- Key disimpan di `SharedPreferences` terenkripsi; tidak pernah ditulis ke file proyek atau log.
+- Key memakai AES-GCM/Android Keystore dan tidak ditulis ke file proyek atau log. Jika Keystore gagal, fallback private-preferences **tidak terenkripsi** dan aplikasi memberi peringatan; jangan anggap fallback sebagai vault terenkripsi.
 - Ollama dari emulator memakai `10.0.2.2`; dari perangkat fisik gunakan IP komputer (`http://192.168.x.x:11434/v1`). Cleartext HTTP diizinkan untuk kasus lokal ini.
 - Model reasoning OpenAI (`o3`, `o4`, `gpt-5…`) otomatis memakai `max_completion_tokens` dan tanpa `temperature`.
 
@@ -353,7 +358,7 @@ Seluruh teks yang tampil di aplikasi berada di `app/src/main/res/values/strings.
 - v0.7 menambah protokol/grammar tool offline, download HTTPS lewat MockWebServer,
   checksum dan transfer terpotong, SQL policy dan tool SQLite nyata, alias/symlink,
   serta alur AgentEngine → LocalInference fake backend → parser → tool file nyata.
-- Unit test mencakup enam area: token design (`DesignSystemTest`), katalog provider/error AI (`AiConfigTest`), filesystem proyek (`ProjectFilesTest`: traversal, zip-slip, snapshot), dan database per proyek (`DatabaseManagerTest`, berjalan di Robolectric dengan SQLite sungguhan: skema, insert/select, parameter terikat, preset seed, jembatan JSON preview, serta `clearAll`), penyimpanan pengaturan dan vault (`SettingsStoreTest`, `SecretStoreTest`: default, persistensi, fallback saat JSON rusak, nilai tidak pernah tersimpan sebagai teks biasa), serta repositori proyek (`ProjectRepositoryTest`: seed pertama, buat/hapus/duplikat, urutan recency, thread chat, ketahanan setelah restart). Mesin obrolan diuji ujung ke ujung lewat MockWebServer (`PlainChatEngineTest`: penolakan mode demo, obrolan kosong, Auto tanpa key, delta streaming, akuntansi pemakaian, batas `max_tokens`, key ditolak, prioritas persona). Format wire tiap provider diuji lewat MockWebServer (`AiStreamingTest`), dan kebijakan kuota/rotasi key diuji tanpa perangkat (`UnlimitedTest`). Alur UI tetap diverifikasi lewat smoke test emulator.
+- Unit test mencakup enam area: token design (`DesignSystemTest`), katalog provider/error AI (`AiConfigTest`), filesystem proyek (`ProjectFilesTest`: traversal, zip-slip, snapshot), dan database per proyek (`DatabaseManagerTest`, berjalan di Robolectric dengan SQLite sungguhan: skema, insert/select, parameter terikat, preset seed, jembatan JSON preview, serta `clearAll`), penyimpanan pengaturan dan vault (`SettingsStoreTest`, `SecretStoreTest`: default, persistensi, fallback saat JSON rusak, enkripsi dan peringatan fallback plaintext saat Keystore gagal), serta repositori proyek (`ProjectRepositoryTest`: seed pertama, buat/hapus/duplikat, urutan recency, thread chat, ketahanan setelah restart). Mesin obrolan diuji ujung ke ujung lewat MockWebServer (`PlainChatEngineTest`: penolakan mode demo, obrolan kosong, Auto tanpa key, delta streaming, akuntansi pemakaian, batas `max_tokens`, key ditolak, prioritas persona). Format wire tiap provider diuji lewat MockWebServer (`AiStreamingTest`), dan kebijakan kuota/rotasi key diuji tanpa perangkat (`UnlimitedTest`). Alur UI tetap diverifikasi lewat smoke test emulator.
 
 ## Troubleshooting
 
