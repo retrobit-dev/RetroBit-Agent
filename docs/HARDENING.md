@@ -21,7 +21,8 @@ JSON/source, respons timeout dan antrean operasi model. Lihat
 ## Proteksi operasional
 
 - Preview publication menunggu test/build/signature/native checks serta smoke
-  pada SHA source yang sama. Lint berjalan sebagai pemeriksaan PR tersendiri.
+  dan lint pada SHA source yang sama. Lint fatal/error atau laporan yang hilang
+  menggagalkan job; tidak lagi ditutupi `|| true`/continue-on-error.
 - Jangan menimpa tag rilis lama. Setelah lolos, gunakan APK signed prerelease
   baru. Simpan source/vault/database penting secara terpisah sebelum update.
 - Uji ulang saat Android/System WebView/NDK/dependensi berubah; jangan mengklaim

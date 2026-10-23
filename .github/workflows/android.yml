@@ -229,7 +229,7 @@ jobs:
             app/build/outputs/apk/release/app-release.apk \
             app/build/outputs/apk/debug/app-debug.apk
 
-      - name: Require successful smoke before preview publication
+      - name: Require successful smoke and lint before preview publication
         if: steps.preview.outputs.tag != ''
         env:
           GH_TOKEN: ${{ github.token }}
@@ -244,6 +244,14 @@ jobs:
           # Do not publish a build tested only with injected PackageInfo. The
           # release-APK / PackageManager smoke must pass on this exact SHA.
           timeout 15m gh run watch "$RUN" --exit-status --interval 30
+          LINT=$(gh api --method GET "repos/$GITHUB_REPOSITORY/actions/workflows/lint.yml/runs" \
+            -f head_sha="$GITHUB_SHA" -f per_page=20 \
+            --jq '[.workflow_runs[] | select(.event == "pull_request" or .event == "workflow_dispatch")] | first | .id // empty')
+          if [ -z "$LINT" ]; then
+            echo "Tidak ada lint run untuk SHA ini; preview tidak diterbitkan."
+            exit 1
+          fi
+          timeout 15m gh run watch "$LINT" --exit-status --interval 30
 
       - name: Upload R8 mapping
         if: success()
