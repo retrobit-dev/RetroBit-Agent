@@ -495,6 +495,10 @@ else
 fi
 
 # --- Actual GGUF through SAF, auto-activation, JNI loading and generation ----
+# Sending leaves the IME open: UIAutomator still exposes nav under the keyboard.
+# BACK hides it (or goes to the chat list), both safe before selecting Cloud.
+$ADB shell input keyevent KEYCODE_BACK >>"$LOG" 2>&1
+sleep 2
 if tap_text "Cloud"; then
   for _ in 1 2 3 4 5; do $ADB shell input swipe 540 650 540 1600 250 >>"$LOG" 2>&1; done
   if tap_text_scrolling "AI di HP (offline)" && tap_text_scrolling "Impor GGUF" exact; then
@@ -525,6 +529,10 @@ if tap_text "Cloud"; then
   else FAILED=1; fi
 else FAILED=1; fi
 
+if [ "$FAILED" -ne 0 ]; then
+  shot 16z-final-failure
+  dump_ui && cp /tmp/ui.xml artifacts/final-failure.xml
+fi
 log "ui_issues=$UI_ISSUES"
 log "failed=$FAILED"
 
