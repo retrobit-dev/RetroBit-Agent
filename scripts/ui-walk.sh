@@ -226,16 +226,24 @@ fi
 for pair in "Preview:03-preview" "Kode:04-code" "Desain:05-design" "Data:06-data" "Vault:07-vault" "Chat:08-chat"; do
   label=${pair%%:*}
   name=${pair##*:}
+  if [ "$label" = "Preview" ]; then $ADB logcat -c 2>/dev/null; fi
   if tap_text "$label"; then
     sleep 3
     shot "$name"
     if [ "$label" = "Preview" ]; then
-      # Must be actual WebView page content, not only the Compose Preview tab.
-      if dump_ui && grep -q "Kirim produk" /tmp/ui.xml; then
+      # Probe runs in the loaded virtual-origin document after runtime injection.
+      # Checking only a Compose label or a workflow exit code is insufficient.
+      for _ in 1 2 3 4 5 6; do
+        $ADB logcat -d -s RetroBitPreview:I '*:S' > artifacts/preview-readiness.log 2>/dev/null
+        if grep -q "ready virtual-origin bridge=1 content=1" artifacts/preview-readiness.log; then break; fi
+        sleep 1
+      done
+      if grep -q "ready virtual-origin bridge=1 content=1" artifacts/preview-readiness.log; then
         log "event=preview-virtual-origin-rendered"
       else
-        log "event=preview-content-missing"
-        UI_ISSUES=$((UI_ISSUES + 1))
+        dump_ui && cp /tmp/ui.xml artifacts/preview-ui.xml
+        log "event=preview-content-or-bridge-missing"
+        UI_ISSUES=$((UI_ISSUES + 1)); FAILED=1
       fi
     fi
     crash_check "tab-$label" || FAILED=1
@@ -489,9 +497,8 @@ fi
 log "ui_issues=$UI_ISSUES"
 log "failed=$FAILED"
 
-# A couple of tap misses are tolerated (Compose semantics differ per API level),
-# but half the walk failing means something is genuinely broken.
-if [ "$UI_ISSUES" -ge 4 ]; then
+# Release publication is strict: no hidden allowance for a few UI regressions.
+if [ "$UI_ISSUES" -ne 0 ]; then
   log "event=too-many-ui-issues"
   exit 1
 fi

@@ -56,7 +56,7 @@ android {
         applicationId = "dev.retrobit.agent"
         minSdk = 26
         targetSdk = 35
-        versionCode = 21
+        versionCode = 22
         versionName = "0.8.1"
         ndk { abiFilters += listOf("arm64-v8a", "x86_64") }
         externalNativeBuild {

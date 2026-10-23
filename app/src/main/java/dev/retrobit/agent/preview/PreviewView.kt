@@ -221,6 +221,15 @@ fun PreviewPane(
                             if (url != null && latestPolicy.isLocal(url)) {
                                 val (currentDesign, currentSecrets) = liveConfig.value
                                 view?.evaluateJavascript(PreviewInjector.runtimePatch(currentDesign, currentSecrets), null)
+                                val origin = latestPolicy.origin
+                                // No HTML, secret, SQL result or filesystem path is logged.
+                                // UIAutomator does not reliably expose WebView DOM text.
+                                val ready = """(function(){return location.origin === ${JsonPrimitive(origin)} && document.readyState === 'complete' && !!document.body && document.body.innerText.trim().length > 0 && window.__RETROBIT_NATIVE__ === true;})()"""
+                                view?.evaluateJavascript(ready) { result ->
+                                    if (result == "true" && latestPolicy.origin == origin) {
+                                        android.util.Log.i("RetroBitPreview", "ready virtual-origin bridge=1 content=1")
+                                    }
+                                }
                             }
                         }
 
