@@ -302,7 +302,7 @@ app/src/main/res/font/         # salinan font agar bisa dipakai Compose
 Pengujian:
 
 ```
-./gradlew testDebugUnitTest   # 262 tests; 0 gagal pada revisi aplikasi 52b455d
+./gradlew testDebugUnitTest   # 263 tests; 0 gagal pada revisi aplikasi 337aaca
 ./gradlew lintDebug          # Android lint
 ```
 

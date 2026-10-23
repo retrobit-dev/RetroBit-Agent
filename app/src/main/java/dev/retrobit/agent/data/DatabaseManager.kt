@@ -323,7 +323,14 @@ class DatabaseManager(context: Context, private val projectId: String) {
 
     fun queryAsJsonForBridge(sql: String, argsJson: String?): String {
         val args = parseArgs(argsJson)
-        val result = run(sql, args)
+        // Generated JavaScript must not bypass the agent's project SQL boundary
+        // through the WebView bridge (ATTACH, PRAGMA, extension loading, etc.).
+        val result = try {
+            ProjectSqlPolicy.validate(sql)
+            run(sql, args)
+        } catch (e: IllegalArgumentException) {
+            QueryResult(error = e.message ?: "SQL preview tidak diizinkan")
+        }
         return json.encodeToString(BridgeResult.serializer(), BridgeResult.from(result))
     }
 

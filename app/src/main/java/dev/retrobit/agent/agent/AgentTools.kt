@@ -1,5 +1,7 @@
 package dev.retrobit.agent.agent
 
+import dev.retrobit.agent.data.ProjectSqlPolicy as AgentSqlPolicy
+
 import dev.retrobit.agent.local.OfflineToolProtocol
 import kotlinx.coroutines.CancellationException
 import kotlinx.serialization.json.Json
@@ -85,6 +87,14 @@ class AgentToolRunner(
         val content = files.read(path) ?: return ToolOutcome(
             false, "Membaca $path", "File tidak ditemukan", "ERROR: file $path tidak ditemukan. Gunakan list_files."
         )
+        if ("start_char" in args || "max_chars" in args) {
+            val start = args.int("start_char") ?: 0
+            val count = args.int("max_chars") ?: 900
+            require(start in 0..content.length && count in 1..16000) { "start_char harus 0..panjang file; max_chars harus 1..16000." }
+            val end = (start + count).coerceAtMost(content.length)
+            return ToolOutcome(true, "Membaca $path", "Karakter $start..$end / ${content.length}",
+                "FILE $path CHARS $start..$end OF ${content.length}; next_start_char=$end\n${content.substring(start, end)}")
+        }
         return ToolOutcome(
             true, "Membaca $path", "${content.length} karakter",
             content.take(16000) + if (content.length > 16000) "\n… (dipotong)" else "",
@@ -317,8 +327,12 @@ class AgentToolRunner(
             ),
             AiToolDef(
                 "read_file",
-                "Baca isi sebuah file teks. Path relatif, contoh: index.html atau assets/app.js.",
-                schema(buildJsonObject { put("path", prop("string", "Path relatif file")) }, listOf("path")),
+                "Baca file teks. Untuk file panjang gunakan start_char (indeks karakter UTF-16, 0-based) dan max_chars; offline disarankan 900. Lanjutkan dari next_start_char.",
+                schema(buildJsonObject {
+                    put("path", prop("string", "Path relatif file"))
+                    put("start_char", prop("integer", "Mulai karakter, 0-based; opsional"))
+                    put("max_chars", prop("integer", "Jumlah karakter 1..16000; offline 900"))
+                }, listOf("path")),
             ),
             AiToolDef(
                 "write_file",

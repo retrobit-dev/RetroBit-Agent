@@ -87,4 +87,13 @@ class AgentToolsTest {
         assertFalse(result.success); assertTrue(result.modelOutput.contains("bad.json"))
         assertTrue(call("project_info").modelOutput.contains("bukan APK"))
     }
+    @Test fun `paged file reads reach content beyond the offline context prefix`() = runBlocking {
+        files.write("large.txt", "x".repeat(5000) + "tail")
+        val page = call("read_file", buildJsonObject { put("path", "large.txt"); put("start_char", 4900); put("max_chars", 900) })
+        assertTrue(page.success); assertTrue(page.modelOutput.endsWith("tail"))
+        assertTrue(page.modelOutput.contains("next_start_char=5004")); assertTrue(page.modelOutput.length < 1200)
+        assertFalse(call("read_file", buildJsonObject { put("path", "large.txt"); put("start_char", -1) }).success)
+        assertEquals(5004, files.read("large.txt")!!.length)
+    }
+
 }

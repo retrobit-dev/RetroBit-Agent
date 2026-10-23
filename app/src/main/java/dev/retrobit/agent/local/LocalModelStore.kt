@@ -31,7 +31,8 @@ class LocalModelStore(private val context: Context) {
     val sizeBytes: Long get() = if (ready) file.length() else 0L
     val sha256: String get() = if (ready) preferences.getString("sha256", "").orEmpty() else ""
 
-    suspend fun import(uri: Uri, progress: suspend (Long) -> Unit) = withContext(Dispatchers.IO) {
+    suspend fun import(uri: Uri, expectedSha256: String = "", progress: suspend (Long) -> Unit) = withContext(Dispatchers.IO) {
+        val checksum = ModelDownloadPolicy.checksum(expectedSha256)
         transfers.withLock {
             val name = runCatching {
                 context.contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)?.use { cursor ->
@@ -39,7 +40,7 @@ class LocalModelStore(private val context: Context) {
                 }
             }.getOrNull()?.take(120) ?: "Model GGUF"
             context.contentResolver.openInputStream(uri)?.use { input ->
-                install(input, name, -1, null, progress)
+                install(input, name, -1, checksum, progress)
             } ?: error("Tidak bisa membaca berkas yang dipilih.")
         }
     }

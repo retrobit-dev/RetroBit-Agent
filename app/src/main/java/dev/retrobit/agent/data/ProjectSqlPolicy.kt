@@ -1,7 +1,7 @@
-package dev.retrobit.agent.agent
+package dev.retrobit.agent.data
 
 /** Conservative SQL lexical gate, not a SQL parser: one project-local statement, no file I/O. */
-internal object AgentSqlPolicy {
+internal object ProjectSqlPolicy {
     fun validate(sql: String) {
         require(sql.length in 1..20_000) { "SQL kosong atau terlalu panjang." }
         val visible = StringBuilder()

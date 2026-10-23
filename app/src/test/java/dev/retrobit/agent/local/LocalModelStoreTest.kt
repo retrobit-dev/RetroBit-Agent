@@ -66,4 +66,12 @@ class LocalModelStoreTest {
         assertEquals(expected, store.sha256)
     }
 
+    @Test fun `file picker import verifies supplied publisher checksum too`() = runBlocking {
+        store.import(Uri.fromFile(input)) {}
+        val original = store.sha256
+        val result = runCatching { store.import(Uri.fromFile(input), "0".repeat(64)) {} }
+        assertTrue(result.isFailure); assertEquals(original, store.sha256)
+        assertEquals(72L, store.sizeBytes)
+    }
+
 }

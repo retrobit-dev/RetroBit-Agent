@@ -119,6 +119,7 @@ class CloudViewModel(private val container: AppContainer) : ViewModel() {
 
     fun importLocalModel(uri: Uri) {
         if (importingModel || testing) return
+        val checksum = expectedSha256
         importingModel = true
         downloadingModel = false
         transferTotal = -1
@@ -126,7 +127,7 @@ class CloudViewModel(private val container: AppContainer) : ViewModel() {
         localMessage = "Menyalin model ke penyimpanan privat…"
         importJob = viewModelScope.launch {
             try {
-                container.localModels.import(uri) { bytes -> withContext(Dispatchers.Main) { importBytes = bytes } }
+                container.localModels.import(uri, checksum) { bytes -> withContext(Dispatchers.Main) { importBytes = bytes } }
                 refreshLocalModel()
                 localMessage = "Model diimpor. Tekan Simpan lalu Uji model untuk memeriksa kompatibilitas."
             } catch (e: CancellationException) {

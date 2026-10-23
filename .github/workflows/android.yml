@@ -33,14 +33,26 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
 
-      - name: Validate preview release input
-        if: github.event_name == 'workflow_dispatch' && inputs.preview_tag != ''
+      - name: Read explicit preview publication request
+        id: preview
         env:
-          PREVIEW_TAG: ${{ inputs.preview_tag }}
+          INPUT_TAG: ${{ inputs.preview_tag }}
+          COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
+          EVENT_NAME: ${{ github.event_name }}
         run: |
-          [[ "$PREVIEW_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+-preview\.[0-9]+$ ]] || {
-            echo "preview_tag harus berbentuk vX.Y.Z-preview.N"; exit 1;
-          }
+          TAG="$INPUT_TAG"
+          # Commit-title publication also works for integrations allowed to
+          # push this branch but not allowed to dispatch Actions workflows.
+          TITLE="${COMMIT_MESSAGE%%$'\n'*}"
+          if [[ "$EVENT_NAME" == "push" && "$TITLE" == "Release preview: "* ]]; then
+            TAG="${TITLE#Release preview: }"
+          fi
+          if [ -n "$TAG" ]; then
+            [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+-preview\.[0-9]+$ ]] || {
+              echo "preview tag harus berbentuk vX.Y.Z-preview.N"; exit 1;
+            }
+            echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Set up JDK 17
         uses: actions/setup-java@v6
@@ -91,6 +103,7 @@ jobs:
           print("\n".join(lines))
           print(summary)
           print(f"::notice title=Tests::{summary}")
+          PY
 
       - name: Annotate failing unit tests
         if: failure()
@@ -225,22 +238,29 @@ jobs:
           retention-days: 30
 
       - name: Publish GitHub Release
-        if: startsWith(github.ref, 'refs/tags/v') || (github.event_name == 'workflow_dispatch' && inputs.preview_tag != '')
+        if: startsWith(github.ref, 'refs/tags/v') || steps.preview.outputs.tag != ''
         env:
           GH_TOKEN: ${{ github.token }}
-          PREVIEW_TAG: ${{ inputs.preview_tag }}
+          PREVIEW_TAG: ${{ steps.preview.outputs.tag }}
         run: |
           TAG="${PREVIEW_TAG:-$GITHUB_REF_NAME}"
           FLAGS=()
           # Preview tags must never displace the latest stable release, even
           # briefly. Manual publication targets this exact tested branch SHA.
           if [[ "$TAG" == *-* ]]; then FLAGS=(--prerelease --latest=false); fi
+          NOTES="$RUNNER_TEMP/retrobit-release-notes.md"
+          if [ -f "docs/releases/$TAG.md" ]; then
+            cp "docs/releases/$TAG.md" "$NOTES"
+          else
+            printf '%s\n' "APK bertanda tangan. Buka app-release.apk langsung di HP untuk memasang." > "$NOTES"
+          fi
+          printf '\nSource commit: `%s`.\n' "$GITHUB_SHA" >> "$NOTES"
           gh release create "$TAG" \
             app/build/outputs/apk/release/app-release.apk \
             app/build/outputs/apk/debug/app-debug.apk \
             --title "RetroBit $TAG" "${FLAGS[@]}" \
             --target "$GITHUB_SHA" \
-            --notes "APK bertanda tangan dari commit $GITHUB_SHA. Pasang dengan adb install -r app-release.apk atau buka filenya langsung di HP (izinkan install unknown apps)."
+            --notes-file "$NOTES"
 
       - name: Upload APK
         if: success()

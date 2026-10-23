@@ -49,7 +49,7 @@ fun OnDevicePanel(vm: CloudViewModel) {
                 OutlinedTextField(value = vm.expectedSha256, onValueChange = { vm.expectedSha256 = it.take(64) },
                     label = { Text("SHA-256 penerbit (opsional)") }, enabled = !vm.importingModel,
                     modifier = Modifier.fillMaxWidth(), maxLines = 2)
-                Text("Tanpa checksum penerbit, HTTPS + header GGUF bukan jaminan keaslian atau kompatibilitas model.", style = MaterialTheme.typography.bodySmall)
+                Text("SHA-256 di atas dipakai untuk download maupun impor. Tanpa checksum penerbit, HTTPS + header GGUF bukan jaminan keaslian atau kompatibilitas model.", style = MaterialTheme.typography.bodySmall)
                 GradientButton("Download & impor GGUF", enabled = !vm.importingModel && !vm.testing,
                     modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp), onClick = vm::downloadLocalModel)
                 TextButton(onClick = { vm.downloadUrl = dev.retrobit.agent.local.ModelDownloadPolicy.RECOMMENDED_URL }, enabled = !vm.importingModel) {

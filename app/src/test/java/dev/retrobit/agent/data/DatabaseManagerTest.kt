@@ -316,4 +316,23 @@ class DatabaseManagerTest {
     fun `splitStatements drops empty chunks`() {
         assertEquals(1, DatabaseManager.splitStatements(";;  ;SELECT 1;;").size)
     }
+    @Test fun `preview bridge cannot bypass project SQL policy`() {
+        createTasks()
+        val statements = listOf("ATTACH DATABASE '/tmp/other.db' AS other", "-- comment\nPRAGMA writable_schema=1",
+            "DETACH other", "SELECT \"load_extension\"('/tmp/x')", "DELETE FROM tasks; DROP TABLE tasks")
+        statements.forEach { sql ->
+            val payload = Json.parseToJsonElement(manager.queryAsJsonForBridge(sql, null)).jsonObject
+            assertNotNull(sql, payload.getValue("error").jsonPrimitive.contentOrNull)
+        }
+        assertTrue(manager.tables().any { it.name == "tasks" })
+    }
+    @Test fun `preview SQL guard does not treat bound values and literals as commands`() {
+        createTasks()
+        val inserted = Json.parseToJsonElement(manager.queryAsJsonForBridge("INSERT INTO tasks(title) VALUES (?)", """["ATTACH; load_extension"]""")).jsonObject
+        assertNull(inserted.getValue("error").jsonPrimitive.contentOrNull)
+        val selected = Json.parseToJsonElement(manager.queryAsJsonForBridge("SELECT title, 'PRAGMA; ATTACH' AS literal FROM tasks", null)).jsonObject
+        assertNull(selected.getValue("error").jsonPrimitive.contentOrNull)
+        assertEquals("ATTACH; load_extension", selected.getValue("rows").jsonArray.single().jsonArray.first().jsonPrimitive.content)
+    }
+
 }

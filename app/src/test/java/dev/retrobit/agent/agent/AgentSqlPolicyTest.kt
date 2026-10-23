@@ -1,5 +1,7 @@
 package dev.retrobit.agent.agent
 
+import dev.retrobit.agent.data.ProjectSqlPolicy as AgentSqlPolicy
+
 import org.junit.Assert.*
 import org.junit.Test
 

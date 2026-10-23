@@ -86,7 +86,8 @@ di Infinix. Model besar tidak disimpan di Git atau diunduh otomatis oleh CI.
 
 **Download** tersedia di panel AI di HP: pilih URL rekomendasi Qwen atau masukkan
 URL HTTPS langsung ke satu berkas GGUF publik. SHA-256 penerbit opsional;
-bila diberikan harus cocok. SHA-256 salinan selalu dihitung dan ditampilkan.
+bila diberikan harus cocok untuk download maupun impor dari pemilih berkas.
+SHA-256 salinan selalu dihitung dan ditampilkan.
 Download besar memakai kuota internet. Tetap buka aplikasi: belum ada resume
 atau layanan background. Pembatalan saat menunggu body jaringan dapat menunggu
 read-timeout (20 detik). Retry dimulai dari awal, bukan menambahkan ke parsial.
@@ -124,12 +125,17 @@ Maksimum 14 langkah/sesi; disarankan konteks 4096 dan tugas kecil. Konteks agen
 mempertahankan permintaan saat ini serta dua siklus tool terakhir, bukan seluruh
 riwayat. Argumen tool lama dihilangkan secara eksplisit; baca ulang file jika
 perlu. Pesan persona pengguna tetap dipertahankan. Berkas dibatasi 400KB/tool.
+`read_file` dapat membaca potongan lewat `start_char` (indeks UTF-16, 0-based)
+dan `max_chars=900`; hasil berisi `next_start_char`. Ini memungkinkan agen
+membaca bagian berikutnya tanpa terus mengulang prefix file yang terpotong.
 Snapshot **file** dibuat sebelum sesi, bisa dipulihkan lewat menu proyek;
 snapshot tersebut tidak mencakup database. Gagal/dibatalkan tidak otomatis
 membatalkan tool yang sudah selesai—lihat daftar langkah dan pulihkan jika perlu.
 
 Path dibatasi ke proyek, termasuk alias root/_meta dan symlink yang keluar.
-SQL tool menerima satu statement; ATTACH/DETACH/PRAGMA/VACUUM/extension loading
-serta SQL rekursif diblokir. Tidak ada tool shell, root, instalasi diam-diam,
+SQL tool dan bridge JavaScript preview menerima satu statement;
+ATTACH/DETACH/PRAGMA/VACUUM/extension loading serta SQL rekursif diblokir.
+Konsol Data manual pengguna tetap terpisah; pembatasan bridge mencegah kode
+hasil model melewati batas tool lewat JavaScript. Tidak ada tool shell, root, instalasi diam-diam,
 atau build APK. Source Kotlin/Gradle bisa ditulis/diekspor, tetapi pipeline
 kompilasi/signing APK hasil proyek tetap belum terintegrasi.
