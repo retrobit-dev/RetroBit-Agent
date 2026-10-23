@@ -173,12 +173,7 @@ class ChatSpaceStore(private val context: Context) {
 
     private fun persist(conversations: List<ChatConversation>) {
         runCatching {
-            val tmp = File(file.parentFile, "${file.name}.tmp")
-            tmp.writeText(json.encodeToString(conversations))
-            if (!tmp.renameTo(file)) {
-                file.writeText(tmp.readText())
-                tmp.delete()
-            }
+            AtomicFiles.writeText(file, json.encodeToString(conversations))
         }
     }
 }

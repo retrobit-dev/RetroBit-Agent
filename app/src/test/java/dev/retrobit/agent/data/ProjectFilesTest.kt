@@ -248,7 +248,8 @@ class ProjectFilesTest {
     }
 
     @Test
-    fun `restore ignores zip-slip entries`() {
+    fun `restore rejects zip-slip without discarding current sources`() {
+        files.write("index.html", "previous")
         val evil = File(tmp.root, "evil.zip")
         ZipOutputStream(evil.outputStream()).use { zip ->
             zip.putNextEntry(ZipEntry("good.txt"))
@@ -259,8 +260,9 @@ class ProjectFilesTest {
             zip.closeEntry()
         }
 
-        assertTrue(files.restoreSnapshot(evil))
-        assertEquals("ok", files.read("good.txt"))
+        assertFalse(files.restoreSnapshot(evil))
+        assertNull(files.read("good.txt"))
+        assertEquals("previous", files.read("index.html"))
         assertFalse(File(root.parentFile, "escaped.txt").exists())
     }
 

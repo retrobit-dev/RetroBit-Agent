@@ -165,7 +165,7 @@ class ProjectRepository(private val context: Context, private val settings: Sett
     suspend fun saveThread(projectId: String, messages: List<ChatMessage>) = withContext(Dispatchers.IO) {
         val file = filesFor(projectId).metaFile("chat.json")
         runCatching {
-            file.writeText(json.encodeToString(ChatThread(messages.takeLast(200))))
+            AtomicFiles.writeText(file, json.encodeToString(ChatThread(messages.takeLast(200))))
         }
     }
 
@@ -174,6 +174,6 @@ class ProjectRepository(private val context: Context, private val settings: Sett
     }
 
     private fun persist() {
-        runCatching { indexFile.writeText(json.encodeToString(_projects.value)) }
+        runCatching { AtomicFiles.writeText(indexFile, json.encodeToString(_projects.value)) }
     }
 }

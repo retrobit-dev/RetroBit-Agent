@@ -252,6 +252,7 @@ class WorkspaceViewModel(
     }
 
     fun restoreLatestSnapshot() {
+        if (_live.value.running) return
         viewModelScope.launch(Dispatchers.IO) {
             val snapshot = files.latestSnapshot() ?: return@launch
             val restored = files.restoreSnapshot(snapshot)
@@ -259,6 +260,8 @@ class WorkspaceViewModel(
                 repo.notifyFilesChanged()
                 refreshFiles()
                 withContext(Dispatchers.Main) { _reloadTick.update { it + 1 } }
+            } else {
+                _live.update { it.copy(notice = "Snapshot gagal dipulihkan. Periksa ruang penyimpanan dan keutuhan arsip; sumber lama dipertahankan jika rollback berhasil.") }
             }
         }
     }

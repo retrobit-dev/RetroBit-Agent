@@ -77,6 +77,8 @@ class CloudViewModel(private val container: AppContainer) : ViewModel() {
     var expectedSha256 by mutableStateOf("")
     var transferTotal by mutableStateOf(-1L)
         private set
+    var deletingModel by mutableStateOf(false)
+        private set
     var downloadingModel by mutableStateOf(false)
         private set
     var localModelHash by mutableStateOf(container.localModels.sha256)
@@ -161,14 +163,20 @@ class CloudViewModel(private val container: AppContainer) : ViewModel() {
 
     fun deleteLocalModel() {
         if (importingModel || testing) return
-        viewModelScope.launch {
+        importingModel = true
+        deletingModel = true
+        localMessage = "Menghapus model privat…"
+        importJob = viewModelScope.launch {
             try {
                 container.localModels.delete()
-                localModelName = container.localModels.label
-                localModelBytes = 0
-                localModelHash = ""
+                refreshLocalModel()
                 localMessage = "Model dihapus dari penyimpanan privat."
-            } catch (e: Exception) { localMessage = e.message }
+            } catch (e: CancellationException) {
+                refreshLocalModel()
+                localMessage = "Operasi dihentikan; status model telah diperbarui."
+                throw e
+            } catch (e: Exception) { localMessage = e.message
+            } finally { importingModel = false; deletingModel = false }
         }
     }
 

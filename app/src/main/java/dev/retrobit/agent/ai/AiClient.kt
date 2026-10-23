@@ -1,5 +1,7 @@
 package dev.retrobit.agent.ai
 
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
@@ -24,7 +26,6 @@ import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Response
 import java.io.IOException
-import java.io.InterruptedIOException
 import java.util.UUID
 import java.util.concurrent.TimeUnit
 import kotlin.coroutines.resume
@@ -153,11 +154,9 @@ internal suspend fun OkHttpClient.executeAsync(request: Request): Response =
 internal suspend fun ResponseBody.readSse(onEvent: suspend (String) -> Unit) {
     val source = source()
     while (true) {
-        val line = try {
-            source.readUtf8Line()
-        } catch (e: InterruptedIOException) {
-            null
-        }
+        currentCoroutineContext().ensureActive()
+        val line = source.readUtf8Line()
+        currentCoroutineContext().ensureActive()
         if (line == null) break
         if (line.isBlank() || line.startsWith(":")) continue
         if (!line.startsWith("data:")) continue

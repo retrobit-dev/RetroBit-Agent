@@ -3,7 +3,6 @@ package dev.retrobit.agent.data
 import java.io.File
 import java.io.FileOutputStream
 import java.util.zip.ZipEntry
-import java.util.zip.ZipInputStream
 import java.util.zip.ZipOutputStream
 
 /**
@@ -12,11 +11,17 @@ import java.util.zip.ZipOutputStream
  */
 class ProjectFiles(val root: File) {
 
+    internal val sourceLock = locks.computeIfAbsent(root.canonicalPath) { Any() }
+
     init {
-        if (!root.exists()) root.mkdirs()
+        synchronized(sourceLock) {
+            if (!root.exists()) root.mkdirs()
+            ProjectSnapshot.recover(this)
+        }
     }
 
     companion object {
+        private val locks = java.util.concurrent.ConcurrentHashMap<String, Any>()
         const val META_DIR = "_meta"
         const val ENTRY_POINT = "index.html"
 
@@ -53,59 +58,71 @@ class ProjectFiles(val root: File) {
     }.getOrNull()
 
     fun write(path: String, content: String): File {
-        val file = resolve(path)
-        file.parentFile?.mkdirs()
-        file.writeText(content)
-        return file
+        synchronized(sourceLock) {
+            val file = resolve(path)
+            file.parentFile?.mkdirs()
+            AtomicFiles.writeText(file, content)
+            return file
+        }
     }
 
     fun append(path: String, content: String) {
-        val file = resolve(path)
-        file.parentFile?.mkdirs()
-        file.appendText(content)
+        synchronized(sourceLock) {
+            val file = resolve(path)
+            file.parentFile?.mkdirs()
+            file.appendText(content)
+        }
     }
 
     fun edit(path: String, find: String, replace: String, all: Boolean = false): Boolean {
-        val current = read(path) ?: return false
-        if (!current.contains(find)) return false
-        val next = if (all) current.replace(find, replace) else current.replaceFirst(find, replace)
-        write(path, next)
-        return true
+        synchronized(sourceLock) {
+            val current = read(path) ?: return false
+            if (!current.contains(find)) return false
+            val next = if (all) current.replace(find, replace) else current.replaceFirst(find, replace)
+            write(path, next)
+            return true
+        }
     }
 
     fun delete(path: String): Boolean {
-        val file = resolve(path)
-        return if (file.isDirectory) file.deleteRecursively() else file.delete()
+        synchronized(sourceLock) {
+            val file = resolve(path)
+            return if (file.isDirectory) file.deleteRecursively() else file.delete()
+        }
     }
 
     fun rename(path: String, newPath: String): Boolean {
-        val from = resolve(path)
-        val to = resolve(newPath)
-        if (!from.exists() || to.exists()) return false
-        to.parentFile?.mkdirs()
-        return from.renameTo(to)
+        synchronized(sourceLock) {
+            val from = resolve(path)
+            val to = resolve(newPath)
+            if (!from.exists() || to.exists()) return false
+            to.parentFile?.mkdirs()
+            return from.renameTo(to)
+        }
     }
 
     fun ensureEntryPoint(): Boolean {
-        if (!resolve(ENTRY_POINT).exists()) {
-            write(
-                ENTRY_POINT,
-                """
-                <!doctype html>
-                <html lang="id"><head><meta charset="utf-8">
-                <meta name="viewport" content="width=device-width, initial-scale=1">
-                <title>RetroBit Preview</title></head>
-                <body style="font-family:system-ui;background:#0B0B12;color:#F5F5FA;display:grid;place-items:center;height:100vh;margin:0">
-                <div style="text-align:center">
-                  <div style="font-size:40px">🤖</div>
-                  <h2>Preview siap</h2>
-                  <p style="color:#8C8CA1">Minta AI membuat sesuatu untuk melihat hasilnya di sini.</p>
-                </div></body></html>
-                """.trimIndent()
-            )
-            return true
+        synchronized(sourceLock) {
+            if (!resolve(ENTRY_POINT).exists()) {
+                write(
+                    ENTRY_POINT,
+                    """
+                    <!doctype html>
+                    <html lang="id"><head><meta charset="utf-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1">
+                    <title>RetroBit Preview</title></head>
+                    <body style="font-family:system-ui;background:#0B0B12;color:#F5F5FA;display:grid;place-items:center;height:100vh;margin:0">
+                    <div style="text-align:center">
+                      <div style="font-size:40px">🤖</div>
+                      <h2>Preview siap</h2>
+                      <p style="color:#8C8CA1">Minta AI membuat sesuatu untuk melihat hasilnya di sini.</p>
+                    </div></body></html>
+                    """.trimIndent()
+                )
+                return true
+            }
+            return false
         }
-        return false
     }
 
     fun readEntryPoint(): String = read(ENTRY_POINT) ?: ""
@@ -143,6 +160,7 @@ class ProjectFiles(val root: File) {
     }
 
     fun snapshot(maxCharsPerFile: Int = 12000): String {
+        require(maxCharsPerFile >= 0)
         val sb = StringBuilder()
         for (file in allFiles().sortedBy { it.path }) {
             val rel = file.relativeTo(root).path.replace('\\', '/')
@@ -151,7 +169,19 @@ class ProjectFiles(val root: File) {
                 sb.appendLine("--- $rel (binary, ${file.length()} bytes) ---")
                 continue
             }
-            val text = runCatching { file.readText() }.getOrNull() ?: continue
+            val text = runCatching {
+                file.reader(Charsets.UTF_8).use { reader ->
+                    val content = StringBuilder()
+                    val buffer = CharArray(4096)
+                    val limit = minOf(maxCharsPerFile.toLong() + 1, Int.MAX_VALUE.toLong()).toInt()
+                    while (content.length < limit) {
+                        val n = reader.read(buffer, 0, minOf(buffer.size, limit - content.length))
+                        if (n < 0) break
+                        content.append(buffer, 0, n)
+                    }
+                    content.toString()
+                }
+            }.getOrNull() ?: continue
             sb.appendLine("--- $rel ---")
             sb.appendLine(if (text.length > maxCharsPerFile) text.take(maxCharsPerFile) + "\n… (dipotong)" else text)
         }
@@ -167,17 +197,19 @@ class ProjectFiles(val root: File) {
     }.ifBlank { "(kosong)" }
 
     fun exportZip(destination: File): File {
-        destination.parentFile?.mkdirs()
-        ZipOutputStream(FileOutputStream(destination)).use { zip ->
-            for (file in allFiles().sortedBy { it.path }) {
-                val rel = file.relativeTo(root).path.replace('\\', '/')
-                if (rel.startsWith("$META_DIR/")) continue
-                zip.putNextEntry(ZipEntry(rel))
-                file.inputStream().use { it.copyTo(zip) }
-                zip.closeEntry()
+        synchronized(sourceLock) {
+            destination.parentFile?.mkdirs()
+            ZipOutputStream(FileOutputStream(destination)).use { zip ->
+                for (file in allFiles().sortedBy { it.path }) {
+                    val rel = file.relativeTo(root).path.replace('\\', '/')
+                    if (rel.startsWith("$META_DIR/")) continue
+                    zip.putNextEntry(ZipEntry(rel))
+                    file.inputStream().use { it.copyTo(zip) }
+                    zip.closeEntry()
+                }
             }
+            return destination
         }
-        return destination
     }
 
     fun metaFile(name: String): File {
@@ -188,19 +220,21 @@ class ProjectFiles(val root: File) {
 
     /** Zips current sources into _meta/snapshots, keeping the newest 10. */
     fun createSnapshot(): File? {
-        val dir = File(root, "$META_DIR/snapshots")
-        if (!dir.exists() && !dir.mkdirs()) return null
-        val destination = File(dir, "snapshot-${System.currentTimeMillis()}.zip")
-        val created = runCatching { exportZip(destination) }.getOrNull() ?: return null
-        if (runCatching { allFiles().isEmpty() }.getOrDefault(true)) {
-            runCatching { destination.delete() }
-            return null
+        synchronized(sourceLock) {
+            val dir = File(root, "$META_DIR/snapshots")
+            if (!dir.exists() && !dir.mkdirs()) return null
+            val destination = File(dir, "snapshot-${System.currentTimeMillis()}.zip")
+            val created = runCatching { exportZip(destination) }.getOrNull() ?: return null
+            if (runCatching { allFiles().isEmpty() }.getOrDefault(true)) {
+                runCatching { destination.delete() }
+                return null
+            }
+            dir.listFiles()?.filter { it.extension == "zip" }
+                ?.sortedByDescending { it.name }
+                ?.drop(10)
+                ?.forEach { runCatching { it.delete() } }
+            return created
         }
-        dir.listFiles()?.filter { it.extension == "zip" }
-            ?.sortedByDescending { it.name }
-            ?.drop(10)
-            ?.forEach { runCatching { it.delete() } }
-        return created
     }
 
     fun latestSnapshot(): File? = File(root, "$META_DIR/snapshots")
@@ -209,41 +243,19 @@ class ProjectFiles(val root: File) {
         ?.maxByOrNull { it.lastModified() }
 
     /** Restores a snapshot created by [createSnapshot]. Returns false when the zip is unusable. */
-    fun restoreSnapshot(snapshot: File): Boolean {
-        val entries = mutableListOf<Pair<String, ByteArray>>()
-        runCatching {
-            ZipInputStream(snapshot.inputStream()).use { zip ->
-                var entry = zip.nextEntry
-                while (entry != null) {
-                    val name = entry.name.replace('\\', '/')
-                    if (!entry.isDirectory && name.isNotBlank() && !name.startsWith("/") && !name.split('/').contains("..")) {
-                        entries.add(name to zip.readBytes())
-                    }
-                    zip.closeEntry()
-                    entry = zip.nextEntry
-                }
-            }
-        }.getOrElse { return false }
-        if (entries.isEmpty()) return false
-        clearSources()
-        for ((name, bytes) in entries) {
-            runCatching {
-                val target = resolve(name)
-                target.parentFile?.mkdirs()
-                target.writeBytes(bytes)
-            }
-        }
-        ensureEntryPoint()
-        return true
-    }
+    fun restoreSnapshot(snapshot: File): Boolean = ProjectSnapshot.restore(this, snapshot)
 
     fun clear() {
-        root.listFiles()?.forEach { it.deleteRecursively() }
+        synchronized(sourceLock) {
+            root.listFiles()?.forEach { it.deleteRecursively() }
+        }
     }
 
     /** Removes generated source files but keeps conversation / metadata. */
     fun clearSources() {
-        root.listFiles()?.forEach { if (it.name != META_DIR) it.deleteRecursively() }
+        synchronized(sourceLock) {
+            root.listFiles()?.forEach { if (it.name != META_DIR) it.deleteRecursively() }
+        }
     }
 
 }

@@ -8,6 +8,7 @@ import android.webkit.ConsoleMessage
 import android.webkit.JavascriptInterface
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceError
+import android.webkit.WebResourceResponse
 import android.webkit.WebResourceRequest
 import android.webkit.WebSettings
 import android.webkit.WebView
@@ -120,9 +121,8 @@ fun PreviewPane(
     val webRef = remember { mutableStateOf<WebView?>(null) }
     var loading by remember { mutableStateOf(true) }
     var hasError by remember { mutableStateOf(false) }
-    val html by remember(filesRoot, design, exposedSecrets, reloadSignal) {
-        mutableStateOf(readHtml(filesRoot))
-    }
+    val policy = remember(filesRoot) { PreviewFiles(ProjectFiles(filesRoot)) }
+    val latestPolicy by rememberUpdatedState(policy)
 
     val liveConfig = remember { mutableStateOf(design to exposedSecrets) }
     liveConfig.value = design to exposedSecrets
@@ -150,17 +150,17 @@ fun PreviewPane(
                         javaScriptEnabled = true
                         domStorageEnabled = true
                         databaseEnabled = true
-                        allowFileAccess = true
+                        allowFileAccess = false
                         allowContentAccess = false
-                        // Preview pages live under file://; without these the WebView
-                        // refuses to read sibling files such as the bundled font.
+                        // A per-project HTTPS virtual origin serves only validated project
+                        // paths. No file:// access to app-private storage is needed.
                         @Suppress("DEPRECATION")
-                        allowFileAccessFromFileURLs = true
+                        allowFileAccessFromFileURLs = false
                         @Suppress("DEPRECATION")
-                        allowUniversalAccessFromFileURLs = true
+                        allowUniversalAccessFromFileURLs = false
                         cacheMode = WebSettings.LOAD_DEFAULT
                         mediaPlaybackRequiresUserGesture = false
-                        mixedContentMode = WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE
+                        mixedContentMode = WebSettings.MIXED_CONTENT_NEVER_ALLOW
                         useWideViewPort = true
                         loadWithOverviewMode = true
                         textZoom = 100
@@ -170,7 +170,7 @@ fun PreviewPane(
                     addJavascriptInterface(bridge, "RetroBitNative")
                     webChromeClient = object : WebChromeClient() {
                         override fun onConsoleMessage(msg: ConsoleMessage): Boolean {
-                            onConsole(
+                            latestConsole(
                                 ConsoleEntry(
                                     level = msg.messageLevel().name,
                                     message = msg.message(),
@@ -182,37 +182,63 @@ fun PreviewPane(
                         }
                     }
                     webViewClient = object : WebViewClient() {
+                        override fun shouldInterceptRequest(view: WebView?, request: WebResourceRequest?): WebResourceResponse? {
+                            val uri = request?.url ?: return null
+                            val boundary = latestPolicy
+                            if (!boundary.isLocal(uri.toString())) {
+                                // Never let remote top-level documents acquire the native bridge.
+                                if (request.isForMainFrame || uri.scheme in listOf("file", "content")) return previewError(403)
+                                return null // External HTTPS assets use ordinary browser CORS.
+                            }
+                            if (request.method != "GET") return previewError(405)
+                            return runCatching {
+                                val target = boundary.resolve(uri.encodedPath.orEmpty())
+                                if (!target.isFile) return previewError(404)
+                                val mime = PreviewFiles.mime(target.name)
+                                val max = if (mime == "text/html") PreviewFiles.MAX_HTML_BYTES else PreviewFiles.MAX_FILE_BYTES
+                                if (target.length() > max) return previewError(413)
+                                val stream = if (mime == "text/html") {
+                                    val (currentDesign, currentSecrets) = liveConfig.value
+                                    val source = target.inputStream().use { input ->
+                                        val bytes = input.readNBytesBounded(max.toInt())
+                                        bytes.toString(Charsets.UTF_8)
+                                    }
+                                    PreviewInjector.inject(source, currentDesign, currentSecrets).byteInputStream(Charsets.UTF_8)
+                                } else target.inputStream()
+                                WebResourceResponse(mime, "UTF-8", 200, "OK", mapOf(
+                                    "Content-Security-Policy" to PreviewFiles.CSP,
+                                    "X-Content-Type-Options" to "nosniff", "Cache-Control" to "no-store",
+                                ), stream)
+                            }.getOrElse { previewError(403) }
+                        }
+
                         override fun onPageStarted(view: WebView?, url: String?, favicon: android.graphics.Bitmap?) {
                             loading = true
                         }
 
                         override fun onPageFinished(view: WebView?, url: String?) {
                             loading = false
-                            val (currentDesign, currentSecrets) = liveConfig.value
-                            view?.evaluateJavascript(PreviewInjector.runtimePatch(currentDesign, currentSecrets), null)
+                            if (url != null && latestPolicy.isLocal(url)) {
+                                val (currentDesign, currentSecrets) = liveConfig.value
+                                view?.evaluateJavascript(PreviewInjector.runtimePatch(currentDesign, currentSecrets), null)
+                            }
                         }
 
                         override fun onReceivedError(view: WebView?, request: WebResourceRequest?, error: WebResourceError?) {
                             if (request?.isForMainFrame == true) {
                                 hasError = true
                                 loading = false
-                                onConsole(ConsoleEntry("ERROR", "Halaman gagal dimuat: ${error?.description}", line = 0))
+                                latestConsole(ConsoleEntry("ERROR", "Halaman gagal dimuat: ${error?.description}", line = 0))
                             }
                         }
 
                         override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
                             val url = request?.url ?: return false
-                            return when {
-                                url.scheme == "file" -> false
-                                url.scheme == "about" -> false
-                                url.scheme == "data" -> false
-                                else -> {
-                                    runCatching {
-                                        context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url.toString())))
-                                    }
-                                    true
-                                }
+                            if (latestPolicy.isLocal(url.toString())) return false
+                            if (request.isForMainFrame && url.scheme in listOf("https", "http", "mailto", "tel")) {
+                                runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, url)) }
                             }
+                            return true
                         }
                     }
                     webRef.value = this
@@ -221,14 +247,11 @@ fun PreviewPane(
             update = { webRef.value = it },
         )
 
-        LaunchedEffect(html, reloadSignal, filesRoot, webRef.value) {
+        LaunchedEffect(reloadSignal, filesRoot, webRef.value) {
             val web = webRef.value ?: return@LaunchedEffect
-            val base = "file://${filesRoot.absolutePath.trimEnd('/')}/"
-            val source = html.ifBlank { "<html><body style='font-family:monospace;color:#8E8E86;background:#0A0A0A;padding:32px'>Belum ada index.html</body></html>" }
-            val injected = PreviewInjector.inject(source, design, exposedSecrets)
             hasError = false
             loading = true
-            web.loadDataWithBaseURL(base, injected, "text/html", "utf-8", null)
+            web.loadUrl("${policy.origin}/index.html")
         }
 
         // Design + secret changes are hot-patched instead of reloading the page,
@@ -286,9 +309,21 @@ fun PreviewPane(
     }
 }
 
-private fun readHtml(root: File): String {
-    val entry = File(root, ProjectFiles.ENTRY_POINT)
-    return runCatching { if (entry.exists()) entry.readText() else "" }.getOrElse { "" }
+private fun previewError(code: Int): WebResourceResponse = WebResourceResponse(
+    "text/plain", "UTF-8", code, "Preview blocked", mapOf("Cache-Control" to "no-store"),
+    "Preview resource unavailable ($code)".byteInputStream(),
+)
+
+private fun java.io.InputStream.readNBytesBounded(limit: Int): ByteArray {
+    val output = java.io.ByteArrayOutputStream()
+    val buffer = ByteArray(16 * 1024)
+    while (true) {
+        val n = read(buffer)
+        if (n < 0) break
+        require(output.size().toLong() + n <= limit) { "HTML preview terlalu besar" }
+        output.write(buffer, 0, n)
+    }
+    return output.toByteArray()
 }
 
 @Composable

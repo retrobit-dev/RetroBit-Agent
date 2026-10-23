@@ -1,5 +1,7 @@
 package dev.retrobit.agent.ai
 
+import okio.buffer
+
 import kotlinx.coroutines.runBlocking
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
@@ -248,4 +250,21 @@ class AiStreamingTest {
         runBlocking { empty.readSse { payloads.add(it) } }
         assertTrue(payloads.isEmpty())
     }
+    @Test
+    fun `SSE read timeout is not a successful empty response`() {
+        val source = object : okio.Source {
+            override fun read(sink: okio.Buffer, byteCount: Long): Long = throw java.io.InterruptedIOException("timeout")
+            override fun timeout() = okio.Timeout.NONE
+            override fun close() {}
+        }
+        val body = object : okhttp3.ResponseBody() {
+            private val buffered = source.buffer()
+            override fun contentType() = "text/event-stream".toMediaType()
+            override fun contentLength() = -1L
+            override fun source() = buffered
+        }
+        val result = runCatching { runBlocking { body.readSse {} } }
+        assertTrue(result.exceptionOrNull() is java.io.InterruptedIOException)
+    }
+
 }

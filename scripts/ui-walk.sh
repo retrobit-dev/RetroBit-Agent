@@ -229,6 +229,15 @@ for pair in "Preview:03-preview" "Kode:04-code" "Desain:05-design" "Data:06-data
   if tap_text "$label"; then
     sleep 3
     shot "$name"
+    if [ "$label" = "Preview" ]; then
+      # Must be actual WebView page content, not only the Compose Preview tab.
+      if dump_ui && grep -q "Kirim produk" /tmp/ui.xml; then
+        log "event=preview-virtual-origin-rendered"
+      else
+        log "event=preview-content-missing"
+        UI_ISSUES=$((UI_ISSUES + 1))
+      fi
+    fi
     crash_check "tab-$label" || FAILED=1
   else
     UI_ISSUES=$((UI_ISSUES + 1))

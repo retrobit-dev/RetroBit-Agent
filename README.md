@@ -382,3 +382,11 @@ Android, dan listing resource/DEX/ABI. Ada analisis APK RetroBit sendiri serta
 ekspor JSON. Tidak memasang/menjalankan APK atau mengirimkannya ke AI/server.
 Ini bukan dekompilasi, verifikasi signature penuh, scanner malware, atau pipeline
 build APK hasil proyek. [Panduan, batas dan privasi](docs/APK_INSPECTOR.md).
+
+### v0.8.1 — hardening audit
+
+Preview boundary (LAN/WebView), restore snapshot staging + recovery journal,
+atomic source/JSON writes, SSE timeout propagation, dan busy guard penghapusan
+model. Lihat [audit/test matrix](docs/HARDENING.md) serta
+[perubahan kompatibilitas](docs/releases/v0.8.1-preview.1.md), terutama perubahan
+origin/localStorage WebView. Ini bukan janji bebas bug selamanya.

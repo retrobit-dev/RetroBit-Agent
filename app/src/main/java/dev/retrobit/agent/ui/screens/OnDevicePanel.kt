@@ -61,12 +61,13 @@ fun OnDevicePanel(vm: CloudViewModel) {
                     onClick = { picker.launch(arrayOf("*/*")) },
                 ) { Text(if (vm.localModelBytes > 0) "Ganti model GGUF" else "Impor GGUF") }
                 if (vm.importingModel) {
-                    if (vm.transferTotal > 0) {
+                    if (!vm.deletingModel && vm.transferTotal > 0) {
                         LinearProgressIndicator(progress = { (vm.importBytes.toFloat() / vm.transferTotal).coerceIn(0f, 1f) }, modifier = Modifier.fillMaxWidth())
                     } else LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
-                    Text("${if (vm.downloadingModel) "Download" else "Disalin"}: ${ProjectFiles.formatBytes(vm.importBytes)}" +
+                    if (vm.deletingModel) Text("Menunggu operasi model selesai sebelum menghapus…")
+                    else Text("${if (vm.downloadingModel) "Download" else "Disalin"}: ${ProjectFiles.formatBytes(vm.importBytes)}" +
                         if (vm.transferTotal > 0) " / ${ProjectFiles.formatBytes(vm.transferTotal)}" else " · ukuran belum diketahui")
-                    TextButton(onClick = vm::cancelModelImport) { Text("Batalkan transfer") }
+                    TextButton(onClick = vm::cancelModelImport) { Text(if (vm.deletingModel) "Batalkan operasi" else "Batalkan transfer") }
                 }
                 if (vm.localModelHash.isNotEmpty()) Text("SHA-256 salinan: ${vm.localModelHash}", style = MaterialTheme.typography.labelSmall)
                 Text("Konteks (prompt + jawaban)", style = MaterialTheme.typography.labelMedium)
