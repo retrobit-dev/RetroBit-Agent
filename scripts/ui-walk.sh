@@ -36,6 +36,14 @@ exact, loose = [], []
 for node in root.iter("node"):
     label = ((node.get("text") or "") + " " + (node.get("content-desc") or "")).strip()
     low = label.lower()
+    # A floating label can lie outside the input's hit region. For form edits,
+    # tap the enclosing editable node, not the decorative label's coordinates.
+    if sys.argv[2] == "field":
+        if node.get("class") != "android.widget.EditText":
+            continue
+        if not any(needle in ((n.get("text") or "") + " " + (n.get("content-desc") or "")).lower() for n in node.iter("node")):
+            continue
+        low = needle
     if needle in low:
         m = re.match(r"\[(\d+),(\d+)\]\[(\d+),(\d+)\]", node.get("bounds", ""))
         if not m:
@@ -504,14 +512,14 @@ EXPECTED_SHA=$(python3 -c 'import json; print(json.load(open("artifacts-local/ci
 if tap_text "Cloud"; then
   for _ in 1 2 3 4 5; do $ADB shell input swipe 540 650 540 1600 250 >>"$LOG" 2>&1; done
   if tap_text_scrolling "AI di HP (offline)"; then
-    if tap_text_scrolling "URL HTTPS langsung ke GGUF" exact; then
+    if tap_text_scrolling "URL HTTPS langsung ke GGUF" field; then
       # Clear both sides of the cursor in a multiline field, independent of
       # tap location/selection/IME. No clipboard helper or debug backdoor.
       $ADB shell input keyevent 123 $(printf '67 %.0s' $(seq 1 240)) $(printf '112 %.0s' $(seq 1 240)) >>"$LOG" 2>&1
       $ADB shell input text "$MODEL_URL" >>"$LOG" 2>&1
       $ADB shell input keyevent KEYCODE_BACK >>"$LOG" 2>&1
       sleep 1
-      if tap_text_scrolling "SHA-256 penerbit (opsional)" exact; then
+      if tap_text_scrolling "SHA-256 penerbit (opsional)" field; then
         $ADB shell input text "$EXPECTED_SHA" >>"$LOG" 2>&1
         $ADB shell input keyevent KEYCODE_BACK >>"$LOG" 2>&1
         sleep 1
