@@ -19,6 +19,7 @@ concurrency:
 
 permissions:
   contents: write
+  actions: read
 
 jobs:
   build:
@@ -227,6 +228,22 @@ jobs:
           python3 scripts/verify-native-apk.py \
             app/build/outputs/apk/release/app-release.apk \
             app/build/outputs/apk/debug/app-debug.apk
+
+      - name: Require successful smoke before preview publication
+        if: steps.preview.outputs.tag != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          RUN=$(gh api --method GET "repos/$GITHUB_REPOSITORY/actions/workflows/smoke.yml/runs" \
+            -f head_sha="$GITHUB_SHA" -f per_page=20 \
+            --jq '[.workflow_runs[] | select(.event == "pull_request" or .event == "workflow_dispatch")] | first | .id // empty')
+          if [ -z "$RUN" ]; then
+            echo "Tidak ada smoke run untuk SHA ini; preview tidak diterbitkan."
+            exit 1
+          fi
+          # Do not publish a build tested only with injected PackageInfo. The
+          # release-APK / PackageManager smoke must pass on this exact SHA.
+          timeout 15m gh run watch "$RUN" --exit-status --interval 30
 
       - name: Upload R8 mapping
         if: success()
