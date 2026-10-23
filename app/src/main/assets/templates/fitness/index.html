@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+<meta name="theme-color" content="#0A0A0A" />
+<title>Pulse — Kesehatan harian</title>
+<style id="rb-design">
+/*RB_DESIGN_START*/
+:root{
+  --rb-primary:#DEDED5;
+  --rb-accent:#F4F4EC;
+  --rb-bg:#0A0A0A;
+  --rb-surface:#141413;
+  --rb-text:#EAEAE2;
+  --rb-muted:#8E8E86;
+  --rb-radius:4px;
+  --rb-font:'Pixel Operator',ui-monospace,'Courier New',monospace;
+}
+/*RB_DESIGN_END*/
+@font-face{font-family:'Pixel Operator';src:url('assets/fonts/PixelOperator.ttf') format('truetype');font-weight:400;font-display:swap}
+@font-face{font-family:'Pixel Operator';src:url('assets/fonts/PixelOperator-Bold.ttf') format('truetype');font-weight:700;font-display:swap}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:var(--rb-bg);color:var(--rb-text);font-family:var(--rb-font);padding-bottom:110px}
+body::before{content:"";position:fixed;inset:0;background:radial-gradient(70% 40% at 90% 0%,color-mix(in srgb,var(--rb-accent) 16%,transparent),transparent 70%);pointer-events:none}
+.app{position:relative;max-width:620px;margin:0 auto;padding:28px 20px}
+.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:26px}
+.top small{font-size:12px;color:var(--rb-muted);display:block;margin-bottom:5px}
+.top h1{margin:0;font-size:24px;letter-spacing:-.03em}
+.bell{width:42px;height:42px;border-radius:14px;background:var(--rb-surface);border:1px solid rgba(255,255,255,.08);display:grid;place-items:center;font-size:16px;cursor:pointer}
+.stats{display:grid;grid-template-columns:1.15fr .85fr;gap:14px;margin-bottom:14px}
+.card{background:var(--rb-surface);border:1px solid rgba(255,255,255,.07);border-radius:var(--rb-radius);padding:18px}
+.rings-card{display:flex;align-items:center;gap:16px;background:linear-gradient(140deg,color-mix(in srgb,var(--rb-primary) 22%,var(--rb-surface)),var(--rb-surface));position:relative;overflow:hidden}
+.rings{position:relative;width:118px;height:118px;flex:none}
+.rings svg{transform:rotate(-90deg)}
+.rings .center{position:absolute;inset:0;display:grid;place-items:center;text-align:center}
+.rings .center b{font-size:22px;letter-spacing:-.03em;display:block}
+.rings .center small{font-size:9px;color:var(--rb-muted);text-transform:uppercase;letter-spacing:.1em}
+.legend{display:grid;gap:11px;font-size:11.5px;color:var(--rb-muted);flex:1}
+.legend div{display:flex;align-items:center;gap:8px}
+.legend i{width:8px;height:8px;border-radius:3px;flex:none}
+.legend b{color:var(--rb-text);margin-left:auto;font-size:12px}
+.sleep-card{display:flex;flex-direction:column;justify-content:space-between;background:linear-gradient(150deg,color-mix(in srgb,var(--rb-accent) 16%,var(--rb-surface)),var(--rb-surface))}
+.sleep-card .ic{font-size:20px}
+.sleep-card h3{margin:0;font-size:26px;letter-spacing:-.03em}
+.sleep-card p{margin:2px 0 0;font-size:11.5px;color:var(--rb-muted)}
+.spark{display:flex;align-items:flex-end;gap:3px;height:34px;margin-top:12px}
+.spark i{flex:1;background:color-mix(in srgb,var(--rb-accent) 45%,transparent);border-radius:2px}
+.section-head{display:flex;justify-content:space-between;align-items:baseline;margin:22px 0 12px}
+.section-head h2{font-size:16px;margin:0;letter-spacing:-.01em}
+.section-head a{font-size:11.5px;color:var(--rb-accent);text-decoration:none}
+.week{display:flex;align-items:flex-end;gap:10px;height:128px;padding:8px 4px 0}
+.day{flex:1;display:flex;flex-direction:column;align-items:center;gap:7px;height:100%;justify-content:flex-end}
+.day .col{width:100%;max-width:26px;border-radius:7px;background:rgba(255,255,255,.07);position:relative;overflow:hidden;transition:.4s height}
+.day .col span{position:absolute;bottom:0;left:0;right:0;background:linear-gradient(180deg,var(--rb-accent),var(--rb-primary));border-radius:7px}
+.day.today .col{background:rgba(255,255,255,.1);box-shadow:0 0 0 1px color-mix(in srgb,var(--rb-accent) 50%,transparent)}
+.day small{font-size:10px;color:var(--rb-muted)}
+.day.today small{color:var(--rb-text);font-weight:700}
+.workout{display:flex;align-items:center;gap:14px;background:var(--rb-surface);border:1px solid rgba(255,255,255,.07);border-radius:16px;padding:13px;margin-bottom:10px;cursor:pointer;transition:.2s border-color,.2s transform}
+.workout:hover{border-color:color-mix(in srgb,var(--rb-primary) 40%,transparent);transform:translateY(-2px)}
+.w-ic{width:48px;height:48px;border-radius:13px;display:grid;place-items:center;font-size:21px;flex:none}
+.w-ic.a{background:rgba(124,92,255,.16)}
+.w-ic.b{background:rgba(57,208,255,.14)}
+.w-ic.c{background:rgba(255,150,90,.14)}
+.w-main{flex:1;min-width:0}
+.w-main b{display:block;font-size:13.5px;font-weight:600;margin-bottom:3px}
+.w-main span{font-size:11.5px;color:var(--rb-muted)}
+.w-time{font-size:11px;color:var(--rb-muted);text-align:right}
+.w-time b{display:block;color:var(--rb-accent);font-size:12.5px}
+.bar{position:fixed;left:0;right:0;bottom:0;background:color-mix(in srgb,var(--rb-bg) 86%,transparent);backdrop-filter:blur(20px);border-top:1px solid rgba(255,255,255,.07);padding:12px 0 calc(12px + env(safe-area-inset-bottom));z-index:10}
+.bar-in{max-width:620px;margin:0 auto;display:flex;justify-content:space-around}
+.nav{background:none;border:0;color:var(--rb-muted);font-family:inherit;font-size:10px;display:flex;flex-direction:column;align-items:center;gap:4px;padding:4px 12px;cursor:pointer}
+.nav .ni{font-size:18px}
+.nav.active{color:var(--rb-text)}
+.nav.active .ni{color:var(--rb-accent)}
+.toast{position:fixed;left:50%;top:18px;transform:translate(-50%,-80px);background:var(--rb-text);color:var(--rb-bg);padding:11px 18px;border-radius:11px;font-size:12.5px;font-weight:650;transition:.35s;z-index:30;white-space:nowrap}
+.toast.show{transform:translate(-50%,0)}
+@media (max-width:420px){.stats{grid-template-columns:1fr}.rings-card{grid-row:1}.sleep-card{grid-row:2}}
+
+/* retro cyberdeck: kill soft glows, snap radii to the token */
+.glow{display:none!important}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="top">
+    <div><small>Selasa, 14 Oktober</small><h1>Halo, Damar 👋</h1></div>
+    <div class="bell" onclick="toast('Tidak ada notifikasi baru')">🔔</div>
+  </div>
+
+  <div class="stats">
+    <div class="card rings-card">
+      <div class="rings">
+        <svg width="118" height="118" viewBox="0 0 118 118">
+          <circle cx="59" cy="59" r="50" fill="none" stroke="rgba(255,255,255,.08)" stroke-width="9"/>
+          <circle cx="59" cy="59" r="50" fill="none" stroke="var(--rb-primary)" stroke-width="9" stroke-linecap="round" stroke-dasharray="314" stroke-dashoffset="80"/>
+          <circle cx="59" cy="59" r="38" fill="none" stroke="rgba(255,255,255,.08)" stroke-width="9"/>
+          <circle cx="59" cy="59" r="38" fill="none" stroke="var(--rb-accent)" stroke-width="9" stroke-linecap="round" stroke-dasharray="238.7" stroke-dashoffset="95"/>
+          <circle cx="59" cy="59" r="26" fill="none" stroke="rgba(255,255,255,.08)" stroke-width="9"/>
+          <circle cx="59" cy="59" r="26" fill="none" stroke="#8C8C8C" stroke-width="9" stroke-linecap="round" stroke-dasharray="163.4" stroke-dashoffset="70"/>
+        </svg>
+        <div class="center"><div><b>74%</b><small>Harian</small></div></div>
+      </div>
+      <div class="legend">
+        <div><i style="background:var(--rb-primary)"></i>Gerak <b>420 kkal</b></div>
+        <div><i style="background:var(--rb-accent)"></i>Latihan <b>38 mnt</b></div>
+        <div><i style="background:#8C8C8C"></i>Berdiri <b>9 jam</b></div>
+      </div>
+    </div>
+    <div class="card sleep-card">
+      <div class="ic">🌙</div>
+      <div>
+        <h3>7j 42m</h3>
+        <p>Tidur kemarin · +12%</p>
+      </div>
+      <div class="spark">
+        <i style="height:30%"></i><i style="height:55%"></i><i style="height:42%"></i><i style="height:80%"></i>
+        <i style="height:65%"></i><i style="height:92%"></i><i style="height:70%"></i><i style="height:48%"></i>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="section-head" style="margin:0 0 4px"><h2>Aktivitas mingguan</h2><a href="#" onclick="toast('Detail mingguan segera hadir');return false">Detail</a></div>
+    <div class="week" id="week"></div>
+  </div>
+
+  <div class="section-head"><h2>Latihan hari ini</h2><a href="#" onclick="toast('Semua latihan segera hadir');return false">Lihat semua</a></div>
+  <div class="workout" onclick="toast('Memulai: Full body HIIT')">
+    <div class="w-ic a">🏋️</div>
+    <div class="w-main"><b>Full body HIIT</b><span>12 gerakan · Intensitas tinggi</span></div>
+    <div class="w-time"><b>24</b>menit</div>
+  </div>
+  <div class="workout" onclick="toast('Memulai: Yoga pagi')">
+    <div class="w-ic b">🧘</div>
+    <div class="w-main"><b>Yoga pagi</b><span>Peregangan · Fokus napas</span></div>
+    <div class="w-time"><b>15</b>menit</div>
+  </div>
+  <div class="workout" onclick="toast('Memulai: Jalan santai')">
+    <div class="w-ic c">🚶</div>
+    <div class="w-main"><b>Jalan santai</b><span>3.200 langkah tersisa</span></div>
+    <div class="w-time"><b>30</b>menit</div>
+  </div>
+</div>
+
+<div class="bar"><div class="bar-in">
+  <button class="nav active"><span class="ni">◉</span>Hari ini</button>
+  <button class="nav" onclick="toast('Latihan segera hadir')"><span class="ni">◈</span>Latihan</button>
+  <button class="nav" onclick="toast('Tren segera hadir')"><span class="ni">◔</span>Tren</button>
+  <button class="nav" onclick="toast('Profil segera hadir')"><span class="ni">☺</span>Profil</button>
+</div></div>
+<div class="toast" id="toast">Halo</div>
+
+<script>
+const DATA = [
+  {d:'S',v:52},{d:'S',v:68},{d:'R',v:44},{d:'K',v:86},{d:'J',v:62},{d:'S',v:96},{d:'M',v:74,today:true}
+];
+document.getElementById('week').innerHTML = DATA.map(x => `
+  <div class="day ${x.today?'today':''}">
+    <div class="col" style="height:100%"><span style="height:${x.v}%"></span></div>
+    <small>${x.d}</small>
+  </div>`).join('');
+
+let timer;
+function toast(msg){
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(timer);
+  timer = setTimeout(() => el.classList.remove('show'), 2000);
+}
+</script>
+</body>
+</html>

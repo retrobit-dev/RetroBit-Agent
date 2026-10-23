@@ -1,0 +1,63 @@
+name: Lint (android lint)
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    name: android lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: gradle/actions/setup-gradle@v6
+      - name: Run lint
+        run: |
+          chmod +x ./gradlew
+          ./gradlew --no-daemon --console=plain lintDebug
+
+      - name: Summarise lint findings
+        if: always()
+        run: |
+          python3 - <<'PY'
+          import glob, sys, xml.etree.ElementTree as ET
+
+          files = glob.glob("app/build/reports/lint-results-debug.xml")
+          if not files:
+              print("::error title=Lint::Tidak ada laporan lint (task gagal sebelum menulis report).")
+              sys.exit(1)
+
+          root = ET.parse(files[0]).getroot()
+          issues = root.findall("issue")
+          errors = [i for i in issues if i.get("severity") in ("Error", "Fatal")]
+          warnings = [i for i in issues if i.get("severity") == "Warning"]
+          print(f"lint: {len(errors)} error, {len(warnings)} warning, {len(issues)} total")
+          for issue in (errors + warnings)[:8]:
+              loc = issue.find("location")
+              where = f"{loc.get('file')}:{loc.get('line')}" if loc is not None else "?"
+              msg = (issue.get("message") or "").replace("%", "%25").replace("\n", " ")
+              print(f"::warning title=lint/{issue.get('id')}::{msg[:400]} ({where})")
+          for issue in errors[:30]:
+              loc = issue.find("location")
+              where = f"{loc.get('file')}:{loc.get('line')}" if loc is not None else "?"
+              msg = (issue.get("message") or "").replace("%", "%25").replace("\n", " ")
+              print(f"::error title=lint/{issue.get('id')}::{msg[:400]} ({where})")
+          sys.exit(1 if errors else 0)
+          PY
+      - name: Upload lint report
+        uses: actions/upload-artifact@v7
+        with:
+          name: lint-report
+          path: app/build/reports/lint-results-debug.html
+          if-no-files-found: ignore

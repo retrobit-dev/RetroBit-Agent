@@ -1,0 +1,317 @@
+name: Android CI
+
+on:
+  push:
+    branches: [main, "arena/**"]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      preview_tag:
+        description: "Opsional: terbitkan prerelease dari revisi ini, misalnya v0.7.0-preview.1"
+        required: false
+        default: ""
+        type: string
+
+concurrency:
+  group: android-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  build:
+    # Own PRs already receive the push build on the exact branch SHA. Avoid
+    # compiling both ABIs twice; keep the PR path for contributions from forks.
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository
+    name: Build signed APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Read explicit preview publication request
+        id: preview
+        env:
+          INPUT_TAG: ${{ inputs.preview_tag }}
+          COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          TAG="$INPUT_TAG"
+          # Commit-title publication also works for integrations allowed to
+          # push this branch but not allowed to dispatch Actions workflows.
+          TITLE="${COMMIT_MESSAGE%%$'\n'*}"
+          if [[ "$EVENT_NAME" == "push" && "$TITLE" == "Release preview: "* ]]; then
+            TAG="${TITLE#Release preview: }"
+          fi
+          STABLE=false
+          if [[ "$EVENT_NAME" == "push" && "$TITLE" == "Release stable: "* ]]; then
+            TAG="${TITLE#Release stable: }"
+            STABLE=true
+          fi
+          if [ -n "$TAG" ]; then
+            if [ "$STABLE" = true ]; then PATTERN='^v[0-9]+\.[0-9]+\.[0-9]+$'; else PATTERN='^v[0-9]+\.[0-9]+\.[0-9]+-preview\.[0-9]+$'; fi
+            [[ "$TAG" =~ $PATTERN ]] || {
+              echo "preview tag harus berbentuk vX.Y.Z-preview.N"; exit 1;
+            }
+            echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v6
+
+      - name: Install Android SDK packages
+        run: |
+          SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          if [ -x "$SDKMANAGER" ]; then
+            yes | "$SDKMANAGER" --licenses > /dev/null 2>&1 || true
+            "$SDKMANAGER" "platforms;android-35" "build-tools;35.0.0" "ndk;27.2.12479018" "cmake;3.22.1" > /dev/null 2>&1 || true
+          fi
+          echo "ANDROID_HOME=$ANDROID_HOME"
+
+      - name: Unit tests
+        run: |
+          set -o pipefail
+          chmod +x ./gradlew
+          ./gradlew --no-daemon --console=plain testDebugUnitTest 2>&1 | tee test.log
+
+      - name: Report unit test summary
+        if: success()
+        run: |
+          python3 - <<'PY'
+          import pathlib, xml.etree.ElementTree as ET
+
+          reports = sorted(pathlib.Path("app/build/test-results/testDebugUnitTest").glob("*.xml"))
+          total = failures = skipped = 0
+          lines = []
+          for report in reports:
+              try:
+                  root = ET.parse(report).getroot()
+              except Exception:
+                  continue
+              name = report.stem
+              count = len(list(root.iter("testcase")))
+              bad = sum(1 for c in root.iter("testcase") if c.find("failure") is not None or c.find("error") is not None)
+              total += count
+              failures += bad
+              skipped += len(list(root.iter("skipped")))
+              lines.append(f"{name}: {count} tests, {bad} failed")
+          summary = f"{total} tests, {failures} failed, {skipped} skipped"
+          print("\n".join(lines))
+          print(summary)
+          print(f"::notice title=Tests::{summary}")
+          PY
+
+      - name: Annotate failing unit tests
+        if: failure()
+        run: |
+          python3 - <<'PY'
+          import pathlib, re, sys, xml.etree.ElementTree as ET
+
+          reports = list(pathlib.Path("app/build/test-results/testDebugUnitTest").glob("*.xml"))
+          if not reports:
+              # No reports means the task died before running tests — almost always a
+              # compile error. Surface test.log so the annotation names the file.
+              log = pathlib.Path("test.log")
+              text = log.read_text(errors="replace") if log.exists() else ""
+              lines = text.splitlines()
+              shown = False
+              for raw in lines:
+                  m = re.match(r"e: file://(\S+?):(\d+):(\d+) (.+)$", raw.strip())
+                  if m:
+                      path = m.group(1)
+                      idx = path.find("app/src/")
+                      if idx > 0:
+                          path = path[idx:]
+                      print(f"::error file={path},line={m.group(2)},col={m.group(3)},title=Kotlin::{m.group(4)}")
+                      shown = True
+              for i, raw in enumerate(lines):
+                  if "What went wrong:" in raw or re.search(r"> Task :\S+ FAILED", raw):
+                      detail = "\n".join(lines[i:i + 12]).replace("%", "%25").replace("\r", "").replace("\n", "%0A")
+                      print(f"::error title=Gradle::{detail[:3000]}")
+                      shown = True
+              if not shown:
+                  tail = "\n".join(lines[-25:]).replace("%", "%25").replace("\r", "").replace("\n", "%0A")
+                  print(f"::error title=Tests::{tail[:3000]}")
+              sys.exit(0)
+          failed = 0
+          for report in reports:
+              try:
+                  root = ET.parse(report).getroot()
+              except Exception:
+                  continue
+              for case in root.iter("testcase"):
+                  problem = case.find("failure")
+                  if problem is None:
+                      problem = case.find("error")
+                  if problem is None:
+                      continue
+                  failed += 1
+                  name = f"{case.get('classname')}.{case.get('name')}"
+                  detail = (problem.get("message") or problem.text or "").strip()
+                  detail = detail.replace("%", "%25").replace("\r", "").replace("\n", "%0A")
+                  print(f"::error title=Test failed::{name}%0A{detail[:3000]}")
+          if failed == 0:
+              print("::error title=Tests::Gradle gagal tetapi tidak ada laporan test; lihat test.log.")
+          PY
+
+      - name: Build release APK (signed)
+        env:
+          # Absent secrets arrive as empty strings, and the Gradle side ignores
+          # blanks, so forks and PRs keep falling back to the demo key in
+          # signing/. Once the four secrets exist, the private key wins and the
+          # demo key is only a historical artifact.
+          RELEASE_KEYSTORE_BASE64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
+          RELEASE_KEYSTORE_PASSWORD: ${{ secrets.RELEASE_KEYSTORE_PASSWORD }}
+          RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
+          RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
+        run: |
+          set -o pipefail
+          chmod +x ./gradlew
+          if [ -n "$RELEASE_KEYSTORE_BASE64" ]; then
+            echo "Signing: repository secret (RELEASE_KEYSTORE_BASE64 set)"
+          else
+            echo "Signing: demo key from signing/ (no RELEASE_KEYSTORE_BASE64 secret)"
+          fi
+          ./gradlew --no-daemon --console=plain --stacktrace assembleRelease assembleDebug 2>&1 | tee build.log
+
+      - name: Annotate Kotlin and Gradle errors
+        if: failure()
+        run: |
+          python3 - <<'PY'
+          import pathlib, re
+
+          log = pathlib.Path("build.log")
+          if not log.exists():
+              raise SystemExit(0)
+          lines = log.read_text(errors="replace").splitlines()
+
+          def emit(title, message):
+              message = message.replace("%", "%25").replace("\r", "").replace("\n", "%0A")
+              print(f"::error title={title}::{message[:6000]}")
+
+          for raw in lines:
+              m = re.match(r"e: file://(\S+?):(\d+):(\d+) (.+)$", raw.strip())
+              if m:
+                  path = m.group(1)
+                  idx = path.find("app/src/")
+                  if idx > 0:
+                      path = path[idx:]
+                  print(
+                      f"::error file={path},line={m.group(2)},col={m.group(3)},"
+                      f"title=Kotlin::{m.group(4)}"
+                  )
+
+          for i, raw in enumerate(lines):
+              if "What went wrong:" in raw or re.search(r"> Task :\S+ FAILED", raw):
+                  emit("Gradle", "\n".join(lines[i:i + 12]))
+              if raw.startswith("Caused by:") or raw.startswith("AAPT:") or raw.startswith("ERROR:"):
+                  emit("Gradle", raw)
+          PY
+
+      - name: Verify signatures
+        if: success()
+        run: |
+          APKSIGNER=$(ls "$ANDROID_HOME"/build-tools/*/apksigner | sort -V | tail -1)
+          "$APKSIGNER" verify --verbose app/build/outputs/apk/release/app-release.apk
+          "$APKSIGNER" verify --verbose app/build/outputs/apk/debug/app-debug.apk
+          # Fingerprints make a key rotation verifiable from the log alone:
+          # compare the SHA-256 digest before and after switching keys.
+          "$APKSIGNER" verify --print-certs app/build/outputs/apk/release/app-release.apk \
+            | grep -i "sha-256"
+          ls -l app/build/outputs/apk/release/ app/build/outputs/apk/debug/
+          du -h app/build/outputs/apk/release/*.apk app/build/outputs/apk/debug/*.apk
+          python3 scripts/verify-native-apk.py \
+            app/build/outputs/apk/release/app-release.apk \
+            app/build/outputs/apk/debug/app-debug.apk
+
+      - name: Require successful smoke and lint before preview publication
+        if: steps.preview.outputs.tag != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          RUN=$(gh api --method GET "repos/$GITHUB_REPOSITORY/actions/workflows/smoke.yml/runs" \
+            -f head_sha="$GITHUB_SHA" -f per_page=20 \
+            --jq '[.workflow_runs[] | select(.event == "pull_request" or .event == "workflow_dispatch")] | first | .id // empty')
+          if [ -z "$RUN" ]; then
+            echo "Tidak ada smoke run untuk SHA ini; preview tidak diterbitkan."
+            exit 1
+          fi
+          # Do not publish a build tested only with injected PackageInfo. The
+          # release-APK / PackageManager smoke must pass on this exact SHA.
+          timeout 40m gh run watch "$RUN" --exit-status --interval 30
+          LINT=$(gh api --method GET "repos/$GITHUB_REPOSITORY/actions/workflows/lint.yml/runs" \
+            -f head_sha="$GITHUB_SHA" -f per_page=20 \
+            --jq '[.workflow_runs[] | select(.event == "pull_request" or .event == "workflow_dispatch")] | first | .id // empty')
+          if [ -z "$LINT" ]; then
+            echo "Tidak ada lint run untuk SHA ini; preview tidak diterbitkan."
+            exit 1
+          fi
+          timeout 15m gh run watch "$LINT" --exit-status --interval 30
+
+      - name: Upload R8 mapping
+        if: success()
+        uses: actions/upload-artifact@v7
+        with:
+          name: retrobit-mapping
+          path: app/build/outputs/mapping/release/mapping.txt
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Publish GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v') || steps.preview.outputs.tag != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PREVIEW_TAG: ${{ steps.preview.outputs.tag }}
+        run: |
+          TAG="${PREVIEW_TAG:-$GITHUB_REF_NAME}"
+          FLAGS=()
+          # Preview tags must never displace the latest stable release, even
+          # briefly. Manual publication targets this exact tested branch SHA.
+          if [[ "$TAG" == *-* ]]; then FLAGS=(--prerelease --latest=false); fi
+          NOTES="$RUNNER_TEMP/retrobit-release-notes.md"
+          if [ -f "docs/releases/$TAG.md" ]; then
+            cp "docs/releases/$TAG.md" "$NOTES"
+          else
+            printf '%s\n' "APK bertanda tangan. Buka app-release.apk langsung di HP untuk memasang." > "$NOTES"
+          fi
+          printf '\nSource commit: `%s`.\n' "$GITHUB_SHA" >> "$NOTES"
+          gh release create "$TAG" \
+            app/build/outputs/apk/release/app-release.apk \
+            app/build/outputs/apk/debug/app-debug.apk \
+            --title "RetroBit $TAG" "${FLAGS[@]}" \
+            --target "$GITHUB_SHA" \
+            --notes-file "$NOTES"
+
+      - name: Upload APK
+        if: success()
+        uses: actions/upload-artifact@v7
+        with:
+          name: retrobit-apk
+          path: |
+            app/build/outputs/apk/release/app-release.apk
+            app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Upload build reports
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: build-reports
+          path: |
+            app/build/reports/**
+            app/build/outputs/logs/**
+            build.log
+          if-no-files-found: ignore
+          retention-days: 7

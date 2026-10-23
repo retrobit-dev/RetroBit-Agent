@@ -1,0 +1,110 @@
+name: Smoke test (emulator)
+
+on:
+  pull_request:
+    paths:
+      - "app/**"
+      - "scripts/**"
+      - ".github/workflows/smoke.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: smoke-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  emulator:
+    name: Install APK on emulator
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # Test the PR head, not the merge ref: GitHub only refreshes
+          # refs/pull/<n>/merge lazily, so the merge commit can be stale.
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: gradle/actions/setup-gradle@v6
+
+      - name: Build release APK
+        run: |
+          chmod +x ./gradlew
+          ./gradlew --no-daemon --console=plain assembleRelease
+          ls -l app/build/outputs/apk/release/
+
+      - name: Fetch actual Instruct GGUF for inference smoke
+        run: python3 scripts/fetch-smoke-model.py
+
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' \
+            | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Boot emulator, install and launch
+        id: device
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 30
+          target: default
+          arch: x86_64
+          profile: pixel_2
+          disable-animations: true
+          emulator-boot-timeout: 900
+          emulator-options: -memory 4096 -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          script: bash scripts/smoke.sh
+
+      - name: Report smoke diagnostics
+        if: always()
+        run: |
+          python3 - <<'PY'
+          import pathlib, sys
+
+          log = pathlib.Path("artifacts/smoke.log")
+          if not log.exists():
+              print("::error title=Smoke::Tidak ada artifacts/smoke.log — script perangkat tidak sempat jalan.")
+              sys.exit(1)
+
+          text = log.read_text(errors="replace")
+          summary = [line for line in text.splitlines() if line.startswith(("install=", "boot_completed=", "event="))]
+          detail = text[-1800:].replace("%", "%25").replace("\r", "").replace("\n", "%0A")
+          print("\n".join(summary))
+          if "== result: OK ==" in text:
+              print(f"::notice title=Smoke OK::{detail}")
+              sys.exit(0)
+          print(f"::error title=Smoke gagal::{detail}")
+          sys.exit(1)
+          PY
+
+      - name: Publish screenshots to ci-artifacts branch
+        if: always()
+        env:
+          SMOKE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          [ -d artifacts ] || { echo "no artifacts"; exit 0; }
+          git config user.name "RetroBit CI"
+          git config user.email "ci@retrobit.dev"
+          export GIT_INDEX_FILE="$(mktemp -u)"
+          git add -f artifacts
+          TREE=$(git write-tree)
+          COMMIT=$(git commit-tree "$TREE" -m "Screenshots for ${SMOKE_SHA}")
+          git push --force origin "$COMMIT:refs/heads/ci-artifacts"
+
+      - name: Upload screenshots
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: emulator-screenshots
+          path: artifacts/
+          if-no-files-found: ignore
+          retention-days: 14

@@ -1,0 +1,27 @@
+# demo keystore secret material (keys themselves are intentionally committed)
+.keys/
+*.iml
+.gradle
+/local.properties
+/.idea
+.DS_Store
+/build
+/captures
+.externalNativeBuild
+.cxx
+.kotlin
+app/build
+*.jks
+# local signing overrides; the demo key in signing/ IS committed on purpose
+/signing/*.jks
+*.hprof
+
+# python bytecode from tools/
+__pycache__/
+*.pyc
+
+# Never commit user model weights or local diagnostic artifacts.
+*.gguf
+artifacts-local/
+# Local CI screenshots, release notes and diagnostics (not application assets).
+/.cache/
