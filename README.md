@@ -302,7 +302,7 @@ app/src/main/res/font/         # salinan font agar bisa dipakai Compose
 Pengujian:
 
 ```
-./gradlew testDebugUnitTest   # 210 unit test (138 JVM + 72 Robolectric)
+./gradlew testDebugUnitTest   # 262 tests; 0 gagal pada revisi aplikasi 52b455d
 ./gradlew lintDebug          # Android lint
 ```
 
@@ -350,6 +350,9 @@ Seluruh teks yang tampil di aplikasi berada di `app/src/main/res/values/strings.
 - Snapshot hanya memulihkan file sumber, bukan database atau design metadata.
 - Preview LAN menyajikan file statis tanpa runtime `RetroBitDB`/`__RETROBIT_ENV__`.
 - R8 menghapus kode yang tidak terpakai, jadi stack trace build rilis memakai nama kelas yang diobfuskasi. `mapping.txt` untuk membacanya diunggah sebagai artifact **`retrobit-mapping`** di setiap build CI.
+- v0.7 menambah protokol/grammar tool offline, download HTTPS lewat MockWebServer,
+  checksum dan transfer terpotong, SQL policy dan tool SQLite nyata, alias/symlink,
+  serta alur AgentEngine → LocalInference fake backend → parser → tool file nyata.
 - Unit test mencakup enam area: token design (`DesignSystemTest`), katalog provider/error AI (`AiConfigTest`), filesystem proyek (`ProjectFilesTest`: traversal, zip-slip, snapshot), dan database per proyek (`DatabaseManagerTest`, berjalan di Robolectric dengan SQLite sungguhan: skema, insert/select, parameter terikat, preset seed, jembatan JSON preview, serta `clearAll`), penyimpanan pengaturan dan vault (`SettingsStoreTest`, `SecretStoreTest`: default, persistensi, fallback saat JSON rusak, nilai tidak pernah tersimpan sebagai teks biasa), serta repositori proyek (`ProjectRepositoryTest`: seed pertama, buat/hapus/duplikat, urutan recency, thread chat, ketahanan setelah restart). Mesin obrolan diuji ujung ke ujung lewat MockWebServer (`PlainChatEngineTest`: penolakan mode demo, obrolan kosong, Auto tanpa key, delta streaming, akuntansi pemakaian, batas `max_tokens`, key ditolak, prioritas persona). Format wire tiap provider diuji lewat MockWebServer (`AiStreamingTest`), dan kebijakan kuota/rotasi key diuji tanpa perangkat (`UnlimitedTest`). Alur UI tetap diverifikasi lewat smoke test emulator.
 
 ## Troubleshooting

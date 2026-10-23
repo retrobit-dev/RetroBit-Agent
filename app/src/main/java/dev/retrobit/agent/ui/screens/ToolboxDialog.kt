@@ -18,6 +18,7 @@ import dev.retrobit.agent.agent.AgentToolRunner
 fun ToolboxDialog(onClose: () -> Unit) {
     AlertDialog(
         onDismissRequest = onClose,
+        shape = androidx.compose.foundation.shape.RoundedCornerShape(4.dp),
         title = { Text("Tool agen proyek (${AgentToolRunner.DEFINITIONS.size})") },
         text = {
             Column(Modifier.heightIn(max = 420.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {

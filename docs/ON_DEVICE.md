@@ -1,4 +1,4 @@
-# AI offline di HP — tahap pertama
+# AI offline di HP — Chat, agen proyek dan GGUF
 
 RetroBit tetap aplikasi Android native Kotlin/Compose. Provider **AI di HP
 (offline)** memanggil llama.cpp melalui JNI, tidak membuka server lokal,
@@ -7,21 +7,24 @@ Auto tidak diam-diam memindahkan percakapan offline ke cloud.
 
 ## Menyiapkan dari HP saja
 
-1. Unduh **model Instruct GGUF satu berkas** dari penerbit tepercaya melalui
-   browser HP. Contoh awal: Qwen2.5-Coder-1.5B-Instruct dengan kuantisasi Q4_K_M.
-   [Halaman model resmi Qwen](https://huggingface.co/Qwen/Qwen2.5-Coder-1.5B-Instruct-GGUF/tree/main):
-   pilih `qwen2.5-coder-1.5b-instruct-q4_k_m.gguf` melalui browser HP.
-   Perhatikan lisensi model. Model tidak termasuk dalam APK. Safetensors,
-   model ZIP, model terpecah, dan file APK bukan berkas yang bisa diimpor.
-2. Di AI Cloud, pilih **AI di HP (offline)**. Tekan **Periksa mesin** untuk
-   memastikan pustaka native dapat dimuat. Ini belum menguji model.
-3. Tekan **Impor GGUF**, pilih berkas di Downloads. Biarkan aplikasi terbuka.
-   Model disalin ke penyimpanan privat; siapkan ruang untuk berkas asli dan
-   salinannya. Ada batas impor 3 GiB dan cadangan ruang disk 64 MiB.
-4. Mulai dengan konteks 2048 dan jawaban 512 token. **Simpan**, kemudian
-   **Uji model** untuk memuat GGUF dan meminta jawaban pendek.
-5. Buka tab **Chat**, buat obrolan, lalu kirim pesan. Setelah impor, chat bisa
-   digunakan tanpa koneksi internet, API key, laptop atau komputer lain.
+1. Buka **AI Cloud → AI di HP (offline)**. Tekan **Periksa mesin** untuk
+   memuat pustaka native dan memeriksa grammar tool, tanpa mengunduh model.
+2. Tekan **Pakai rekomendasi Qwen 1.5B Q4** (atau masukkan URL HTTPS GGUF
+   satu berkas tepercaya). Isi SHA-256 penerbit jika tersedia, lalu tekan
+   **Download & impor GGUF**. Gunakan Wi-Fi dan biarkan aplikasi terbuka.
+   [Halaman model resmi Qwen](https://huggingface.co/Qwen/Qwen2.5-Coder-1.5B-Instruct-GGUF/tree/main).
+   Model tidak disertakan APK; periksa lisensinya. Ada batas 3 GiB dan cadangan
+   disk 64 MiB. Safetensors, ZIP, APK, dan model terpecah tidak didukung.
+3. Jika sudah punya berkas dari browser HP, pilih **Impor GGUF/Ganti model GGUF**
+   dan pilih dari Downloads. Aplikasi menyalin ke penyimpanan privat; siapkan
+   ruang untuk berkas asli dan salinannya. Tidak perlu komputer/Termux.
+4. Pilih **Setelan agen: 4096 / 1024 token**, tekan **Simpan**, lalu **Uji model**
+   untuk memuat GGUF dan meminta jawaban pendek. Untuk Chat saja, konteks 2048
+   dan keluaran 256–512 lebih ringan. Pemuatan pertama bisa lama.
+5. Untuk obrolan biasa, buka tab **Chat**. Untuk membangun/mengedit proyek,
+   buat proyek/template di Beranda lalu gunakan **Chat di dalam proyek**.
+   Menu proyek → **Tool agen** berisi katalog 15 tool. Setelah model tersedia,
+   inferensi dan tool lokal tidak memerlukan internet/API key/komputer.
 
 Untuk Infinix GT 30 Pro dengan 12 GB RAM fisik: model 1.5B Q4 adalah titik
 awal, bukan benchmark yang sudah dibuktikan pada perangkat. Model 3B Q4 bisa
@@ -38,7 +41,9 @@ Model-format/arsitektur baru setelah versi backend yang dipin dapat ditolak.
 - Streaming mempertahankan karakter UTF-8 walau token memotong emoji.
 - Berhenti membatalkan di antara batch prefill/decode. Pemuatan model atau
   batch native yang sedang berjalan perlu selesai dahulu. Itu bukan hard kill.
-- Satu inferensi/impor/hapus sekaligus. Model dan KV cache dilepas sesudah
+- Satu inferensi aktif; model dapat ditransfer ke file parsial saat inferensi
+  berjalan, tetapi penggantian/hapus menunggu inferensi selesai. KV cache dan
+  model yang dimuat dilepas sesudah
   permintaan selesai/gagal/dibatalkan; permintaan berikutnya memuat ulang.
 - Impor memeriksa magic/version dan ukuran. Itu **bukan** validasi penuh GGUF:
   keberhasilan impor tidak menjamin arsitektur/quantization/model muat di RAM.
@@ -68,9 +73,12 @@ belum ada atau pemasangan diam-diam tanpa persetujuan pengguna.
 ## Pengujian
 
 JVM tests memakai backend palsu untuk lifetime/cancellation/streaming dan
-MockWebServer untuk cloud yang lama. Robolectric memeriksa impor dan kegagalan
-penggantian berkas. C++ bridge juga diperiksa sintaks terhadap header upstream.
-Smoke release emulator memuat pustaka native melalui **Periksa mesin**.
+MockWebServer untuk cloud dan download/redirect/error GGUF. Robolectric memeriksa
+impor/checksum/ukuran, penggantian berkas, tool SQLite, serta AgentEngine →
+LocalInference fake backend → parser → tool file sungguhan. C++ bridge diperiksa
+sintaks terhadap header upstream. Grammar native diuji dengan 12 acceptance case
+tanpa weights. Smoke release emulator memuat pustaka native dan memeriksa grammar
+melalui **Periksa mesin**, lalu memotret katalog tool dan kontrol download.
 Pengujian tersebut tidak membuktikan kualitas/kecepatan inferensi model nyata
 di Infinix. Model besar tidak disimpan di Git atau diunduh otomatis oleh CI.
 

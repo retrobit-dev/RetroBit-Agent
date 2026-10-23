@@ -23,3 +23,5 @@ __pycache__/
 # Never commit user model weights or local diagnostic artifacts.
 *.gguf
 artifacts-local/
+# Local CI screenshots, release notes and diagnostics (not application assets).
+/.cache/
