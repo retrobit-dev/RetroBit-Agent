@@ -25,7 +25,7 @@ dump_ui() {
 
 # find_xy <substring>  -> prints "x y" of the first matching node
 find_xy() {
-  python3 - "$1" <<'PY'
+  python3 - "$1" "${2:-loose}" <<'PY'
 import re, sys, xml.etree.ElementTree as ET
 needle = sys.argv[1].lower()
 try:
@@ -47,7 +47,7 @@ for node in root.iter("node"):
         (exact if low == needle else loose).append(point)
 if exact:
     print(*exact[0]); sys.exit(0)
-if loose:
+if loose and sys.argv[2] != "exact":
     print(*loose[0]); sys.exit(0)
 sys.exit(1)
 PY
@@ -76,10 +76,10 @@ tap_text() {
 # tap_text_scrolling <substring> — like tap_text, but scrolls the page down
 # until the node exists (the dashboard is taller than the screen).
 tap_text_scrolling() {
-  local needle="$1" xy=""
+  local needle="$1" mode="${2:-loose}" xy=""
   for _ in 1 2 3 4 5 6; do
     if dump_ui; then
-      xy=$(find_xy "$needle") && break
+      xy=$(find_xy "$needle" "$mode") && break
     fi
     $ADB shell input swipe 540 1400 540 900 250 >>"$LOG" 2>&1
     sleep 1
@@ -497,7 +497,7 @@ fi
 # --- Actual GGUF through SAF, auto-activation, JNI loading and generation ----
 if tap_text "Cloud"; then
   for _ in 1 2 3 4 5; do $ADB shell input swipe 540 650 540 1600 250 >>"$LOG" 2>&1; done
-  if tap_text_scrolling "AI di HP (offline)" && tap_text_scrolling "Impor GGUF"; then
+  if tap_text_scrolling "AI di HP (offline)" && tap_text_scrolling "Impor GGUF" exact; then
     sleep 2
     shot 16a-model-picker
     # DocumentsUI's default Recent view does not reliably index unknown GGUF.
@@ -505,7 +505,7 @@ if tap_text "Cloud"; then
     if tap_text "ci-model.gguf"; then
       sleep 5
       # Testing loads real weights, unlike the separate engine/grammar probe.
-      if tap_text_scrolling "Uji model"; then
+      if tap_text_scrolling "Uji model" exact; then
         $ADB shell input swipe 540 1300 540 950 400 >>"$LOG" 2>&1
         REAL_MODEL_OK=0
         for _ in $(seq 1 90); do
